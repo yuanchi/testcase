@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="debug" name="TestCase">
+      <Properties>
+        <Property name="localfilename">C:\dts\log\testlog4j-$${date:yyyy-MM-dd}.log</Property>
+      </Properties>
+      <ThresholdFilter level="debug"/>
+     
+      <Appenders>
+        <Console name="STDOUT">
+          <PatternLayout pattern="%m%n"/>
+        </Console>
+        <File name="File1" fileName="${localfilename}" bufferedIO="true" immediateFlush="true">
+    		<PatternLayout>
+      			<pattern>%d %p %C{1.} [%t] %m%n</pattern>
+    		</PatternLayout>
+  		</File>
+      </Appenders>
+     
+      <Loggers>
+        <Logger name="EventLogger" level="info" additivity="false">
+          <AppenderRef ref="File1"/>
+        </Logger>
+        <Root level="error">
+          <AppenderRef ref="STDOUT"/>
+        </Root>
+      </Loggers>
+     
+    </Configuration>
