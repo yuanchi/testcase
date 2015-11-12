@@ -33,11 +33,13 @@ public class QRCodeGenerator {
 		return extension.toUpperCase();
 	}
 	public static void zxingEncode(String content, String path){
+		Map<EncodeHintType, Object> hints = new HashMap<>();
+		hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 		final int QRCODE_IMAGE_HEIGHT = 250;
 		final int QRCODE_IMAGE_WIDTH = 250;
 		QRCodeWriter qrWriter = new QRCodeWriter();
 		try {
-			BitMatrix matrix = qrWriter.encode(content, BarcodeFormat.QR_CODE, QRCODE_IMAGE_WIDTH, QRCODE_IMAGE_HEIGHT);
+			BitMatrix matrix = qrWriter.encode(content, BarcodeFormat.QR_CODE, QRCODE_IMAGE_WIDTH, QRCODE_IMAGE_HEIGHT, hints);
 			BufferedImage image = MatrixToImageWriter.toBufferedImage(matrix);
 			File imageFile = new File(path);
 			ImageIO.write(image, extensionAsType(path), imageFile);
@@ -46,18 +48,21 @@ public class QRCodeGenerator {
 		}
 	}
 	private static void testZxingEncode(){
-		zxingEncode("今天是好天氣啊", "C:\\Users\\JerryLin\\Desktop\\pic\\qrsample.jpg");
+//		zxingEncode("今天是好天氣啊", "C:\\Users\\JerryLin\\Desktop\\pic\\qrsample.jpg");
+		zxingEncode("我愛你", "C:\\Users\\JerryLin\\Desktop\\pic\\iloveyou.jpg");
 	}
 	/**
 	 * generate qrcode with logo picture
 	 * ref. https://skrymerdev.wordpress.com/2012/09/22/qr-code-generation-with-zxing/
+	 * logo image should be as possible as small
 	 * @param content
 	 * @param path
 	 * @param overlayPath
 	 */
 	public static void zxingEncodeOverlay(String content, String path, String overlayPath){
-		Map<EncodeHintType, ErrorCorrectionLevel> hints = new HashMap<>();
+		Map<EncodeHintType, Object> hints = new HashMap<>();
 		hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+		hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 		
 		final int QRCODE_IMAGE_HEIGHT = 300;
 		final int QRCODE_IMAGE_WIDTH = 300;
@@ -85,7 +90,7 @@ public class QRCodeGenerator {
 		}
 	}
 	private static void testZxingEncodeOverlay(){
-		zxingEncodeOverlay("今天是好天氣啊", "C:\\Users\\JerryLin\\Desktop\\pic\\qrsample.gif", "C:\\Users\\JerryLin\\Desktop\\pic\\ohm_logo_slowly.jpg");
+		zxingEncodeOverlay("我愛你", "C:\\Users\\JerryLin\\Desktop\\pic\\iloveyouoverlay.jpg", "C:\\Users\\JerryLin\\Desktop\\pic\\ohm_logo_slowly.jpg");
 	}
 	public static void simple(String content, String path){
 		File file = new File(path);
