@@ -49,7 +49,7 @@ public class QRCodeGenerator {
 	}
 	private static void testZxingEncode(){
 //		zxingEncode("今天是好天氣啊", "C:\\Users\\JerryLin\\Desktop\\pic\\qrsample.jpg");
-		zxingEncode("我愛你", "C:\\Users\\JerryLin\\Desktop\\pic\\iloveyou.jpg");
+		zxingEncode("http://themeforest.net/item/fortis-responsive-magento-theme/full_screen_preview/1744309", "C:\\Users\\JerryLin\\Desktop\\pic\\fortistheme5.jpg");
 	}
 	/**
 	 * generate qrcode with logo picture
@@ -110,7 +110,7 @@ public class QRCodeGenerator {
 	}
 	public static void main(String[]args){
 //		testSimple();
-//		testZxingEncode();
-		testZxingEncodeOverlay();
+		testZxingEncode();
+//		testZxingEncodeOverlay();
 	}
 }
