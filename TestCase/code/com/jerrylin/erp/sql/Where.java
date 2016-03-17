@@ -9,6 +9,7 @@ import com.jerrylin.erp.sql.condition.CollectConds;
 import com.jerrylin.erp.sql.condition.SqlCondition.Junction;
 
 public class Where extends SqlNode{
+	private static final long serialVersionUID = -7259383899187705676L;
 	public CollectConds collectConds(){
 		CollectConds collectConds = CollectConds.getInstance();
 		addChild(collectConds);
@@ -30,8 +31,8 @@ public class Where extends SqlNode{
 			.map(ISqlNode::genSql)
 			.collect(Collectors.toList());
 		String result = StringUtils.join(items, "\n");
-		String andStart = Junction.AND.toString() + " ";
-		String orStart = Junction.OR.toString() + " ";
+		String andStart = Junction.AND.getSymbol() + " ";
+		String orStart = Junction.OR.getSymbol() + " ";
 		if(StringUtils.isNotBlank(result)){
 			if(result.startsWith(andStart)){
 				result = result.substring(andStart.length(), result.length());
@@ -48,5 +49,11 @@ public class Where extends SqlNode{
 			result = "WHERE " + result; 
 		}
 		return result;
+	}
+	@Override
+	public ISqlNode singleCopy() {
+		Where where = new Where();
+		where.id(getId());
+		return where;
 	}
 }

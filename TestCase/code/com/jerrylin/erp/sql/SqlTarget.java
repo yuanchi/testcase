@@ -3,6 +3,7 @@ package com.jerrylin.erp.sql;
 import org.apache.commons.lang3.StringUtils;
 
 public class SqlTarget extends SqlNode {
+	private static final long serialVersionUID = -6053902581602785992L;
 	private String target;
 	private String alias;
 	
@@ -38,5 +39,13 @@ public class SqlTarget extends SqlNode {
 			result += " AS " + alias;
 		}
 		return result;
+	}
+	@Override
+	public ISqlNode singleCopy() {
+		SqlTarget t = new SqlTarget();
+		t.id(getId());
+		t.alias(alias)
+		.target(target);
+		return t;
 	}
 }

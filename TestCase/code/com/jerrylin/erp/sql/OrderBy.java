@@ -6,7 +6,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 public class OrderBy extends SqlNode {
-	
+	private static final long serialVersionUID = -6961582950154807375L;
+
 	public OrderBy asc(String target){
 		Asc asc = new Asc();
 		asc.setTarget(target);
@@ -27,6 +28,12 @@ public class OrderBy extends SqlNode {
 								.collect(Collectors.toList());
 		String result = StringUtils.join(items, ", ");
 		return "ORDER BY " + result;
+	}
+	@Override
+	public ISqlNode singleCopy() {
+		OrderBy orderBy = new OrderBy();
+		orderBy.id(getId());
+		return orderBy;
 	}
 
 }

@@ -1,8 +1,12 @@
 package com.jerrylin.erp.sql;
 
-
-
+/**
+ * representing root node as starting point
+ * @author JerryLin
+ *
+ */
 public class SqlRoot extends SqlNode implements ISqlRoot{
+	private static final long serialVersionUID = 6314237980437169038L;
 	public static SqlRoot getInstance(){
 		SqlRoot root = new SqlRoot();
 		root.root(root);
@@ -56,6 +60,13 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 			.reduce("", (a, b)->a + "\n" + b);
 		return result;
 	}
+	@Override
+	public ISqlNode singleCopy() {
+		SqlRoot root = SqlRoot.getInstance();
+		root.id(getId());
+		return root;
+	}
+	
 	private static void testBaseOperation(){
 		ISqlRoot root = SqlRoot.getInstance()
 			.select()
@@ -76,7 +87,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 					.getWhere()
 				.orConds()
 					.andSimpleCond("p.address LIKE :pAddress", String.class)
-					.andSimpleCond("p.gender", Integer.class)
+					.andSimpleCond("p.gender = :pGender", Integer.class)
 					.getRoot()
 			.orderBy()
 				.asc("p1.id")
@@ -88,6 +99,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 	public static void main(String[]args){
 		testBaseOperation();
 	}
+
 
 
 }

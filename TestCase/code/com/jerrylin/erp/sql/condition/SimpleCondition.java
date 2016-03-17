@@ -1,12 +1,20 @@
 package com.jerrylin.erp.sql.condition;
 
+import com.jerrylin.erp.sql.ISqlNode;
+
 public class SimpleCondition extends SqlCondition {
-	private String expression;
+	private static final long serialVersionUID = 4978680262162278817L;
+	private String propertyName;
+	private String operator;
 	private Object value;
 	private Class<?> type;
 	
-	public SimpleCondition expression(String expression){
-		this.expression = expression;
+	public SimpleCondition propertyName(String propertyName){
+		this.propertyName = propertyName;
+		return this;
+	}
+	public SimpleCondition operator(String operator){
+		this.operator = operator;
 		return this;
 	}
 	public SimpleCondition value(Object value){
@@ -17,8 +25,11 @@ public class SimpleCondition extends SqlCondition {
 		this.type = type;
 		return this;
 	}
-	public String getExpression() {
-		return expression;
+	public String getPropertyName() {
+		return propertyName;
+	}
+	public String getOperator() {
+		return operator;
 	}
 	public Object getValue() {
 		return value;
@@ -26,10 +37,23 @@ public class SimpleCondition extends SqlCondition {
 	public Class<?> getType() {
 		return type;
 	}
+	public Object getFormattedValue(){
+		return value;
+	}
 	@Override
 	public String genSql() {
 		Junction junction = getJunction();
-		return junction.toString() + " " + expression;
+		return junction.toString() + " " + (propertyName + " " + operator + " :" + getId());
+	}
+	@Override
+	public ISqlNode singleCopy() {
+		SimpleCondition c = new SimpleCondition();
+		c.id(getId());
+		c.propertyName(propertyName)
+		 .operator(operator)
+		 .type(type)
+		 .value(value);
+		return c;
 	}
 	
 }

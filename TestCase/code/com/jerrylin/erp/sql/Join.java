@@ -3,6 +3,7 @@ package com.jerrylin.erp.sql;
 import org.apache.commons.lang3.StringUtils;
 
 public class Join extends SqlNode {
+	private static final long serialVersionUID = -6941598944193606788L;
 	private String expression;
 	private String alias;
 	private String on;
@@ -39,6 +40,15 @@ public class Join extends SqlNode {
 			result += (" ON " + on);
 		}
 		return result;
+	}
+	@Override
+	public ISqlNode singleCopy() {
+		Join join = new Join();
+		join.id(getId());
+		join.expression(expression)
+			.alias(alias)
+			.on(on);
+		return join;
 	}
 
 }

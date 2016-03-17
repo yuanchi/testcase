@@ -4,8 +4,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-
+/**
+ * Sql Tree Node Base Implementation
+ * @author JerryLin
+ *
+ */
 public abstract class SqlNode implements ISqlNode {
+	private static final long serialVersionUID = -5581891859984293702L;
 	private String id;
 	private ISqlNode parent;
 	private ISqlRoot root;
@@ -57,6 +62,4 @@ public abstract class SqlNode implements ISqlNode {
 	public List<ISqlNode> getChildren() {
 		return this.children;
 	}
-
-
 }
