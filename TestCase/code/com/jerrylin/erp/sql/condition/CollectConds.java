@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.Where;
+import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 
 /**
  * representing a set conditions
@@ -54,19 +55,21 @@ public class CollectConds extends SqlCondition{
 		}
 		throw new RuntimeException("Parent Node's class is NOT expected: Where");
 	}
-	private SimpleCondition simpleCond(String expression, Class<?> type, Object val){
+	private SimpleCondition initSimpleCond(SimpleCondition cond, String expression, Class<?> type, Object val){
 		String propertyName = findPropertyName(expression);
 		String operator = findOperator(expression);
 		String namedParam = findNamedParam(expression);
 		
-		SimpleCondition s = new SimpleCondition()
-								.propertyName(propertyName)
+		SimpleCondition s = cond.propertyName(propertyName)
 								.operator(operator)
 								.type(type)
-								.value(val);
+								.value(val);		
 		s.id(namedParam);
 		addChild(s);
 		return s;
+	}
+	private SimpleCondition simpleCond(String expression, Class<?> type, Object val){
+		return initSimpleCond(new SimpleCondition(), expression, type, val);
 	}
 	public CollectConds andSimpleCond(String expression, Class<?> type, Object val){
 		SimpleCondition s = simpleCond(expression, type, val);
@@ -112,6 +115,64 @@ public class CollectConds extends SqlCondition{
 		addChild(s);
 		return this;		
 	}
+	
+	private StrCondition strCondition(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = new StrCondition();
+		strCondition.setMatchMode(matchMode);
+		initSimpleCond(strCondition, expression, String.class, value);
+		return strCondition;
+	}
+	
+	public CollectConds andStrCondition(String expression, MatchMode matchMode){
+		andStrCondition(expression, matchMode, null);
+		return this;
+	}
+	
+	public CollectConds andStrCondition(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strCondition(expression, matchMode, value);
+		strCondition.junction(Junction.AND);
+		return this;
+	}
+	
+	public CollectConds orStrCondition(String expression, MatchMode matchMode){
+		orStrCondition(expression, matchMode, null);
+		return this;
+	}
+	
+	public CollectConds orStrCondition(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strCondition(expression, matchMode, value);
+		strCondition.junction(Junction.OR);
+		return this;
+	}
+	
+	private StrCondition strCaseInsensitive(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strCondition(expression, matchMode, value);
+		strCondition.setCaseInsensitive(true);
+		return strCondition;
+	}
+	
+	public CollectConds andStrCaseInsensitive(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strCaseInsensitive(expression, matchMode, value);
+		strCondition.junction(Junction.AND);
+		return this;
+	}
+	
+	public CollectConds andStrCaseInsensitive(String expression, MatchMode matchMode){
+		andStrCaseInsensitive(expression, matchMode, null);
+		return this;
+	}
+	
+	public CollectConds orStrCaseInsensitive(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strCaseInsensitive(expression, matchMode, value);
+		strCondition.junction(Junction.OR);
+		return this;
+	}
+	
+	public CollectConds orStrCaseInsensitive(String expression, MatchMode matchMode){
+		orStrCaseInsensitive(expression, matchMode, null);
+		return this;
+	}
+	
 	@Override
 	public String genSql() {
 		List<String> items = getChildren().stream()
