@@ -178,6 +178,9 @@ public class CollectConds extends SqlCondition{
 		List<String> items = getChildren().stream()
 			.map(ISqlNode::genSql)
 			.collect(Collectors.toList());
+		if(items.size() == 0){
+			return "";
+		}
 		String result = StringUtils.join(items, "\n      "); 
 		String and = Junction.AND.toString();
 		if(result.indexOf(and) == 0){
@@ -187,7 +190,10 @@ public class CollectConds extends SqlCondition{
 		if(result.indexOf(or) == 0){
 			result = result.substring(3, result.length());
 		}
-		return getJunction().getSymbol() + " (" + result + ")";
+		if(items.size() > 1){
+			result = "(" + result + ")";
+		}
+		return getJunction().getSymbol() + " " + result;
 	}
 	
 	private static String findFirstMatch(Pattern p, String input){
