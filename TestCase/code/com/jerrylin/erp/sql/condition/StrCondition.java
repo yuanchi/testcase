@@ -1,5 +1,7 @@
 package com.jerrylin.erp.sql.condition;
 
+import com.jerrylin.erp.sql.ISqlNode;
+
 
 public class StrCondition extends SimpleCondition {
 	private static final long serialVersionUID = 5371175197617721399L;
@@ -19,7 +21,18 @@ public class StrCondition extends SimpleCondition {
 	public void setMatchMode(MatchMode matchMode) {
 		this.matchMode = matchMode;
 	}
-
+	@Override
+	public ISqlNode singleCopy() {
+		StrCondition c = new StrCondition();
+		c.id(getId());
+		c.propertyName(getPropertyName())
+		 .operator(getOperator())
+		 .type(getType())
+		 .value(getValue());
+		c.setCaseInsensitive(caseInsensitive);
+		c.setMatchMode(matchMode);
+		return c;
+	}
 	public enum MatchMode{
 		ANYWHERE {
 			@Override
