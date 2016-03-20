@@ -1,5 +1,10 @@
 package com.jerrylin.erp.sql;
 
+import java.util.List;
+import java.util.function.Predicate;
+
+import com.jerrylin.erp.sql.condition.SimpleCondition;
+
 /**
  * representing root node as starting point
  * @author JerryLin
@@ -7,6 +12,7 @@ package com.jerrylin.erp.sql;
  */
 public class SqlRoot extends SqlNode implements ISqlRoot{
 	private static final long serialVersionUID = 6314237980437169038L;
+	
 	public static SqlRoot getInstance(){
 		SqlRoot root = new SqlRoot();
 		root.root(root);
@@ -66,7 +72,33 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		root.id(getId());
 		return root;
 	}
-	
+	/**
+	 * filter out nodes not needed, and copy a new SqlNode(from SqlRoot)
+	 * if parent node is filtered out, his children are also excluded.
+	 * @param filter
+	 * @return
+	 */
+	@Override
+	public ISqlNode excludeCopy(Predicate<ISqlNode> filter){
+		return excludeCopy(this, filter);
+	}
+	private ISqlNode excludeCopy(ISqlNode src, Predicate<ISqlNode> filterout){
+		if(filterout.test(src)){
+			return null;
+		}
+		ISqlNode copyNode = src.singleCopy();
+		List<ISqlNode> nodes = src.getChildren();
+		if(nodes.size() != 0){
+			for(int i = 0; i < nodes.size(); i++){
+				ISqlNode child = nodes.get(i);
+				ISqlNode childCopy = excludeCopy(child, filterout);
+				if(childCopy != null){
+					copyNode.addChild(childCopy);
+				}
+			}
+		}
+		return copyNode;
+	}	
 	private static void testBaseOperation(){
 		ISqlRoot root = SqlRoot.getInstance()
 			.select()
@@ -96,9 +128,83 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 			;
 		System.out.println(root.genSql());
 	}
-	public static void main(String[]args){
-		testBaseOperation();
+	private static void testFindConditionById(){
+		ISqlRoot root = SqlRoot.getInstance()
+			.select()
+				.target("p1.id", "pId")
+				.target("p1.name", "pName")
+				.target("p2.mobile", "pMobile")
+				.target("p2.tel", "pTel")
+				.getRoot()
+			.from()
+				.target("com.jerrylin.erp.model.Member", "p1")
+				.target("com.jerrylin.erp.model.Member", "p2")
+				.getRoot()
+			.joinAlias("LEFT JOIN p1.orders", "p1Orders")
+			.where()
+				.andConds()
+					.andSimpleCond("p.name LIKE :pName", String.class)
+					.andSimpleCond("p.age = :pAge", Integer.class)
+					.getWhere()
+				.orConds()
+					.andSimpleCond("p.address LIKE :pAddress", String.class)
+					.andSimpleCond("p.gender = :pGender", Integer.class)
+					.getRoot()
+			.orderBy()
+				.asc("p1.id")
+				.desc("p2.name")
+				.getRoot()
+			;
+		SimpleCondition c = (SimpleCondition)root.findNodeById("pGender");
+		System.out.println(c.getPropertyName() + " " + c.getOperator() + " " + c.getId());
+		
 	}
+	
+	private static void testExcludeCopy(){
+		ISqlRoot root = SqlRoot.getInstance()
+			.select()
+				.target("p1.id", "pId")
+				.target("p1.name", "pName")
+				.target("p2.mobile", "pMobile")
+				.target("p2.tel", "pTel")
+				.getRoot()
+			.from()
+				.target("com.jerrylin.erp.model.Member", "p1")
+				.target("com.jerrylin.erp.model.Member", "p2")
+				.getRoot()
+			.joinAlias("LEFT JOIN p1.orders", "p1Orders")
+			.where()
+				.andConds()
+					.andSimpleCond("p.name LIKE :pName", String.class)
+					.andSimpleCond("p.age = :pAge", Integer.class)
+					.getWhere()
+				.orConds()
+					.andSimpleCond("p.address LIKE :pAddress", String.class)
+					.andSimpleCond("p.gender = :pGender", Integer.class)
+					.getRoot()
+			.orderBy()
+				.asc("p1.id")
+				.desc("p2.name")
+				.getRoot()
+			;
+		
+		ISqlNode copy = root.excludeCopy(n->{return INCLUDED;});
+		System.out.println(copy.genSql());
+		
+		ISqlNode copy2 = root.excludeCopy(n->{
+			if(n instanceof Where){
+				return EXCLUDED;
+			}
+			return INCLUDED;
+		});
+		System.out.println(copy2.genSql());
+		System.out.println(root == copy2);
+	}
+	
+	public static void main(String[]args){
+		testExcludeCopy();
+	}
+
 
 
 
