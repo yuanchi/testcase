@@ -64,10 +64,14 @@ public abstract class SqlNode implements ISqlNode {
 	public List<ISqlNode> getChildren() {
 		return this.children;
 	}
+	/**
+	 * the same as method find, return self/this node, not the found node
+	 * if you want to retrieve found node directly, use method getFounds
+	 */
 	@Override
 	public ISqlNode findNodeById(String id){
-		ISqlNode target = findNodeById(this, id);
-		return target;
+		find(n->id.equals(n.getId()));
+		return this;
 	}
 	@Override
 	public ISqlNode find(Predicate<ISqlNode> validation) {
@@ -84,6 +88,10 @@ public abstract class SqlNode implements ISqlNode {
 			find(matches, child, validation);
 		});
 	}
+	/**
+	 * update found nodes;
+	 * before calling this method, you should call find or findNodeById first.
+	 */
 	@Override
 	public ISqlNode update(Consumer<ISqlNode> update) {
 		this.founds.forEach(f->{
@@ -91,20 +99,8 @@ public abstract class SqlNode implements ISqlNode {
 		});
 		return this;
 	}
-	private ISqlNode findNodeById(ISqlNode node, String id){
-		if(id.equals(node.getId())){
-			return node;
-		}
-		List<ISqlNode> nodes = node.getChildren();
-		if(nodes.size() != 0){
-			for(int i = 0; i < nodes.size(); i++){
-				ISqlNode child = nodes.get(i);
-				ISqlNode target = findNodeById(child, id);
-				if(target != null){
-					return target;
-				}
-			}
-		}
-		return null;
+	@Override
+	public List<ISqlNode> getFounds(){
+		return this.founds;
 	}
 }
