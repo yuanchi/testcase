@@ -19,7 +19,7 @@ public abstract class SqlNode implements ISqlNode {
 	private ISqlNode parent;
 	private ISqlRoot root;
 	private List<ISqlNode> children = new LinkedList<>();
-	private List<ISqlNode> founds = Collections.emptyList();
+	List<ISqlNode> founds = Collections.emptyList();
 	
 	public ISqlNode root(ISqlRoot root){
 		this.root = root;
