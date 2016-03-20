@@ -114,6 +114,11 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		return this;
 	}
 	@Override
+	public ISqlRoot findNodeById(String id){
+		super.findNodeById(id);
+		return this;
+	}
+	@Override
 	public Map<String, Object> getCondIdValuePairs() {
 		find(n->(n instanceof SimpleCondition));
 		Map<String, Object> params = new LinkedHashMap<>();
