@@ -2,12 +2,15 @@ package com.jerrylin.erp.sql;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 /**
  * Sql Tree Base Interface
  * @author JerryLin
  *
  */
 public interface ISqlNode extends Serializable{
+	
 	public String getId();
 	public ISqlNode getParent();
 	public void addChild(ISqlNode node);
@@ -22,4 +25,7 @@ public interface ISqlNode extends Serializable{
 	 * @return
 	 */
 	public ISqlNode singleCopy();
+	public ISqlNode findNodeById(String id);
+	public void find(Predicate<ISqlNode> validation);
+	public void update(Consumer<ISqlNode> update);
 }
