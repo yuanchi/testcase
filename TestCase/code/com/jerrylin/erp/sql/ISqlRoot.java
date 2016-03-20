@@ -1,5 +1,6 @@
 package com.jerrylin.erp.sql;
 
+import java.util.Map;
 import java.util.function.Predicate;
 
 public interface ISqlRoot extends ISqlNode {
@@ -12,5 +13,6 @@ public interface ISqlRoot extends ISqlNode {
 	public ISqlRoot joinAlias(String expression, String alias);
 	public ISqlRoot joinOn(String expression, String on);
 	public OrderBy orderBy();
-	public ISqlNode excludeCopy(Predicate<ISqlNode> exclude);
+	public ISqlRoot excludeCopy(Predicate<ISqlNode> exclude);
+	public Map<String, Object> getCondIdValuePairs();
 }

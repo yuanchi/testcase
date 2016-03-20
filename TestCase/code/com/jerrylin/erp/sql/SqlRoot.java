@@ -1,9 +1,13 @@
 package com.jerrylin.erp.sql;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.jerrylin.erp.sql.condition.SimpleCondition;
+import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 
 /**
  * representing root node as starting point
@@ -79,8 +83,8 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 	 * @return
 	 */
 	@Override
-	public ISqlNode excludeCopy(Predicate<ISqlNode> filter){
-		return excludeCopy(this, filter);
+	public ISqlRoot excludeCopy(Predicate<ISqlNode> filter){
+		return (ISqlRoot)excludeCopy(this, filter);
 	}
 	private ISqlNode excludeCopy(ISqlNode src, Predicate<ISqlNode> filterout){
 		if(filterout.test(src)){
@@ -99,6 +103,27 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		}
 		return copyNode;
 	}	
+	@Override
+	public ISqlRoot find(Predicate<ISqlNode> validation){
+		super.find(validation);
+		return this;
+	}
+	@Override
+	public ISqlRoot update(Consumer<ISqlNode> update){
+		super.update(update);
+		return this;
+	}
+	@Override
+	public Map<String, Object> getCondIdValuePairs() {
+		find(n->(n instanceof SimpleCondition));
+		Map<String, Object> params = new LinkedHashMap<>();
+		founds.forEach(n->{
+			SimpleCondition s = (SimpleCondition)n;
+			params.put(s.getId(), s.getValue());
+		});
+		return params;
+	}
+	
 	private static void testBaseOperation(){
 		ISqlRoot root = SqlRoot.getInstance()
 			.select()
@@ -200,10 +225,51 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		System.out.println(copy2.genSql());
 		System.out.println(root == copy2);
 	}
+	private static void testFindUpdate(){
+		ISqlRoot root = SqlRoot.getInstance()
+				.select()
+					.target("p1.id", "pId")
+					.target("p1.name", "pName")
+					.target("p2.mobile", "pMobile")
+					.target("p2.tel", "pTel")
+					.getRoot()
+				.from()
+					.target("com.jerrylin.erp.model.Member", "p1")
+					.target("com.jerrylin.erp.model.Member", "p2")
+					.getRoot()
+				.joinAlias("LEFT JOIN p1.orders", "p1Orders")
+				.where()
+					.andConds()
+						.andStrCondition("p1.name LIKE :pName", MatchMode.START, "John")
+						.andSimpleCond("p1.age = :pAge", Integer.class)
+						.getWhere()
+					.orConds()
+						.andStrCaseInsensitive("p2.address LIKE :pAddress", MatchMode.ANYWHERE, "AsxhyyOOPP")
+						.andSimpleCond("p2.gender = :pGender", Integer.class)
+						.getRoot()
+				.orderBy()
+					.asc("p1.id")
+					.desc("p2.name")
+					.getRoot()
+				;
+		
+		root.find(n->"pAge".equals(n.getId()))
+			.update(n->{
+				SimpleCondition s = (SimpleCondition)n;
+				s.value(10);
+			});
+		
+		Map<String, Object> params = root.getCondIdValuePairs();
+		params.forEach((k,v)->{
+			System.out.println(k+"|"+v);
+		});
+	}
+	
 	
 	public static void main(String[]args){
-		testExcludeCopy();
+		testFindUpdate();
 	}
+
 
 
 
