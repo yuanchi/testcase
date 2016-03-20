@@ -70,11 +70,11 @@ public abstract class SqlNode implements ISqlNode {
 		return target;
 	}
 	@Override
-	public void find(Predicate<ISqlNode> validation) {
+	public ISqlNode find(Predicate<ISqlNode> validation) {
 		List<ISqlNode> matches = new ArrayList<>();
 		find(matches, this, validation);
 		this.founds = matches;
-		
+		return this;
 	}
 	private void find(List<ISqlNode> matches, ISqlNode node , Predicate<ISqlNode> validation){
 		if(validation.test(node)){
@@ -85,11 +85,11 @@ public abstract class SqlNode implements ISqlNode {
 		});
 	}
 	@Override
-	public void update(Consumer<ISqlNode> update) {
+	public ISqlNode update(Consumer<ISqlNode> update) {
 		this.founds.forEach(f->{
 			update.accept(f);
 		});
-		
+		return this;
 	}
 	private ISqlNode findNodeById(ISqlNode node, String id){
 		if(id.equals(node.getId())){

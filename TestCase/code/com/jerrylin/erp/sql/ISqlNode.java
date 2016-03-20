@@ -26,6 +26,6 @@ public interface ISqlNode extends Serializable{
 	 */
 	public ISqlNode singleCopy();
 	public ISqlNode findNodeById(String id);
-	public void find(Predicate<ISqlNode> validation);
-	public void update(Consumer<ISqlNode> update);
+	public ISqlNode find(Predicate<ISqlNode> validation);
+	public ISqlNode update(Consumer<ISqlNode> update);
 }
