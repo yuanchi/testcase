@@ -1,5 +1,6 @@
 package com.jerrylin.erp.sql;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,8 +115,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		super.update(update);
 		return this;
 	}
-	@Override
-	public ISqlRoot findNodeById(String id){
+	public SqlRoot findNodeById(String id){
 		super.findNodeById(id);
 		return this;
 	}
@@ -129,7 +129,18 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		});
 		return params;
 	}
-	private static ISqlRoot getSampleRoot(){
+	public SqlRoot updateSimpleCondition(Consumer<SimpleCondition> update){
+		update(n->{
+			if(n instanceof SimpleCondition){
+				SimpleCondition s = (SimpleCondition)n;
+				update.accept(s);
+			}else{
+				throw new RuntimeException("found nodes' type IS NOT SimpleCondition");
+			}
+		});
+		return this;
+	}
+	private static SqlRoot getSampleRoot(){
 		ISqlRoot root = SqlRoot.getInstance()
 				.select()
 					.target("p1.id", "pId")
@@ -156,7 +167,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 					.desc("p2.name")
 					.getRoot()
 				;
-		return root;
+		return (SqlRoot)root;
 	}
 	private static void testBaseOperation(){
 		ISqlRoot root = getSampleRoot();
@@ -170,19 +181,58 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 	}
 	
 	private static void testExcludeCopy(){
-		ISqlRoot root = getSampleRoot();
+		SqlRoot root = getSampleRoot();
 		
-		ISqlNode copy = root.excludeCopy(n->{return INCLUDED;});
-		System.out.println(copy.genSql());
+		ISqlNode copy1 = root.excludeCopy(n->{return INCLUDED;});
+		System.out.println(copy1.genSql());
 		
-		ISqlNode copy2 = root.excludeCopy(n->{
+		root.findNodeById("pName").updateSimpleCondition(n->{
+			n.value("JerryLin");
+		}).findNodeById("pAddress").updateSimpleCondition(n->{
+			n.value("台北市復興南路一段998號");
+		});
+		ISqlRoot copy2 = root.excludeCopy(n->{
+			if(!(n instanceof SimpleCondition)){
+				return INCLUDED;
+			}
+			SimpleCondition sc = (SimpleCondition)n;
+			Object val = sc.getValue();
+			if(val == null){
+				return EXCLUDED;
+			}
+			if(val instanceof String){
+				String strVal = (String)val;
+				if(StringUtils.isBlank(strVal)){
+					return EXCLUDED;
+				}
+			}
+			if(val instanceof Collection){
+				Collection<?> collect = (Collection<?>)val;
+				if(collect.size() == 0){
+					return EXCLUDED;
+				}
+			}
+			if(val instanceof Object[]){
+				Object[] objArray = (Object[])val;
+				if(objArray.length == 0){
+					return EXCLUDED;
+				}
+			}
+			return INCLUDED;
+		});
+		System.out.println(copy2.genSql());
+		copy2.getCondIdValuePairs().forEach((k,v)->{
+			System.out.println(k + "|" + v);
+		});
+		
+		ISqlNode copy3 = root.excludeCopy(n->{
 			if(n instanceof Where){
 				return EXCLUDED;
 			}
 			return INCLUDED;
 		});
-		System.out.println(copy2.genSql());
-		System.out.println(root == copy2);
+		System.out.println(copy3.genSql());
+		System.out.println(root == copy3);
 	}
 	private static void testFindUpdate(){
 		ISqlRoot root = getSampleRoot();
@@ -209,11 +259,6 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 	}
 	
 	public static void main(String[]args){
-		testRemove();
+		testExcludeCopy();
 	}
-
-
-
-
-
 }
