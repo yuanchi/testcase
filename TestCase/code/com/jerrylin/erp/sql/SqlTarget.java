@@ -36,7 +36,7 @@ public class SqlTarget extends SqlNode {
 	public String genSql() {
 		String result = target;
 		if(StringUtils.isNotBlank(alias)){
-			result += " AS " + alias;
+			result += " " + alias;
 		}
 		return result;
 	}
