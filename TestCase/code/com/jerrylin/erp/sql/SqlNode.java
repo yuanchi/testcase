@@ -100,6 +100,17 @@ public abstract class SqlNode implements ISqlNode {
 		return this;
 	}
 	@Override
+	public ISqlNode remove(){
+		this.founds.forEach(f->{
+			ISqlNode parent = f.getParent();
+			if(parent != null){
+				parent.getChildren().remove(f);
+			}
+		});
+		this.founds.clear();
+		return this;
+	}
+	@Override
 	public List<ISqlNode> getFounds(){
 		return this.founds;
 	}

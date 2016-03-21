@@ -6,8 +6,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.jerrylin.erp.sql.condition.SimpleCondition;
-import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 
 /**
  * representing root node as starting point
@@ -67,7 +68,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		String result = getChildren()
 			.stream()
 			.map(ISqlNode::genSql)
-			.reduce("", (a, b)->a + "\n" + b);
+			.reduce("", (a, b)->a + (StringUtils.isNotBlank(b) ? ("\n" + b) : ""));
 		return result;
 	}
 	@Override
@@ -128,109 +129,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		});
 		return params;
 	}
-	
-	private static void testBaseOperation(){
-		ISqlRoot root = SqlRoot.getInstance()
-			.select()
-				.target("p1.id", "pId")
-				.target("p1.name", "pName")
-				.target("p2.mobile", "pMobile")
-				.target("p2.tel", "pTel")
-				.getRoot()
-			.from()
-				.target("com.jerrylin.erp.model.Member", "p1")
-				.target("com.jerrylin.erp.model.Member", "p2")
-				.getRoot()
-			.joinAlias("LEFT JOIN p1.orders", "p1Orders")
-			.where()
-				.andConds()
-					.andSimpleCond("p.name LIKE :pName", String.class)
-					.andSimpleCond("p.age = :pAge", Integer.class)
-					.getWhere()
-				.orConds()
-					.andSimpleCond("p.address LIKE :pAddress", String.class)
-					.andSimpleCond("p.gender = :pGender", Integer.class)
-					.getRoot()
-			.orderBy()
-				.asc("p1.id")
-				.desc("p2.name")
-				.getRoot()
-			;
-		System.out.println(root.genSql());
-	}
-	private static void testFindConditionById(){
-		ISqlRoot root = SqlRoot.getInstance()
-			.select()
-				.target("p1.id", "pId")
-				.target("p1.name", "pName")
-				.target("p2.mobile", "pMobile")
-				.target("p2.tel", "pTel")
-				.getRoot()
-			.from()
-				.target("com.jerrylin.erp.model.Member", "p1")
-				.target("com.jerrylin.erp.model.Member", "p2")
-				.getRoot()
-			.joinAlias("LEFT JOIN p1.orders", "p1Orders")
-			.where()
-				.andConds()
-					.andSimpleCond("p.name LIKE :pName", String.class)
-					.andSimpleCond("p.age = :pAge", Integer.class)
-					.getWhere()
-				.orConds()
-					.andSimpleCond("p.address LIKE :pAddress", String.class)
-					.andSimpleCond("p.gender = :pGender", Integer.class)
-					.getRoot()
-			.orderBy()
-				.asc("p1.id")
-				.desc("p2.name")
-				.getRoot()
-			;
-		SimpleCondition c = (SimpleCondition)root.findNodeById("pGender");
-		System.out.println(c.getPropertyName() + " " + c.getOperator() + " " + c.getId());
-		
-	}
-	
-	private static void testExcludeCopy(){
-		ISqlRoot root = SqlRoot.getInstance()
-			.select()
-				.target("p1.id", "pId")
-				.target("p1.name", "pName")
-				.target("p2.mobile", "pMobile")
-				.target("p2.tel", "pTel")
-				.getRoot()
-			.from()
-				.target("com.jerrylin.erp.model.Member", "p1")
-				.target("com.jerrylin.erp.model.Member", "p2")
-				.getRoot()
-			.joinAlias("LEFT JOIN p1.orders", "p1Orders")
-			.where()
-				.andConds()
-					.andSimpleCond("p.name LIKE :pName", String.class)
-					.andSimpleCond("p.age = :pAge", Integer.class)
-					.getWhere()
-				.orConds()
-					.andSimpleCond("p.address LIKE :pAddress", String.class)
-					.andSimpleCond("p.gender = :pGender", Integer.class)
-					.getRoot()
-			.orderBy()
-				.asc("p1.id")
-				.desc("p2.name")
-				.getRoot()
-			;
-		
-		ISqlNode copy = root.excludeCopy(n->{return INCLUDED;});
-		System.out.println(copy.genSql());
-		
-		ISqlNode copy2 = root.excludeCopy(n->{
-			if(n instanceof Where){
-				return EXCLUDED;
-			}
-			return INCLUDED;
-		});
-		System.out.println(copy2.genSql());
-		System.out.println(root == copy2);
-	}
-	private static void testFindUpdate(){
+	private static ISqlRoot getSampleRoot(){
 		ISqlRoot root = SqlRoot.getInstance()
 				.select()
 					.target("p1.id", "pId")
@@ -245,18 +144,48 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 				.joinAlias("LEFT JOIN p1.orders", "p1Orders")
 				.where()
 					.andConds()
-						.andStrCondition("p1.name LIKE :pName", MatchMode.START, "John")
-						.andSimpleCond("p1.age = :pAge", Integer.class)
+						.andSimpleCond("p.name LIKE :pName", String.class)
+						.andSimpleCond("p.age = :pAge", Integer.class)
 						.getWhere()
 					.orConds()
-						.andStrCaseInsensitive("p2.address LIKE :pAddress", MatchMode.ANYWHERE, "AsxhyyOOPP")
-						.andSimpleCond("p2.gender = :pGender", Integer.class)
+						.andSimpleCond("p.address LIKE :pAddress", String.class)
+						.andSimpleCond("p.gender = :pGender", Integer.class)
 						.getRoot()
 				.orderBy()
 					.asc("p1.id")
 					.desc("p2.name")
 					.getRoot()
 				;
+		return root;
+	}
+	private static void testBaseOperation(){
+		ISqlRoot root = getSampleRoot();
+		System.out.println(root.genSql());
+	}
+	private static void testFindConditionById(){
+		ISqlRoot root = getSampleRoot();
+		SimpleCondition c = (SimpleCondition)root.findNodeById("pGender");
+		System.out.println(c.getPropertyName() + " " + c.getOperator() + " " + c.getId());
+		
+	}
+	
+	private static void testExcludeCopy(){
+		ISqlRoot root = getSampleRoot();
+		
+		ISqlNode copy = root.excludeCopy(n->{return INCLUDED;});
+		System.out.println(copy.genSql());
+		
+		ISqlNode copy2 = root.excludeCopy(n->{
+			if(n instanceof Where){
+				return EXCLUDED;
+			}
+			return INCLUDED;
+		});
+		System.out.println(copy2.genSql());
+		System.out.println(root == copy2);
+	}
+	private static void testFindUpdate(){
+		ISqlRoot root = getSampleRoot();
 		
 		root.find(n->"pAge".equals(n.getId()))
 			.update(n->{
@@ -269,10 +198,18 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 			System.out.println(k+"|"+v);
 		});
 	}
-	
+	private static void testRemove(){
+		ISqlRoot root = getSampleRoot();
+//		root.find(n->(n instanceof SimpleCondition))
+//			.remove();
+		root.find(n->((n instanceof Asc) || (n instanceof Desc)))
+			.remove();
+		System.out.println(root.genSql());
+		
+	}
 	
 	public static void main(String[]args){
-		testFindUpdate();
+		testRemove();
 	}
 
 

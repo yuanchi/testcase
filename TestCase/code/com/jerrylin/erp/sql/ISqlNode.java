@@ -29,4 +29,5 @@ public interface ISqlNode extends Serializable{
 	public ISqlNode find(Predicate<ISqlNode> validation);
 	public List<ISqlNode> getFounds();
 	public ISqlNode update(Consumer<ISqlNode> update);
+	public ISqlNode remove();
 }
