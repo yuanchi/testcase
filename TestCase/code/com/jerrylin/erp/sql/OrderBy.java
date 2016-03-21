@@ -11,13 +11,13 @@ public class OrderBy extends SqlNode {
 	public OrderBy asc(String target){
 		Asc asc = new Asc();
 		asc.setTarget(target);
-		getChildren().add(asc);
+		addChild(asc);
 		return this;
 	}
 	public OrderBy desc(String target){
 		Desc desc = new Desc();
 		desc.setTarget(target);
-		getChildren().add(desc);
+		addChild(desc);
 		return this;
 	}
 	
@@ -27,7 +27,10 @@ public class OrderBy extends SqlNode {
 								.map(ISqlNode::genSql)
 								.collect(Collectors.toList());
 		String result = StringUtils.join(items, ", ");
-		return "ORDER BY " + result;
+		if(StringUtils.isNotBlank(result)){
+			result = "ORDER BY " + result;
+		}
+		return result;
 	}
 	@Override
 	public ISqlNode singleCopy() {
