@@ -11,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.jerrylin.erp.sql.condition.SimpleCondition;
 
+import static com.jerrylin.erp.sql.Instruction.*;
+
 /**
  * representing root node as starting point
  * @author JerryLin
@@ -78,6 +80,10 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		root.id(getId());
 		return root;
 	}
+	@Override
+	public ISqlRoot excludeCopy(){
+		return (ISqlRoot)excludeCopy(this, excludeNode());
+	}
 	/**
 	 * filter out nodes not needed, and copy a new SqlNode(from SqlRoot)
 	 * if parent node is filtered out, his children are also excluded.
@@ -104,7 +110,30 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 			}
 		}
 		return copyNode;
-	}	
+	}
+	/**
+	 * copy node after transform
+	 * attention: better not continually repeatedly call this method, or it may lead to unexpected results
+	 */
+	@Override
+	public ISqlRoot transformCopy(){
+		return (ISqlRoot)transformCopy(this, transformNode());
+	}
+	@Override
+	public ISqlRoot transformCopy(Consumer<ISqlNode> transform){
+		return (ISqlRoot)transformCopy(this, transform);
+	}
+	private ISqlNode transformCopy(ISqlNode src, Consumer<ISqlNode> transform){
+		ISqlNode copyNode = src.singleCopy();
+		transform.accept(copyNode);
+		src.getChildren().forEach(child->{
+			ISqlNode childCopy = transformCopy(child, transform);
+			if(childCopy != null){
+				copyNode.addChild(childCopy);
+			}
+		});
+		return copyNode;
+	}
 	@Override
 	public ISqlRoot find(Predicate<ISqlNode> validation){
 		super.find(validation);
@@ -129,6 +158,7 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		});
 		return params;
 	}
+	
 	public SqlRoot updateSimpleCondition(Consumer<SimpleCondition> update){
 		update(n->{
 			if(n instanceof SimpleCondition){
@@ -139,6 +169,74 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 			}
 		});
 		return this;
+	}
+	/**
+	 * default exclude node implementation logic
+	 * @return
+	 */
+	public Predicate<ISqlNode> excludeNode(){
+		return new Predicate<ISqlNode>(){
+			@Override
+			public boolean test(ISqlNode n) {
+				if(!(n instanceof SimpleCondition)){
+					return INCLUDED;
+				}
+				SimpleCondition sc = (SimpleCondition)n;
+				Object val = sc.getValue();
+				if(val == null){
+					return EXCLUDED;
+				}
+				if(val instanceof String){
+					String strVal = (String)val;
+					if(StringUtils.isBlank(strVal)){
+						return EXCLUDED;
+					}
+				}
+				if(val instanceof Collection){
+					Collection<?> collect = (Collection<?>)val;
+					if(collect.size() == 0){
+						return EXCLUDED;
+					}
+				}
+				if(val instanceof Object[]){
+					Object[] objArray = (Object[])val;
+					if(objArray.length == 0){
+						return EXCLUDED;
+					}
+				}
+				return INCLUDED;
+			}
+			
+		};
+	}
+	/**
+	 * default transform node implementation logic
+	 * @return
+	 */
+	public Consumer<ISqlNode> transformNode(){
+		return new Consumer<ISqlNode>(){
+			@Override
+			public void accept(ISqlNode node) {
+				if(node instanceof SimpleCondition){
+					SimpleCondition s = (SimpleCondition)node;
+					String instruction = s.getInstruction();
+					if(StringUtils.isBlank(instruction)){
+						return;
+					}
+					switch(instruction){
+						case START_LIKE:
+							s.value(((String)s.getValue()) + "%");
+						case END_LIKE:
+							s.value("%" + ((String)s.getValue()));
+						case CONTAIN_LIKE:
+							s.value("%" + ((String)s.getValue()) + "%");
+						case LOWERCASE:
+							s.value(((String)s.getValue()).toLowerCase());
+						case UPPERCASE:
+							s.value(((String)s.getValue()).toUpperCase());
+					}
+				}
+			}};
 	}
 	private static SqlRoot getSampleRoot(){
 		ISqlRoot root = SqlRoot.getInstance()
