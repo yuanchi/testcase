@@ -34,7 +34,7 @@ public class Join extends SqlNode {
 	public String genSql() {
 		String result = expression;
 		if(StringUtils.isNotBlank(alias)){
-			result += (" AS " + alias); 
+			result += (" " + alias); 
 		}
 		if(StringUtils.isNotBlank(on)){
 			result += (" ON " + on);
