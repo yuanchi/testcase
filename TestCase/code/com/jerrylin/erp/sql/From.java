@@ -20,7 +20,7 @@ public class From extends SqlNode {
 	@Override
 	public String genSql() {
 		List<String> items = getChildren().stream()
-						.map(ISqlNode::genSql)
+						.map(n->n.genSql().replace("AS ", ""))
 						.collect(Collectors.toList());
 		return "FROM " + StringUtils.join(items, ",\n");
 	}
