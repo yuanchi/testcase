@@ -8,6 +8,7 @@ public class SimpleCondition extends SqlCondition {
 	private String operator;
 	private Object value;
 	private Class<?> type;
+	private String instruction;
 	
 	public SimpleCondition propertyName(String propertyName){
 		this.propertyName = propertyName;
@@ -25,6 +26,10 @@ public class SimpleCondition extends SqlCondition {
 		this.type = type;
 		return this;
 	}
+	public SimpleCondition instruction(String instruction){
+		this.instruction = instruction;
+		return this;
+	}
 	public String getPropertyName() {
 		return propertyName;
 	}
@@ -37,8 +42,8 @@ public class SimpleCondition extends SqlCondition {
 	public Class<?> getType() {
 		return type;
 	}
-	public Object getFormattedValue(){
-		return value;
+	public String getInstruction(){
+		return instruction;
 	}
 	@Override
 	public String genSql() {
