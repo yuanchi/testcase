@@ -12,6 +12,8 @@ import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.Where;
 import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 
+import static com.jerrylin.erp.sql.Instruction.*;
+
 /**
  * representing a set conditions
  * @author JerryLin
@@ -115,10 +117,20 @@ public class CollectConds extends SqlCondition{
 		addChild(s);
 		return this;		
 	}
-	
+	private String getLikePattern(MatchMode matchMode){
+		if(MatchMode.START == matchMode){
+			return START_LIKE;
+		}else if(MatchMode.END == matchMode){
+			return END_LIKE;
+		}else if(MatchMode.ANYWHERE == matchMode){
+			return CONTAIN_LIKE;
+		}
+		return null;
+	}
 	private StrCondition strCondition(String expression, MatchMode matchMode, String value){
 		StrCondition strCondition = new StrCondition();
 		strCondition.setMatchMode(matchMode);
+		addInstruction(strCondition, getLikePattern(matchMode));
 		initSimpleCond(strCondition, expression, String.class, value);
 		return strCondition;
 	}
@@ -145,31 +157,42 @@ public class CollectConds extends SqlCondition{
 		return this;
 	}
 	
-	private StrCondition strCaseInsensitive(String expression, MatchMode matchMode, String value){
+	private void addInstruction(SimpleCondition s, String instruction){
+		String oriInstruction = s.getInstruction();
+		String newInstruction = "";
+		if(StringUtils.isNotBlank(oriInstruction)){
+			newInstruction = (oriInstruction + "|"); 
+		}
+		newInstruction += instruction;
+		s.instruction(newInstruction);
+	}
+	
+	private StrCondition strToUpperCase(String expression, MatchMode matchMode, String value){
 		StrCondition strCondition = strCondition(expression, matchMode, value);
+		addInstruction(strCondition, UPPERCASE);
 		strCondition.setCaseInsensitive(true);
 		return strCondition;
 	}
 	
-	public CollectConds andStrCaseInsensitive(String expression, MatchMode matchMode, String value){
-		StrCondition strCondition = strCaseInsensitive(expression, matchMode, value);
+	public CollectConds andStrToUpperCase(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strToUpperCase(expression, matchMode, value);
 		strCondition.junction(Junction.AND);
 		return this;
 	}
 	
-	public CollectConds andStrCaseInsensitive(String expression, MatchMode matchMode){
-		andStrCaseInsensitive(expression, matchMode, null);
+	public CollectConds andStrToUpperCase(String expression, MatchMode matchMode){
+		andStrToUpperCase(expression, matchMode, null);
 		return this;
 	}
 	
-	public CollectConds orStrCaseInsensitive(String expression, MatchMode matchMode, String value){
-		StrCondition strCondition = strCaseInsensitive(expression, matchMode, value);
+	public CollectConds orStrToUpperCase(String expression, MatchMode matchMode, String value){
+		StrCondition strCondition = strToUpperCase(expression, matchMode, value);
 		strCondition.junction(Junction.OR);
 		return this;
 	}
 	
-	public CollectConds orStrCaseInsensitive(String expression, MatchMode matchMode){
-		orStrCaseInsensitive(expression, matchMode, null);
+	public CollectConds orStrToUpperCase(String expression, MatchMode matchMode){
+		orStrToUpperCase(expression, matchMode, null);
 		return this;
 	}
 	
