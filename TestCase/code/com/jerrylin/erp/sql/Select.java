@@ -15,6 +15,10 @@ public class Select extends SqlNode {
 		addChild(t);
 		return this;	
 	}
+	
+	public Select target(String target){
+		return target(target, null);
+	}
 
 	@Override
 	public String genSql() {

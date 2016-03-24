@@ -1,17 +1,22 @@
 package com.jerrylin.erp.sql;
 
+import static com.jerrylin.erp.sql.Instruction.CONTAIN_LIKE;
+import static com.jerrylin.erp.sql.Instruction.END_LIKE;
+import static com.jerrylin.erp.sql.Instruction.LOWERCASE;
+import static com.jerrylin.erp.sql.Instruction.START_LIKE;
+import static com.jerrylin.erp.sql.Instruction.UPPERCASE;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.jerrylin.erp.sql.condition.SimpleCondition;
-
-import static com.jerrylin.erp.sql.Instruction.*;
 
 /**
  * representing root node as starting point
@@ -169,6 +174,15 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 			}
 		});
 		return this;
+	}
+	
+	public List<SimpleCondition> findSimpleConditions(){
+		List<ISqlNode> founds = find(n->(n instanceof SimpleCondition)).getFounds();
+		List<SimpleCondition> conds = 
+			founds.stream()
+				.map(n->{return (SimpleCondition)n;})
+				.collect(Collectors.toList());
+		return conds;
 	}
 	/**
 	 * default exclude node implementation logic
