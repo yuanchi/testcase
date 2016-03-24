@@ -1,6 +1,8 @@
 package com.jerrylin.erp.service;
 
 import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -13,6 +15,12 @@ import org.springframework.stereotype.Service;
 @Service
 @Scope("prototype")
 public class TimeService {
+	public static final DateFormat DF_yyyyMMdd_DASHED = new SimpleDateFormat("yyyy-MM-dd");
+	public static final DateFormat DF_MMddyyyy_DASHED = new SimpleDateFormat("MM-dd-yyyy");
+	public static final DateFormat DF_yyyyMMdd_SLASHED = new SimpleDateFormat("yyyy/MM/dd");
+	public static final DateFormat DF_MMddyyyy_SLASHED = new SimpleDateFormat("MM/dd/yyyy");
+	public static final DateFormat DF_yyyyMMdd_DASHED_EXTEND_TO_SEC = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
 	private ZoneId zoneId = ZoneId.systemDefault();
 	
 	public Date atStartOfToday(){
