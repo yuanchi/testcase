@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -98,11 +99,13 @@ public class ConditionalQuery<T> implements Serializable{
 		String alias = findFirstSqlTargetAlias();
 		String id = getIdFieldName();
 		String identifier = alias + "." + id;
-		addOrderByIdIfAnyNotExisted();
 		
 		// retrieving copy root, not originally
 		SqlRoot copyRoot = copyRootPrepared(); 
 		String rootSql = copyRoot.genSql();
+		addOrderByIdIfAnyNotExisted(copyRoot);
+		String rootWithOrderSql = copyRoot.genSql();
+		String orderSql = rootWithOrderSql.replace(rootSql, "");
 		String select = getSelectSql(copyRoot);
 		String where = getWhereSql(copyRoot);
 		
@@ -120,8 +123,13 @@ public class ConditionalQuery<T> implements Serializable{
 		
 		String selectAlias = "SELECT DISTINCT " + alias;
 		String whereInIds = "WHERE " + identifier + " IN (:ids)";
-		String whereInIdsHql = rootSql.replace(select, selectAlias)
-									.replace(where, whereInIds);
+		String whereInIdsHql = rootSql.replace(select, selectAlias);
+		if(StringUtils.isBlank(where)){
+			whereInIdsHql = (whereInIdsHql + "\n" + whereInIds);
+		}else{
+			whereInIdsHql = whereInIdsHql.replace(where, whereInIds);
+		}
+		whereInIdsHql = (whereInIdsHql + orderSql);
 		logger.log(Level.INFO, "whereInIdsHql: " + whereInIdsHql + "\n");
 		
 		Map<String, Object> params = copyRoot.getCondIdValuePairs();
@@ -223,13 +231,13 @@ public class ConditionalQuery<T> implements Serializable{
 		return sql;
 	}	
 	
-	private void addOrderByIdIfAnyNotExisted(){
-		List<ISqlNode> founds = sqlRoot
+	private void addOrderByIdIfAnyNotExisted(SqlRoot root){
+		List<ISqlNode> founds = root
 				.find(n-> (n instanceof OrderBy))
 				.getFounds();
 		OrderBy node = null;
 		if(founds.isEmpty()){
-			node = sqlRoot.orderBy();
+			node = root.orderBy();
 		}else{
 			node = (OrderBy)founds.get(0);
 		}
