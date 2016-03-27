@@ -34,13 +34,108 @@
 </head>
 <body>
 	<div class="container">
+		<div id="form-container">
+			Name:<input data-bind="value: conds.cond_pName"/>
+			<br>
+			IdNo:<input data-bind="value: conds.cond_pIdNo"/>
+			<br>
+			Mobile:<input data-bind="value: conds.cond_pMobile"/>
+		</div>
 		<div id="grid"></div>
 	</div>
 	<script type="text/javascript">
 		$(function(){
+			// MVVM ref. http://demos.telerik.com/kendo-ui/mvvm/remote-binding
+			// http://blog.falafel.com/kendo-ui-creating-an-dynamic-input-form-from-an-external-json-viewmodel/
+			var viewModel = kendo.observable({
+				conds: null
+			});
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
 			var gridId = "#grid";
+			var dataSource = {
+				transport: {// remote communication
+					create: {
+						url: "/TestCase/member/save.json",
+						dataType: "json",
+						cache: false
+					},
+					read: {
+						url: "/TestCase/member/queryConditional.json",
+						type: "POST",
+						dataType: "json",
+						contentType: "application/json;charset=utf-8",
+						cache: false,
+						data: {
+							q: 'testData' // send the value to the remote service
+						}
+					},
+					update: {
+						url: "/TestCase/member/queryConditional.json",
+						cache: false
+					},
+					destroy: {
+						url: "/TestCase/member/delete.json",
+						dataType: "json",
+						cache: false
+					},
+					parameterMap: function(data, type){// customize sending parameters to remote
+						if(type == "read"){
+							var conds = $.extend({currentPage: data.page, countPerPage: data.pageSize}, viewModel.get("conds"));
+							var r = {
+								conds: conds
+							};
+							return JSON.stringify(r);
+						}
+					}
+				},
+				serverPaging: true,
+				pageSize: 10,
+				page: 1,
+				schema: {
+					type: "json",
+					data: function(response){
+						var conds = viewModel.get("conds");
+						if(conds == null){
+							viewModel.set("conds", response.conds);
+							kendo.bind($("#form-container"), viewModel);
+							console.log("bind MVVM");
+						}
+						return response.results;
+					},
+					total: function(response){
+						return response.pageNavigator.totalCount;
+					},
+					model: {
+						id: "id",
+						fields: {
+							id: {
+								editable: false
+							},
+							name: {
+								editable: true,
+								validation: {required: true}
+							},
+							birthday: {
+								type: "date",
+								editable: true
+							},
+							idNo:{
+								editable: true
+							},
+							mobile:{
+								editable: true
+							}
+						}
+					},
+					parse: function(response){ //preprocess the response before use
+						return response;
+					},
+					errors: function(response){
+						return response.error;
+					}
+				}
+			};
 			$(gridId).kendoGrid({
 				columns:[{ // defining header title and binding data to model
 					field: "id",
@@ -66,96 +161,17 @@
 				{
 					command: "destroy" // display delete button and eable this function
 				}],
-				dataSource: {
-					transport: {// remote communication
-						create: {
-							url: "/TestCase/member/save.json",
-							dataType: "json",
-							cache: false
-						},
-						read: {
-							url: "/TestCase/member/queryConditional.json",
-							type: "POST",
-							dataType: "json",
-							contentType: "application/json;charset=utf-8",
-							cache: false,
-							data: {
-								q: 'testData' // send the value to the remote service
-							}
-						},
-						update: {
-							url: "/TestCase/member/queryConditional.json",
-							cache: false
-						},
-						destroy: {
-							url: "/TestCase/member/delete.json",
-							dataType: "json",
-							cache: false
-						},
-						parameterMap: function(data, type){// customize sending parameters to remote
-							if(type == "read"){
-								var s = "";
-								for(var prop in data){
-									s += (prop + ":" + data[prop] + "\n");
-								}
-								console.log(s);
-								var r = {
-									conds: {
-										currentPage: data.page,
-										countPerPage: data.pageSize
-									}	
-								};
-								return JSON.stringify(r);
-							}
-						}
-					},
-					serverPaging: true,
-					pageSize: 10,
-					page: 1,
-					schema: {
-						type: "json",
-						data: function(response){
-							return response.results;
-						},
-						total: function(response){
-							return response.pageNavigator.totalCount;
-						},
-						model: {
-							id: "id",
-							fields: {
-								id: {
-									editable: false
-								},
-								name: {
-									editable: true,
-									validation: {required: true}
-								},
-								birthday: {
-									type: "date",
-									editable: true
-								},
-								idNo:{
-									editable: true
-								},
-								mobile:{
-									editable: true
-								}
-							}
-						},
-						parse: function(response){ //preprocess the response before use
-							return response;
-						},
-						errors: function(response){
-							return response.error;
-						}
-					}
-				},
+				dataSource: dataSource,
 				toolbar: ["create", "save", "cancel"], // display related operation button
 				editable: true, // 可編輯: enable functions: create, update, destroy 
 				groupable: true, // 分組
 				scrollable: true,// 捲軸
 				sortable: true, // 排序
-				pageable: true // 分頁
+				pageable: {
+					refresh: true,
+					pageSizes: true,
+					buttonCount: 5
+				} // 分頁
 			});
 			
 		});
