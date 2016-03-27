@@ -12,6 +12,7 @@
 
 <html>
 <head>
+	<meta charset="utf-8"/>
 	<meta content="width=device-width, initial-scale=1.0" name="viewport">
 	<title>Kendo UI Grid Test Page</title>
 	
@@ -39,7 +40,8 @@
 		$(function(){
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
-			$("#grid").kendoGrid({
+			var gridId = "#grid";
+			$(gridId).kendoGrid({
 				columns:[{ // defining header title and binding data to model
 					field: "id",
 					title: "Member ID"
@@ -50,7 +52,8 @@
 				},
 				{
 					field: "birthday",
-					title: "生日"
+					title: "生日",
+					template: '#= kendo.toString(birthday, "yyyy-MM-dd") #'
 				},
 				{
 					field: "idNo",
@@ -67,29 +70,42 @@
 					transport: {// remote communication
 						create: {
 							url: "/TestCase/member/save.json",
-							dataType: "json"
+							dataType: "json",
+							cache: false
 						},
 						read: {
-							url: "/TestCase/member/queryAll.json",
+							url: "/TestCase/member/queryConditional.json",
 							type: "POST",
 							dataType: "json",
+							contentType: "application/json;charset=utf-8",
+							cache: false,
 							data: {
 								q: 'testData' // send the value to the remote service
 							}
 						},
 						update: {
-							url: "/TestCase/member/queryAll.json"
+							url: "/TestCase/member/queryConditional.json",
+							cache: false
 						},
 						destroy: {
 							url: "/TestCase/member/delete.json",
-							dataType: "json"
+							dataType: "json",
+							cache: false
 						},
 						parameterMap: function(data, type){// customize sending parameters to remote
 							if(type == "read"){
-								return {
-									$top: data.take,
-									$skip: data.skip
+								var s = "";
+								for(var prop in data){
+									s += (prop + ":" + data[prop] + "\n");
+								}
+								console.log(s);
+								var r = {
+									conds: {
+										currentPage: data.page,
+										countPerPage: data.pageSize
+									}	
 								};
+								return JSON.stringify(r);
 							}
 						}
 					},
@@ -99,10 +115,10 @@
 					schema: {
 						type: "json",
 						data: function(response){
-							return response.data.results;
+							return response.results;
 						},
 						total: function(response){
-							return response.data.pageNavigator.totalCount;
+							return response.pageNavigator.totalCount;
 						},
 						model: {
 							id: "id",
@@ -122,7 +138,6 @@
 									editable: true
 								},
 								mobile:{
-									type: "number",
 									editable: true
 								}
 							}
