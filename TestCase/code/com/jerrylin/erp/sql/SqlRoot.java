@@ -153,6 +153,13 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		super.findNodeById(id);
 		return this;
 	}
+	public <T extends ISqlNode>String findSql(Class<T> clz){
+		T node = find(clz);
+		if(null != node){
+			return node.genSql();
+		}
+		return "";
+	}
 	@Override
 	public Map<String, Object> getCondIdValuePairs() {
 		find(n->(n instanceof SimpleCondition));

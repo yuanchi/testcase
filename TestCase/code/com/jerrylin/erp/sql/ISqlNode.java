@@ -30,4 +30,6 @@ public interface ISqlNode extends Serializable{
 	public List<ISqlNode> getFounds();
 	public ISqlNode update(Consumer<ISqlNode> update);
 	public ISqlNode remove();
+	public <T extends ISqlNode>T find(Class<T> clz);
+	public <T extends ISqlNode>List<T> findMultiple(Class<T> clz);
 }

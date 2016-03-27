@@ -80,6 +80,22 @@ public abstract class SqlNode implements ISqlNode {
 		this.founds = matches;
 		return this;
 	}
+	@Override
+	public <T extends ISqlNode>T find(Class<T> clz){
+		find(n->(n.getClass() == clz));
+		if(!founds.isEmpty()){
+			return (T)founds.get(0);
+		}
+		return null;
+	}
+	@Override
+	public <T extends ISqlNode>List<T> findMultiple(Class<T> clz){
+		find(n->(n.getClass().isInstance(clz)));
+		if(!founds.isEmpty()){
+			return (List<T>)founds;
+		}
+		return Collections.emptyList();
+	}
 	private void find(List<ISqlNode> matches, ISqlNode node , Predicate<ISqlNode> validation){
 		if(validation.test(node)){
 			matches.add(node);
