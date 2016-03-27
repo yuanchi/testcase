@@ -42,7 +42,7 @@ public class SessionFactoryWrapper {
 			s.close();
 		}
 	}
-	public <T>List<T> executeSession(Function<Session, List<T>> execute){
+	public <T>List<T> executeFindResults(Function<Session, List<T>> execute){
 		Session s = null;
 		List<T> results = Collections.emptyList();
 		try{
