@@ -2,6 +2,7 @@ package com.jerrylin.erp.query;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
@@ -23,6 +25,7 @@ import com.jerrylin.erp.service.TimeService;
 import com.jerrylin.erp.sql.From;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
+import com.jerrylin.erp.sql.Join;
 import com.jerrylin.erp.sql.OrderBy;
 import com.jerrylin.erp.sql.Select;
 import com.jerrylin.erp.sql.SqlRoot;
@@ -84,7 +87,7 @@ public class ConditionalQuery<T> implements Serializable{
 	}
 	
 	public List<T> executeQueryPageable(){
-		List<T> results = sfw.executeSession(s->{
+		List<T> results = sfw.executeFindResults(s->{
 			return executeQueryPageable(s);
 		});
 		return results;
@@ -101,35 +104,30 @@ public class ConditionalQuery<T> implements Serializable{
 		String identifier = alias + "." + id;
 		
 		// retrieving copy root, not originally
-		SqlRoot copyRoot = copyRootPrepared(); 
-		String rootSql = copyRoot.genSql();
+		SqlRoot copyRoot = copyRootPrepared();
 		addOrderByIdIfAnyNotExisted(copyRoot);
-		String rootWithOrderSql = copyRoot.genSql();
-		String orderSql = rootWithOrderSql.replace(rootSql, "");
-		String select = getSelectSql(copyRoot);
-		String where = getWhereSql(copyRoot);
 		
-		if(rootSql.toLowerCase().contains("join fetch")){
+		String selectSql = copyRoot.findSql(Select.class);
+		String fromSql = copyRoot.findSql(From.class);
+		String joinSql = copyRoot.findSql(Join.class);
+		String whereSql = copyRoot.findSql(Where.class);
+		String orderSql = copyRoot.findSql(OrderBy.class);
+		
+		if(joinSql.toLowerCase().contains("join fetch")){
 			throw new UnsupportedOperationException("ConditionalQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
 		}
 		
 		String selectCount = "SELECT COUNT(DISTINCT " + identifier + ")";
-		String selectCountHql = rootSql.replace(select, selectCount);
+		String selectCountHql = addLineBreakIfNotBlank(selectCount, fromSql, joinSql, whereSql);
 		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
 		
 		String selectId = "SELECT DISTINCT " + identifier;
-		String selectIdHql = rootSql.replace(select, selectId);
+		String selectIdHql = selectCountHql.replace(selectCount, selectId);
 		logger.log(Level.INFO, "selectIdHql: " + selectIdHql + "\n");
 		
 		String selectAlias = "SELECT DISTINCT " + alias;
 		String whereInIds = "WHERE " + identifier + " IN (:ids)";
-		String whereInIdsHql = rootSql.replace(select, selectAlias);
-		if(StringUtils.isBlank(where)){
-			whereInIdsHql = (whereInIdsHql + "\n" + whereInIds);
-		}else{
-			whereInIdsHql = whereInIdsHql.replace(where, whereInIds);
-		}
-		whereInIdsHql = (whereInIdsHql + orderSql);
+		String whereInIdsHql = addLineBreakIfNotBlank(selectAlias, fromSql, whereInIds, orderSql);
 		logger.log(Level.INFO, "whereInIdsHql: " + whereInIdsHql + "\n");
 		
 		Map<String, Object> params = copyRoot.getCondIdValuePairs();
@@ -157,6 +155,13 @@ public class ConditionalQuery<T> implements Serializable{
 		return results;
 	}
 
+	private static String addLineBreakIfNotBlank(String... statements){
+		List<String> ori = Arrays.asList(statements);
+		List<String> filtered = ori.stream().filter(s->StringUtils.isNotBlank(s)).collect(Collectors.toList());
+		String append = StringUtils.join(filtered, "\n");
+		return append;
+	}
+	
 	public List<T> executeQueryList(Session s){
 		SqlRoot copyRoot = copyRootPrepared();
 		String queryHql = copyRoot.genSql();
@@ -166,7 +171,7 @@ public class ConditionalQuery<T> implements Serializable{
 	}
 	
 	public List<T> executeQueryList(){
-		List<T> r = sfw.executeSession(s->{
+		List<T> r = sfw.executeFindResults(s->{
 			List<T> results = executeQueryList(s);
 			return results;
 		});
