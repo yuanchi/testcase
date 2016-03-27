@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.model.Member;
 import com.jerrylin.erp.query.ConditionalQuery;
+import com.jerrylin.erp.query.PageNavigator;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
 import com.jerrylin.erp.sql.SqlRoot;
@@ -63,13 +64,32 @@ public class QueryBaseService<T, R> {
 				addValToSimpleCondition(s, all.get(k));
 			}
 		});
-		q.setCurrentPage(parseInteger(all.get(CURRENT_PAGE)));
-		q.setCountPerPage(parseInteger(all.get(COUNT_PER_PAGE)));
+		Integer currentPage = getInteger(all.get(CURRENT_PAGE));
+		Integer countPerPage = getInteger(all.get(COUNT_PER_PAGE));
+		if(null != currentPage){
+			q.setCurrentPage(currentPage);
+		}
+		if(null != countPerPage){
+			q.setCountPerPage(countPerPage);
+		}
 		
 		String orderBy = (String)all.get(ORDER_TYPE);
 		if(StringUtils.isNotBlank(orderBy)){
 			// TODO
 		}
+	}
+	
+	private Integer getInteger(Object val){
+		if(val == null){
+			return null;
+		}
+		if(val instanceof String){
+			return Integer.parseInt((String)val);
+		}
+		if(val instanceof Integer){
+			return (Integer)val;
+		}
+		return null;
 	}
 	
 	public ConditionConfig<T> executeQueryPageable(ConditionConfig<T> conditionConfig){
