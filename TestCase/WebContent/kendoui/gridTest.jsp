@@ -151,7 +151,23 @@
 							},
 							name: {
 								editable: true,
-								validation: {required: true},
+								validation: {
+									required: true,
+									nameStartWithValidation: function(input){// input is a jQuery object // ref. http://demos.telerik.com/kendo-ui/grid/editing-custom-validation
+										if(input.is("[name='name']") && input.val() != ""){// [name='name'] references to fields definition name
+											input.attr("data-nameStartWithValidation-msg", "會員名稱開頭應該包含英文大寫"); // define showing message if validate fail
+											return /^[A-Z]/.test(input.val());
+										}
+										return true; // validate success
+									},
+									nameEndWithValidation: function(input){
+										if(input.is("[name='name']") && input.val() != ""){
+											input.attr("data-nameEndWithValidation-msg", "會員名稱結尾應該包含英文小寫");
+											return /[a-z]$/.test(input.val());
+										}
+										return true; // validate success
+									}
+								},									
 								defaultValue: null
 							},
 							birthday: {
