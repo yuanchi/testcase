@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service;
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.model.Member;
 import com.jerrylin.erp.query.ConditionalQuery;
-import com.jerrylin.erp.query.PageNavigator;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
+import com.jerrylin.erp.sql.OrderBy;
 import com.jerrylin.erp.sql.SqlRoot;
 import com.jerrylin.erp.sql.condition.SimpleCondition;
 import com.jerrylin.erp.test.BaseTest;
@@ -49,7 +49,7 @@ public class QueryBaseService<T, R> {
 			cc.setPageNavigator(q.getPageNavigator());
 		}
 		// sorting
-		conds.put(ORDER_TYPE, null);
+//		conds.put(ORDER_TYPE, null);
 		return cc;
 	}
 	
@@ -73,9 +73,24 @@ public class QueryBaseService<T, R> {
 			q.setCountPerPage(countPerPage);
 		}
 		
-		String orderBy = (String)all.get(ORDER_TYPE);
-		if(StringUtils.isNotBlank(orderBy)){
-			// TODO
+		List<Map<String, String>> orderTypes = (List<Map<String, String>>)all.get(ORDER_TYPE);
+		if(null != orderTypes){
+			OrderBy orderBy = root.find(OrderBy.class);
+			if(null != orderBy){
+				root.remove(); // remove original orderBy node
+			}
+			orderBy = root.orderBy(); // generating new orderBy node
+			String alias = q.findFirstSqlTargetAlias();
+			for(int i = 0; i < orderTypes.size(); i++){
+				Map<String, String> orderType = orderTypes.get(i); // Kendo UI Grid排序回傳的資料結構 
+				String field = orderType.get("field");
+				String dir = orderType.get("dir");
+				if("asc".equals(dir)){
+					orderBy.asc(alias + "." + field);
+				}else if("desc".equals(dir)){
+					orderBy.desc(alias + "." + field);
+				}
+			}
 		}
 	}
 	
