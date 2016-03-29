@@ -35,7 +35,12 @@
 <body>
 	<div class="container">
 		<div id="form-container">
-			Name:<input data-bind="value: conds.cond_pName"/>
+			Name1:<input data-bind="value: conds.cond_pName"/>
+			<!-- without value attribte, just display content via text, not value -->
+			<span data-bind="text: conds.cond_pName"></span>
+			<br>
+			<!-- change trigger event via data-value-update -->
+			Name2:<input data-bind="value: conds.cond_pName" data-value-update="keyup"/><span data-bind="text: conds.cond_pName"></span>
 			<br>
 			IdNo:<input data-bind="value: conds.cond_pIdNo"/>
 			<br>
@@ -54,11 +59,13 @@
 			// initialize grid widget
 			var gridId = "#grid";
 			var dataSource = {
+				batch: true, // 批次更新 ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource
 				transport: {// remote communication
 					create: {
-						url: "/TestCase/member/save.json",
+						url: "/TestCase/member/batchSaveOrMerge.json",
 						dataType: "json",
-						cache: false
+						type: "POST",
+						contentType: "application/json;charset=utf-8",
 					},
 					read: {
 						url: "/TestCase/member/queryConditional.json",
@@ -67,31 +74,57 @@
 						contentType: "application/json;charset=utf-8",
 						cache: false,
 						data: {
-							q: 'testData' // send the value to the remote service
+							q: 'testData' // additional parameters which are sent to the remote service
 						}
 					},
 					update: {
-						url: "/TestCase/member/queryConditional.json",
-						cache: false
+						url: "/TestCase/member/batchSaveOrMerge.json",
+							dataType: "json",
+							type: "POST",
+							contentType: "application/json;charset=utf-8",
 					},
 					destroy: {
-						url: "/TestCase/member/delete.json",
+						url: "/TestCase/member/deleteByIds.json",
 						dataType: "json",
-						cache: false
+						type: "POST",
+						contentType: "application/json;charset=utf-8",
 					},
 					parameterMap: function(data, type){// customize sending parameters to remote
+						console.log("parameterMap type: " + type);
 						if(type == "read"){
-							var conds = $.extend({currentPage: data.page, countPerPage: data.pageSize}, viewModel.get("conds"));
+							var s = "";
+							for(var prop in data){
+								if(prop == "sort"){
+									var sortObj = data[prop];
+									s = JSON.stringify(sortObj);
+								}
+							}
+							console.log(s);
+							var conds = $.extend({}, viewModel.get("conds"), {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort});
 							var r = {
 								conds: conds
 							};
 							return JSON.stringify(r);
+						}else if(type == "create" || type == "update"){
+							var dataModels = data['models'];
+							if(dataModels){// batch create enabled
+								return JSON.stringify(dataModels);
+							}
+						}else if(type == "destroy"){
+							var dataModels = data['models'];
+							if(dataModels){
+								var ids = $.map(dataModels, function(element, idx){
+									return element.id;
+								});
+								return JSON.stringify(ids);
+							}
 						}
 					}
 				},
 				serverPaging: true,
 				pageSize: 10,
 				page: 1,
+				serverSorting: true,
 				schema: {
 					type: "json",
 					data: function(response){
@@ -99,9 +132,12 @@
 						if(conds == null){
 							viewModel.set("conds", response.conds);
 							kendo.bind($("#form-container"), viewModel);
-							console.log("bind MVVM");
 						}
-						return response.results;
+						var results = response.results; // read
+						if(!results){
+							results = response; // add, update
+						}
+						return results;
 					},
 					total: function(response){
 						return response.pageNavigator.totalCount;
@@ -110,21 +146,26 @@
 						id: "id",
 						fields: {
 							id: {
-								editable: false
+								editable: false,
+								defaultValue: null
 							},
 							name: {
 								editable: true,
-								validation: {required: true}
+								validation: {required: true},
+								defaultValue: null
 							},
 							birthday: {
 								type: "date",
-								editable: true
+								editable: true,
+								defaultValue: null
 							},
 							idNo:{
-								editable: true
+								editable: true,
+								defaultValue: null
 							},
 							mobile:{
-								editable: true
+								editable: true,
+								defaultValue: null
 							}
 						}
 					},
@@ -163,15 +204,33 @@
 				}],
 				dataSource: dataSource,
 				toolbar: ["create", "save", "cancel"], // display related operation button
-				editable: true, // 可編輯: enable functions: create, update, destroy 
+				editable: {// 可編輯: enable functions: create, update, destroy
+					create: true,
+					update: true,
+					destroy: true // disable the deletion functionality
+				}, 
 				groupable: true, // 分組
 				scrollable: true,// 捲軸
-				sortable: true, // 排序
 				pageable: {
 					refresh: true,
 					pageSizes: true,
 					buttonCount: 5
-				} // 分頁
+				}, // 分頁
+				sortable: { // 排序
+					mode: "single",
+					allowUnsort: false
+				},
+				navigatable: true, // 可藉由方向鍵上下左右在grid cell上移動
+				columnMenu: true// sorting, hiding or showing columns
+				//resizable: true // column resizing
+			});
+			$(document.body).keydown(function(e){
+				if(e.altKey && e.keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
+					$(gridId).data("kendoGrid").table.focus();
+				}
+				if(e.altKey && e.keyCode == 67){// Alt + C 跳到Save Changes；
+					$("a.k-grid-save-changes").focus();
+				}
 			});
 			
 		});
