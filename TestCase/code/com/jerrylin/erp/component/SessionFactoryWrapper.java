@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -12,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 import org.springframework.stereotype.Component;
+
+import com.jerrylin.erp.initialize.config.RootConfig;
 
 @Component
 @Scope("prototype")
@@ -70,7 +73,7 @@ public class SessionFactoryWrapper {
 			s.close();
 		}
 	}
-	public <T>T executeTransaction(Function<Session, T> execute){
+	public <T>T executeTxReturnResults(Function<Session, T> execute){
 		Session s = null;
 		Transaction tx = null;
 		T t = null;
@@ -86,5 +89,10 @@ public class SessionFactoryWrapper {
 			s.close();
 		}
 		return t;
+	}
+	public int getBatchSize(){
+		String batchSizeStr = lsfb.getConfiguration().getProperty("hibernate.jdbc.batch_size");
+		int batchSize = StringUtils.isNumeric(batchSizeStr) ? Integer.parseInt(batchSizeStr) : Integer.parseInt(RootConfig.DEFAULT_BATCH_SIZE);
+		return batchSize;
 	}
 }
