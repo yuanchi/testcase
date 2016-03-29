@@ -122,7 +122,7 @@ public class ConditionalQuery<T> implements Serializable{
 		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
 		
 		String selectId = "SELECT DISTINCT " + identifier;
-		String selectIdHql = selectCountHql.replace(selectCount, selectId);
+		String selectIdHql = addLineBreakIfNotBlank(selectCountHql, orderSql).replace(selectCount, selectId);
 		logger.log(Level.INFO, "selectIdHql: " + selectIdHql + "\n");
 		
 		String selectAlias = "SELECT DISTINCT " + alias;
@@ -206,7 +206,7 @@ public class ConditionalQuery<T> implements Serializable{
 		return sqlRoot.transformNode();
 	}
 	
-	private String findFirstSqlTargetAlias(){
+	public String findFirstSqlTargetAlias(){
 		ISqlNode target = sqlRoot
 			.find(n-> (n instanceof SqlTarget && n.getParent() instanceof From))
 			.getFounds()
@@ -292,8 +292,38 @@ public class ConditionalQuery<T> implements Serializable{
 			});
 		});
 	}
-	
+
+	private static <T>void testExecuteQueryPageableOrderBy(){
+		testConditionalQuery(c->{
+			SqlRoot root = c.getSqlRoot();
+			root.select()
+					.target("p", "member").getRoot()
+				.from()
+					.target(Member.class.getName(), "p").getRoot()
+				.where()
+					.andConds()
+						.andSimpleCond("p.idNo LIKE :pIdNo", String.class)
+						.andSimpleCond("p.name LIKE :pName", String.class).getRoot()
+						;
+			
+			List<Object> r = c.executeQueryList();
+			System.out.println("executeQueryList:");
+			r.forEach(o->{
+				Member m = (Member)o;
+				System.out.println(m.getId());
+			});
+			
+			List<Object> results = c.executeQueryPageable();
+			System.out.println("executeQueryPageable:");
+			results.forEach(o->{
+				Member m = (Member)o;
+				System.out.println(m.getId() + "|" + m.getName());
+//				List<VipDiscountDetail> details = m.getVipDiscountDetails();
+//				System.out.println("details count: " + details.size());
+			});
+		});
+	}	
 	public static void main(String[]args){
-		testExecuteQueryPageable();
+		testExecuteQueryPageableOrderBy();
 	}
 }
