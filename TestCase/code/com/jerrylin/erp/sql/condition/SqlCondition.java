@@ -5,6 +5,7 @@ import com.jerrylin.erp.sql.SqlNode;
 public abstract class SqlCondition extends SqlNode implements ISqlCondition{
 	private static final long serialVersionUID = -8402017095718411755L;
 	private Junction junction = Junction.AND;
+	private String groupMark;
 	@Override
 	public ISqlCondition junction(Junction junction){
 		this.junction = junction;
@@ -13,6 +14,15 @@ public abstract class SqlCondition extends SqlNode implements ISqlCondition{
 	@Override
 	public Junction getJunction() {
 		return junction;
+	}
+	@Override
+	public ISqlCondition groupMark(String groupMark){
+		this.groupMark = groupMark;
+		return this;
+	}
+	@Override
+	public String getGroupMark(){
+		return this.groupMark;
 	}
 	public enum Junction{
 		START(""),
