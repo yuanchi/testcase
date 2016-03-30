@@ -22,13 +22,14 @@ public class ConditionStatement extends SqlCondition {
 
 	@Override
 	public String genSql() {
-		return getJunction().getSymbol() + expression;
+		return getJunction().getSymbol() + " " + expression;
 	}
 	@Override
 	public ISqlNode singleCopy() {
 		ConditionStatement s = new ConditionStatement();
 		s.id(getId());
 		s.setExpression(expression);
+		s.groupMark(getGroupMark());
 		return s;
 	}
 
