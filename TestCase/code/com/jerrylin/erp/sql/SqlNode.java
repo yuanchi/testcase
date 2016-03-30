@@ -75,7 +75,7 @@ public abstract class SqlNode implements ISqlNode {
 	}
 	@Override
 	public ISqlNode find(Predicate<ISqlNode> validation) {
-		List<ISqlNode> matches = new ArrayList<>();
+		List<ISqlNode> matches = new LinkedList<>();
 		find(matches, this, validation);
 		this.founds = matches;
 		return this;
