@@ -24,7 +24,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ProductService {
-	private String baseUrl = "http://localhost/magento/index.php/";
+	private static final String LOCAL_HOST_URL = "http://localhost/magento/index.php/";
+	private static final String INTRANET_HOST_URL = "http://192.168.1.15/magento/index.php/";
+	
+	private String baseUrl = LOCAL_HOST_URL;
+	
+	private void changeToLocalUrl(){
+		this.baseUrl = LOCAL_HOST_URL;
+	}
+	
+	private void changeToIntranetUrl(){
+		this.baseUrl = INTRANET_HOST_URL;
+	}
 	
 	private String connectToProductApi(String action){
 		return connectToProductApi(action, null);
@@ -136,9 +147,9 @@ public class ProductService {
 		String results = connectToProductApi("listProductsByFilters", Arrays.asList(filters));
 	}
 	
-	public void listInventoryByProductIds(){
+	public void listInventoryByProductIds(List<Object> ids){
 		// id can be product id or sku
-		String result = connectToProductApi("listInventoryByIds", Arrays.asList("asus001", "acer001", "apple001"));
+		String result = connectToProductApi("listInventoryByIds", ids);
 		
 		ObjectMapper om = new ObjectMapper();
 		try {
@@ -250,8 +261,16 @@ public class ProductService {
 	public void deleteProduct(){
 		String result = connectToProductApi("deleteProduct", Arrays.asList("6"));
 	}
-	public static void main(String[]args){
+	private static void testChangeToIntranetUrl(){
 		ProductService service = new ProductService();
-		service.updateInventoryByProductId();
+		service.changeToIntranetUrl();
+		service.listInventoryByProductIds(Arrays.asList("TT120", "TT121"));
+		
+	}
+	public static void main(String[]args){
+//		ProductService service = new ProductService();
+//		service.updateInventoryByProductId();
+		
+//		testChangeToIntranetUrl();
 	}
 }
