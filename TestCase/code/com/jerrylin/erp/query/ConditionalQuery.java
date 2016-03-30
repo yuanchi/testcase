@@ -1,9 +1,13 @@
 package com.jerrylin.erp.query;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.sql.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +15,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +36,7 @@ import com.jerrylin.erp.sql.Select;
 import com.jerrylin.erp.sql.SqlRoot;
 import com.jerrylin.erp.sql.SqlTarget;
 import com.jerrylin.erp.sql.Where;
+import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 import com.jerrylin.erp.test.BaseTest;
 
 @Service
@@ -130,7 +136,11 @@ public class ConditionalQuery<T> implements Serializable{
 		String whereInIdsHql = addLineBreakIfNotBlank(selectAlias, fromSql, whereInIds, orderSql);
 		logger.log(Level.INFO, "whereInIdsHql: " + whereInIdsHql + "\n");
 		
+		logger.log(Level.INFO, "params:");
 		Map<String, Object> params = copyRoot.getCondIdValuePairs();
+		params.forEach((k,v)->{
+			logger.log(Level.INFO, k + ":" + v + ":" + v.getClass());
+		});
 		
 		List<T> results = Collections.emptyList();
 		int totalCount = 0;
@@ -206,13 +216,17 @@ public class ConditionalQuery<T> implements Serializable{
 		return sqlRoot.transformNode();
 	}
 	
-	public String findFirstSqlTargetAlias(){
+	public SqlTarget findFirstSqlTarget(){
 		ISqlNode target = sqlRoot
-			.find(n-> (n instanceof SqlTarget && n.getParent() instanceof From))
-			.getFounds()
-			.get(0);
-		SqlTarget t = (SqlTarget)target;
-		String alias = t.getAlias();
+				.find(n-> (n instanceof SqlTarget && n.getParent() instanceof From))
+				.getFounds()
+				.get(0);
+			SqlTarget t = (SqlTarget)target;
+		return t;
+	}
+	
+	public String findFirstSqlTargetAlias(){
+		String alias = findFirstSqlTarget().getAlias();
 		return alias;
 	}
 	
@@ -322,8 +336,92 @@ public class ConditionalQuery<T> implements Serializable{
 //				System.out.println("details count: " + details.size());
 			});
 		});
-	}	
+	}
+	
+	private static void testConditionStatement(){
+		testConditionalQuery(c->{
+			SqlRoot root = c.getSqlRoot();
+			root.select()
+					.target("p", "member").getRoot()
+				.from()
+					.target(Member.class.getName(), "p").getRoot()
+				.where()
+					.andConds()
+						.andStatement("p.name IS NOT NULL").getRoot()
+						;
+			System.out.println(root.genSql());
+			c.executeQueryPageable();
+		});
+	}
+	
+	private static void testContainLike(){
+		testConditionalQuery(c->{
+			SqlRoot root = c.getSqlRoot();
+			root.select()
+					.target("p", "member").getRoot()
+				.from()
+					.target(Member.class.getName(), "p").getRoot()
+				.where()
+					.andConds()
+						.andStrCondition("p.name LIKE :pName", MatchMode.ANYWHERE, "竹").getRoot()
+						;
+			
+			c.executeQueryPageable();
+		});
+	}
+	
+	private static void testAddAfterRemove(){
+		testConditionalQuery(c->{
+			SqlRoot root = c.getSqlRoot();
+			root.select()
+					.target("p", "member").getRoot()
+				.from()
+					.target(Member.class.getName(), "p").getRoot()
+				.where()
+					.andConds()
+						.andStrCondition("p.name LIKE :pName", MatchMode.ANYWHERE, "竹").getRoot()
+						;
+			
+			c.executeQueryPageable();
+		});
+	}
+	
+	private static void testSimpleConditionId(){
+		testConditionalQuery(c->{
+			SqlRoot root = c.getSqlRoot();
+			root.select()
+					.target("p", "member").getRoot()
+				.from()
+					.target(Member.class.getName(), "p").getRoot()
+				.where()
+					.andConds()
+						.andStrCondition("p.name LIKE :pName_FILTER_1", MatchMode.ANYWHERE, "竹").getRoot()
+						;
+			System.out.println(root.genSql());
+		});
+	}
+	
+	private static void testLocalDateTimeParse(){
+		String time = "2016-03-01T16:00:00.000Z";
+		
+		Pattern ISO_OFFSET_DATE_TIME_PATTERN = Pattern.compile("^[0-9]{4}-[0-9]{2}-[0-]");
+		
+		LocalDateTime ldt = LocalDateTime.parse(time, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+		System.out.println(ldt);
+	}
+	
+	private static <T>void testClassFieldsInfo(Class<T> clz){
+		Map<String, Class<?>> info = new HashMap<>();
+		Field[] fields = clz.getDeclaredFields();
+		for(Field field : fields){
+			String name = field.getName();
+			Class<?> type = field.getType();
+			info.put(name, type);
+			System.out.println(name +":"+type);
+		}
+	}
+	
 	public static void main(String[]args){
-		testExecuteQueryPageableOrderBy();
+		testClassFieldsInfo(Member.class);
 	}
 }
