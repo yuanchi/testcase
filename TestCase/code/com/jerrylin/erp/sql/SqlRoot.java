@@ -244,17 +244,23 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 					if(StringUtils.isBlank(instruction)){
 						return;
 					}
+					
 					switch(instruction){
 						case START_LIKE:
 							s.value(((String)s.getValue()) + "%");
+							break;
 						case END_LIKE:
 							s.value("%" + ((String)s.getValue()));
+							break;
 						case CONTAIN_LIKE:
 							s.value("%" + ((String)s.getValue()) + "%");
+							break;
 						case LOWERCASE:
 							s.value(((String)s.getValue()).toLowerCase());
+							break;
 						case UPPERCASE:
 							s.value(((String)s.getValue()).toUpperCase());
+							break;
 					}
 				}
 			}};
