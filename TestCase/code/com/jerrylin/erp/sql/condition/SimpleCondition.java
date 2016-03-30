@@ -57,7 +57,10 @@ public class SimpleCondition extends SqlCondition {
 		c.propertyName(propertyName)
 		 .operator(operator)
 		 .type(type)
-		 .value(value);
+		 .value(value)
+		 .instruction(instruction)
+		 .groupMark(getGroupMark())
+		 ;
 		return c;
 	}
 	
