@@ -1,5 +1,6 @@
 package com.jerrylin.erp.controller;
 
+import java.io.Serializable;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -26,7 +27,8 @@ import com.jerrylin.erp.util.JsonParseUtil;
 @Controller
 @RequestMapping("/member")
 @Scope("session")
-public class MemberController {
+public class MemberController implements Serializable{
+	private static final long serialVersionUID = -7172365121730602834L;
 	@Autowired
 	private QueryBaseService<Member, Member> queryBaseService;
 	@Autowired
@@ -38,7 +40,7 @@ public class MemberController {
 		.select()
 			.target("p").getRoot()
 		.from()
-			.target(Member.class.getName(), "p").getRoot()
+			.target(Member.class, "p").getRoot()
 		.where()
 			.andConds()
 				.andSimpleCond("p.name = :pName", String.class)
