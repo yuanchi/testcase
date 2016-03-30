@@ -27,7 +27,22 @@ public class CollectConds extends SqlCondition{
 	private static final Pattern FIND_NAMED_PARAM_STEP1 = Pattern.compile("(\\:|\\(\\:){1}\\w+\\)?");
 	private static final Pattern FIND_NAMED_PARAM_STEP2 = Pattern.compile("([^\\:]|[^(\\(\\:)]){1}\\w+[^\\)]?");
 	
-	
+	private String makeGroupMark;
+	/**
+	 * 啟動群組標記，這會在新增條件的時候，標明哪些條件屬於特定群組，使用完畢後應呼叫disableGroupMark，解除標記狀態
+	 * @param groupMark
+	 */
+	public void enableGroupMark(String groupMark){
+		this.makeGroupMark = groupMark;
+	}
+	public void disableGroupMark(){
+		this.makeGroupMark = null;
+	}
+	private void makeGroupMarkIfEnabled(ISqlCondition cond){
+		if(StringUtils.isNotBlank(makeGroupMark)){
+			cond.groupMark(makeGroupMark);
+		}
+	}
 	public static CollectConds getInstance(){
 		return new CollectConds();
 	}
@@ -116,6 +131,14 @@ public class CollectConds extends SqlCondition{
 		s.junction(Junction.OR);
 		addChild(s);
 		return this;		
+	}
+	@Override
+	public void addChild(ISqlNode node){
+		if(node instanceof ISqlCondition){
+			ISqlCondition cond = (ISqlCondition)node;
+			makeGroupMarkIfEnabled(cond);
+		}
+		super.addChild(node);
 	}
 	private String getLikePattern(MatchMode matchMode){
 		if(MatchMode.START == matchMode){
@@ -281,6 +304,8 @@ public class CollectConds extends SqlCondition{
 	public ISqlNode singleCopy() {
 		CollectConds c = new CollectConds();
 		c.id(getId());
+		c.groupMark(getGroupMark());
+		c.makeGroupMark = makeGroupMark; // TODO 理論上，使用完畢應該就要呼叫disableGroupMark除去暫存的makeGroupMark，所以這邊不應該有值
 		return c;
 	}
 	
