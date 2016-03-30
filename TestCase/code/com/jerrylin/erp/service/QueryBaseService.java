@@ -2,11 +2,16 @@ package com.jerrylin.erp.service;
 
 import static com.jerrylin.erp.service.TimeService.DF_yyyyMMdd_DASHED;
 
+import java.io.Serializable;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.UnknownFormatConversionException;
+import java.util.logging.Logger;
+
+import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -21,18 +26,36 @@ import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
 import com.jerrylin.erp.sql.OrderBy;
 import com.jerrylin.erp.sql.SqlRoot;
+import com.jerrylin.erp.sql.SqlTarget;
+import com.jerrylin.erp.sql.Where;
+import com.jerrylin.erp.sql.condition.CollectConds;
+import com.jerrylin.erp.sql.condition.ISqlCondition;
 import com.jerrylin.erp.sql.condition.SimpleCondition;
+import com.jerrylin.erp.sql.condition.SqlCondition.Junction;
+import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 import com.jerrylin.erp.test.BaseTest;
 
 @Service
 @Scope("prototype")
-public class QueryBaseService<T, R> {
+public class QueryBaseService<T, R> implements Serializable{
+
+	private static final long serialVersionUID = 5612145044684815434L;
+	
 	private static final String SIMPLE_CONDITION_PREFIX = "cond_";
 	private static final String CURRENT_PAGE			= "currentPage";
 	private static final String COUNT_PER_PAGE			= "countPerPage";
 	private static final String ORDER_TYPE				= "orderType";
+	private static final String KENDO_UI_GRID_FILTER	= "filter";
+	private static final String KENDO_UI_FILTER_LOGIC_AND	= "and";
+	private static final String KENDO_UI_FILTER_LOGIC_OR	= "or";
+	private static final String GROUP_AS_KENDO_UI_FILTER = "GROUP_AS_KENDO_UI_FILTER";
+	
+	private Logger logger = Logger.getLogger(QueryBaseService.class.getName());
+	
 	@Autowired
 	private ConditionalQuery<T> q;
+	@Resource(name="classFieldType")
+	private Map<Class<?>, Map<String, Class<?>>> classFieldType;
 	
 	public ConditionConfig<T> copyToConditionConfig(){
 		ConditionConfig<T> cc = new ConditionConfig<T>();
@@ -56,14 +79,26 @@ public class QueryBaseService<T, R> {
 	public void copyFromConditionConfig(ConditionConfig<T> conds){
 		SqlRoot root = getSqlRootImpl();
 		Map<String, Object> all = conds.getConds();
+		SqlTarget target = q.findFirstSqlTarget();
+		// predefined conditions populate value
 		all.keySet().stream().filter(k->k.startsWith(SIMPLE_CONDITION_PREFIX)).forEach(k->{
 			String id = k.replace(SIMPLE_CONDITION_PREFIX, "");
 			List<ISqlNode> founds = root.findNodeById(id).getFounds();
 			if(founds.size() == 1){
 				SimpleCondition s = (SimpleCondition)founds.get(0);
-				addValToSimpleCondition(s, all.get(k));
+				addValToSimpleCondition(s, all.get(k), target);
 			}
 		});
+		
+		// kendo ui filter conditions
+		Object filter = all.get(KENDO_UI_GRID_FILTER);
+		// remove kendo ui filter conditions
+		root.find(n->(n instanceof ISqlCondition && (GROUP_AS_KENDO_UI_FILTER.equals(((ISqlCondition)n).getGroupMark())))).remove();
+		if(null != filter){
+			adjustConditionByKendoUIGridFilter(filter);
+		}
+		
+		// paging configuration
 		Integer currentPage = getInteger(all.get(CURRENT_PAGE));
 		Integer countPerPage = getInteger(all.get(COUNT_PER_PAGE));
 		if(null != currentPage){
@@ -73,13 +108,15 @@ public class QueryBaseService<T, R> {
 			q.setCountPerPage(countPerPage);
 		}
 		
+		// order by configuration
 		List<Map<String, String>> orderTypes = (List<Map<String, String>>)all.get(ORDER_TYPE);
 		if(null != orderTypes){
 			OrderBy orderBy = root.find(OrderBy.class);
-			if(null != orderBy){
-				root.remove(); // remove original orderBy node
+			if(null == orderBy){
+				orderBy = root.orderBy();
 			}
-			orderBy = root.orderBy(); // generating new orderBy node
+			orderBy.getChildren().clear();
+			
 			String alias = q.findFirstSqlTargetAlias();
 			for(int i = 0; i < orderTypes.size(); i++){
 				Map<String, String> orderType = orderTypes.get(i); // Kendo UI Grid排序回傳的資料結構 
@@ -91,6 +128,118 @@ public class QueryBaseService<T, R> {
 					orderBy.desc(alias + "." + field);
 				}
 			}
+		}
+	}
+	
+	private void adjustConditionByKendoUIGridFilter(Object filterObj){
+		Map<String, Object> filter = (Map<String, Object>)filterObj;
+		String logic = (String)filter.get("logic");
+		List<Map<String, Object>> filters = (List<Map<String, Object>>)filter.get("filters");
+		
+		SqlRoot root = getSqlRootImpl();
+		Where where = root.find(Where.class);
+		if(null == where){
+			where = root.where();
+		}
+		
+		if(KENDO_UI_FILTER_LOGIC_AND.equals(logic)){
+			CollectConds conds = null;
+			List<ISqlNode> children =where.getChildren();
+			if(!children.isEmpty()){
+				ISqlNode lastChild = children.get(children.size()-1);
+				CollectConds last = (CollectConds)lastChild;
+				if(last.getJunction() == Junction.AND){
+					conds = last;
+				}
+			}
+			
+			if(conds == null){
+				conds = where.andConds();
+			}
+			conds.enableGroupMark(GROUP_AS_KENDO_UI_FILTER);
+			
+			ListIterator<Map<String, Object>> iterator = filters.listIterator();
+			String alias = q.findFirstSqlTargetAlias();
+			int count = 0;
+			SqlTarget target = q.findFirstSqlTarget();
+			while(iterator.hasNext()){
+				Map<String, Object> f = iterator.next();
+				String operator = (String)f.get("operator");
+				String field = (String)f.get("field");
+				Object value = f.get("value");
+				
+				count++;
+				
+				String expression = alias + "." + field + " ";
+				String nameParam = " :" + alias + firstLetterToUpperCase(field) + "_FILTER_" + count;
+				MatchMode matchMode = null;
+				Object convertedVal = convertValueByType(field, value, target);
+				switch(operator){
+					case "isnull":
+						expression += "IS NULL";
+						conds.andStatement(expression);
+						break;
+					case "isnotnull":
+						expression += "IS NOT NULL";
+						conds.andStatement(expression);
+						break;
+					case "isempty":
+						expression += "IS EMPTY";
+						conds.andStatement(expression);
+						break;
+					case "isnotempty":
+						expression += "IS NOT EMPTY";
+						conds.andStatement(expression);
+						break;
+						
+					case "eq":
+						expression += ("=" + nameParam);
+						conds.andSimpleCond(expression, value.getClass(), convertedVal);
+						break;						
+					case "neq":
+						expression += ("!=" + nameParam);
+						conds.andSimpleCond(expression, value.getClass(), convertedVal);
+						break;						
+					case "gte":
+						expression += (">=" + nameParam);
+						conds.andSimpleCond(expression, value.getClass(), convertedVal);
+						break;						
+					case "gt":
+						expression += (">" + nameParam);
+						conds.andSimpleCond(expression, value.getClass(), convertedVal);
+						break;						
+					case "lte":
+						expression += ("<=" + nameParam);
+						conds.andSimpleCond(expression, value.getClass(), convertedVal);
+						break;						
+					case "lt":
+						expression += ("<" + nameParam);
+						conds.andSimpleCond(expression, value.getClass(), convertedVal);
+						break;
+						
+					case "startswith":
+						matchMode = MatchMode.START;
+						expression += ("LIKE" + nameParam);
+						conds.andStrCondition(expression, matchMode, (String)value);						
+						break;						
+					case "endswith":
+						matchMode = MatchMode.END;
+						expression += ("LIKE" + nameParam);
+						conds.andStrCondition(expression, matchMode, (String)value);						
+						break;						
+					case "contains":
+						matchMode = MatchMode.ANYWHERE;
+						expression += ("LIKE" + nameParam);
+						conds.andStrCondition(expression, matchMode, (String)value);						
+						break;
+					case "doesnotcontain":
+						matchMode = MatchMode.ANYWHERE;
+						expression += ("NOT LIKE" + nameParam);
+						conds.andStrCondition(expression, matchMode, (String)value);
+						break;
+				}
+			}
+			conds.disableGroupMark();
 		}
 	}
 	
@@ -129,13 +278,23 @@ public class QueryBaseService<T, R> {
 		return (SqlRoot)getSqlRoot();
 	}
 	
-	private void addValToSimpleCondition(SimpleCondition s, Object obj){
+	private void addValToSimpleCondition(SimpleCondition s, Object obj, SqlTarget target){
 		if(obj == null){
 			return;
 		}
-		Class<?> type = s.getType();
-		Object casted = transformByType(type, obj);
+//		Class<?> type = s.getType();
+		String field = s.getPropertyName().replace(target.getAlias() + ".", "");
+		Object casted = convertValueByType(field, obj, target);
 		s.value(casted);
+	}
+	
+	private Object convertValueByType(String field, Object obj, SqlTarget target){
+		Class<?> targetClass = target.getTargetClass();
+		Map<String, Class<?>> types = classFieldType.get(targetClass);
+		Class<?> type = types.get(field);
+		
+		Object casted = transformByType(type, obj);
+		return casted;
 	}
 	
 	private static Object transformByType(Class<?> type, Object obj){
@@ -182,6 +341,15 @@ public class QueryBaseService<T, R> {
 		return i;
 	}
 	
+	private static String firstLetterToUpperCase(String input){
+		String first = input.substring(0, 1);
+		String firstToUpper = first.toUpperCase();
+		String firstRemoved = StringUtils.removeStart(input, first);
+		String result = firstToUpper + firstRemoved;
+		
+		return result;
+	}
+	
 	private static void testBaseOperation(){
 		BaseTest.executeApplicationContext(acac->{
 			QueryBaseService<Member, Member> q = acac.getBean(QueryBaseService.class);
@@ -202,7 +370,45 @@ public class QueryBaseService<T, R> {
 		});
 	}
 	
+	private static void testSwitch(String operator){
+		String expression = "p.name = ";
+		switch(operator){
+		case "isnull":
+			expression += "IS NULL";
+		case "isnotnull":
+			expression += "IS NOT NULL";				
+		case "isempty":
+			expression += "IS EMPTY";
+		case "isnotempty":
+			expression += "IS NOT EMPTY";
+			break;
+		}
+		System.out.println(expression);
+	}
+	
+	private static void testFirstLetterToUpperCase(){
+		String t1 = "name";
+		String result = firstLetterToUpperCase(t1);
+		System.out.println(result);
+	}
+	
+	private static void testTransformByType(){
+		System.out.println(transformByType(Date.class, "2016-03-01T16:00:00.000Z"));
+	}
+	
+	private static void testClassFieldType(){
+		BaseTest.executeApplicationContext(acac->{
+			QueryBaseService<Member, Member> ser = acac.getBean(QueryBaseService.class);
+			ser.classFieldType.forEach((k,v)->{
+				System.out.println(k+":"+v);
+				v.forEach((key, val)->{
+					System.out.println(key +":"+ val);
+				});
+			});
+		});
+	}
+	
 	public static void main(String[]args){
-		testBaseOperation();
+		testClassFieldType();
 	}
 }
