@@ -4,9 +4,15 @@ import org.apache.commons.lang3.StringUtils;
 
 public class SqlTarget extends SqlNode {
 	private static final long serialVersionUID = -6053902581602785992L;
+	private Class<?> targetClass;
 	private String target;
 	private String alias;
 	
+	public SqlTarget targetClass(Class<?> targetClass){
+		this.targetClass = targetClass;
+		this.target = targetClass.getName(); 
+		return this;
+	}
 	public SqlTarget target(String target){
 		this.target = target;
 		return this;
@@ -16,6 +22,9 @@ public class SqlTarget extends SqlNode {
 		return this;
 	}
 	
+	public Class<?> getTargetClass(){
+		return this.targetClass;
+	}
 	public String getTarget() {
 		return target;
 	}
