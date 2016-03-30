@@ -1,5 +1,9 @@
 package com.jerrylin.erp.initialize.config;
 
+import java.sql.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.sql.DataSource;
@@ -13,6 +17,8 @@ import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.VipDiscountDetail;
 import com.jerrylin.erp.sql.SqlRoot;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
@@ -68,5 +74,45 @@ public class RootConfig {
 	@Scope("prototype")
 	public SqlRoot getSqlRoot(){
 		return SqlRoot.getInstance();
+	}
+	
+	@Bean
+	public Map<Class<?>, Map<String, Class<?>>> classFieldType(){
+		Map<Class<?>, Map<String, Class<?>>> types = new LinkedHashMap<>();
+		
+		Map<String, Class<?>> memberFieldType = new LinkedHashMap<>();
+		memberFieldType.put("id", String.class);
+		memberFieldType.put("important", Boolean.class);
+		memberFieldType.put("name", String.class);
+		memberFieldType.put("nameEng", String.class);
+		memberFieldType.put("fbNickname", String.class);
+		memberFieldType.put("gender", Integer.class);
+		memberFieldType.put("idNo", String.class);
+		memberFieldType.put("birthday", Date.class);
+		memberFieldType.put("email", String.class);
+		memberFieldType.put("mobile", String.class);
+		memberFieldType.put("tel", String.class);
+		memberFieldType.put("postalCode", String.class);
+		memberFieldType.put("address", String.class);
+		memberFieldType.put("toVipDate", Date.class);
+		memberFieldType.put("toVipEndDate", Date.class);
+		memberFieldType.put("note", String.class);
+		memberFieldType.put("clientId", String.class);
+		memberFieldType.put("vipDiscountDetails", List.class);
+		types.put(Member.class, memberFieldType);
+		
+		Map<String, Class<?>> vipDiscountDetailFieldType = new LinkedHashMap<>();
+		vipDiscountDetailFieldType.put("id", String.class);
+		vipDiscountDetailFieldType.put("memberId", String.class);
+		vipDiscountDetailFieldType.put("memberIdNo", String.class);
+		vipDiscountDetailFieldType.put("effectiveStart", Date.class);
+		vipDiscountDetailFieldType.put("effectiveEnd", Date.class);
+		vipDiscountDetailFieldType.put("discountUseDate", Date.class);
+		vipDiscountDetailFieldType.put("toVipDate", Date.class);
+		vipDiscountDetailFieldType.put("available", Boolean.class);
+		vipDiscountDetailFieldType.put("useStatus", String.class);
+		types.put(VipDiscountDetail.class, vipDiscountDetailFieldType);
+		
+		return types;
 	}
 }
