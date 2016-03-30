@@ -9,6 +9,14 @@ import org.apache.commons.lang3.StringUtils;
 public class From extends SqlNode {
 	private static final long serialVersionUID = -8928595846523142228L;
 
+	public From target(Class<?> targetClass, String alias){
+		SqlTarget t = SqlTarget.getInstance()
+					.targetClass(targetClass)
+					.alias(alias);
+		addChild(t);
+		return this;
+	}
+	
 	public From target(String target, String alias){
 		SqlTarget t = SqlTarget.getInstance()
 					.target(target)
@@ -16,7 +24,7 @@ public class From extends SqlNode {
 		addChild(t);
 		return this;
 	}
-
+	
 	@Override
 	public String genSql() {
 		List<String> items = getChildren().stream()
