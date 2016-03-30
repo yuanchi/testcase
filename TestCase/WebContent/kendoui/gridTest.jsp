@@ -55,6 +55,46 @@
 			var viewModel = kendo.observable({
 				conds: null
 			});
+			var modelFields = {
+				id: {
+					editable: false,
+					defaultValue: null
+				},
+				name: {
+					editable: true,
+					validation: {
+						required: true,
+						nameStartWithValidation: function(input){// input is a jQuery object // ref. http://demos.telerik.com/kendo-ui/grid/editing-custom-validation
+							if(input.is("[name='name']") && input.val() != ""){// [name='name'] references to fields definition name
+								input.attr("data-nameStartWithValidation-msg", "會員名稱開頭應該包含英文大寫"); // define showing message if validate fail
+								return /^[A-Z]/.test(input.val());
+							}
+							return true; // validate success
+						},
+						nameEndWithValidation: function(input){
+							if(input.is("[name='name']") && input.val() != ""){
+								input.attr("data-nameEndWithValidation-msg", "會員名稱結尾應該包含英文小寫");
+								return /[a-z]$/.test(input.val());
+							}
+							return true; // validate success
+						}
+					},									
+					defaultValue: null
+				},
+				birthday: {
+					type: "date",
+					editable: true,
+					defaultValue: null
+				},
+				idNo:{
+					editable: true,
+					defaultValue: null
+				},
+				mobile:{
+					editable: true,
+					defaultValue: null
+				}
+			};
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
 			var gridId = "#grid";
@@ -92,15 +132,23 @@
 					parameterMap: function(data, type){// customize sending parameters to remote
 						console.log("parameterMap type: " + type);
 						if(type == "read"){
-							var s = "";
-							for(var prop in data){
-								if(prop == "sort"){
-									var sortObj = data[prop];
-									s = JSON.stringify(sortObj);
+							if(data.filter && data.filter.filters){
+								var filters = data.filter.filters;
+								for(var i = 0; i < filters.length; i++){
+									var filter = filters[i];
+									if('date' == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
+										var d = filter.value,
+											fullYear = d.getFullYear(),
+											month = d.getMonth()+1,
+											date = d.getDate();
+										//console.log('date: ' + d); // Thu Mar 03 2016 00:00:00 GMT+0800
+										//console.log('stringify: ' + JSON.stringify(d)); // 2016-03-02T16:00:00.000Z
+										var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date);
+										filter.value = dateStr;
+									}
 								}
 							}
-							console.log(s);
-							var conds = $.extend({}, viewModel.get("conds"), {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort});
+							var conds = $.extend({}, viewModel.get("conds"), {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort, filter: data.filter});
 							var r = {
 								conds: conds
 							};
@@ -125,11 +173,12 @@
 				pageSize: 10,
 				page: 1,
 				serverSorting: true,
+				serverFiltering: true,
 				schema: {
 					type: "json",
 					data: function(response){
 						var conds = viewModel.get("conds");
-						if(conds == null){
+						if(!conds && response.conds){
 							viewModel.set("conds", response.conds);
 							kendo.bind($("#form-container"), viewModel);
 						}
@@ -144,46 +193,7 @@
 					},
 					model: {
 						id: "id",
-						fields: {
-							id: {
-								editable: false,
-								defaultValue: null
-							},
-							name: {
-								editable: true,
-								validation: {
-									required: true,
-									nameStartWithValidation: function(input){// input is a jQuery object // ref. http://demos.telerik.com/kendo-ui/grid/editing-custom-validation
-										if(input.is("[name='name']") && input.val() != ""){// [name='name'] references to fields definition name
-											input.attr("data-nameStartWithValidation-msg", "會員名稱開頭應該包含英文大寫"); // define showing message if validate fail
-											return /^[A-Z]/.test(input.val());
-										}
-										return true; // validate success
-									},
-									nameEndWithValidation: function(input){
-										if(input.is("[name='name']") && input.val() != ""){
-											input.attr("data-nameEndWithValidation-msg", "會員名稱結尾應該包含英文小寫");
-											return /[a-z]$/.test(input.val());
-										}
-										return true; // validate success
-									}
-								},									
-								defaultValue: null
-							},
-							birthday: {
-								type: "date",
-								editable: true,
-								defaultValue: null
-							},
-							idNo:{
-								editable: true,
-								defaultValue: null
-							},
-							mobile:{
-								editable: true,
-								defaultValue: null
-							}
-						}
+						fields: modelFields
 					},
 					parse: function(response){ //preprocess the response before use
 						return response;
@@ -196,16 +206,35 @@
 			$(gridId).kendoGrid({
 				columns:[{ // defining header title and binding data to model
 					field: "id",
-					title: "Member ID"
+					title: "Member ID",
+					filterable: {
+						cell: {
+							showOperators: false
+						}
+					}
 				},
 				{
 					field: "name",
-					title: "Name"
+					title: "Name",
+					filterable: {
+						cell: {
+							operator: "contains" // default filter operator
+						}
+					}
 				},
 				{
 					field: "birthday",
 					title: "生日",
-					template: '#= kendo.toString(birthday, "yyyy-MM-dd") #'
+					format:"{0:yyyy-MM-dd}",
+					template: '#= kendo.toString(birthday, "yyyy-MM-dd") #',
+					filterable: {
+						ui: function(element){
+							element.kendoDatePicker();
+						},
+						cell: {
+							operator: "gte"
+						}
+					}
 				},
 				{
 					field: "idNo",
@@ -237,6 +266,9 @@
 					allowUnsort: false
 				},
 				navigatable: true, // 可藉由方向鍵上下左右在grid cell上移動
+				filterable: {
+					mode: "row"
+				},
 				columnMenu: true// sorting, hiding or showing columns
 				//resizable: true // column resizing
 			});
