@@ -51,6 +51,29 @@
 	</div>
 	<script type="text/javascript">
 		$(function(){
+			function modifyFilterDateVal(filter, modelFields){
+				if(!filter){
+					return;
+				}
+				if(filter.filters){
+					for(var i = 0; i < filter.filters.length; i++){
+						var f = filter.filters[i];
+						modifyFilterDateVal(f, modelFields);
+					}
+				}
+				if(filter.field && 'date' == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
+					var d = filter.value,
+					fullYear = d.getFullYear(),
+					month = d.getMonth()+1,
+					date = d.getDate();
+					//console.log('date: ' + d); // Thu Mar 03 2016 00:00:00 GMT+0800
+					//console.log('stringify: ' + JSON.stringify(d)); // 2016-03-02T16:00:00.000Z
+					var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date);
+					filter.value = dateStr;	
+				}
+			}
+			
+			
 			// MVVM ref. http://demos.telerik.com/kendo-ui/mvvm/remote-binding
 			// http://blog.falafel.com/kendo-ui-creating-an-dynamic-input-form-from-an-external-json-viewmodel/
 			var viewModel = kendo.observable({
@@ -187,20 +210,7 @@
 						console.log("parameterMap data: " + JSON.stringify(data));
 						if(type == "read"){
 							if(data.filter && data.filter.filters){
-								var filters = data.filter.filters;
-								for(var i = 0; i < filters.length; i++){
-									var filter = filters[i];
-									if('date' == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
-										var d = filter.value,
-											fullYear = d.getFullYear(),
-											month = d.getMonth()+1,
-											date = d.getDate();
-										//console.log('date: ' + d); // Thu Mar 03 2016 00:00:00 GMT+0800
-										//console.log('stringify: ' + JSON.stringify(d)); // 2016-03-02T16:00:00.000Z
-										var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date);
-										filter.value = dateStr;
-									}
-								}
+								modifyFilterDateVal(data.filter, modelFields);
 							}
 							var conds = $.extend({}, viewModel.get("conds"), {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort, filter: data.filter});
 							var r = {
