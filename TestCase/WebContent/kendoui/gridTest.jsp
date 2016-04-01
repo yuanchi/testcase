@@ -46,6 +46,7 @@
 			<br>
 			Mobile:<input data-bind="value: conds.cond_pMobile"/>
 		</div>
+		<div id="inputGrid"></div>
 		<div id="grid"></div>
 	</div>
 	<script type="text/javascript">
@@ -95,6 +96,58 @@
 					defaultValue: null
 				}
 			};
+			var columns = [{ // defining header title and binding data to model
+				field: "id",
+				title: "Member ID",
+				filterable: {
+					cell: {
+						showOperators: false
+					}
+				}
+			},
+			{
+				field: "name",
+				title: "Name",
+				filterable: {
+					cell: {
+						operator: "contains" // default filter operator
+					}
+				}
+			},
+			{
+				field: "birthday",
+				title: "生日",
+				format:"{0:yyyy-MM-dd}",
+				template: '#= kendo.toString(birthday, "yyyy-MM-dd") #',
+				filterable: {
+					ui: function(element){
+						element.kendoDatePicker();
+					},
+					cell: {
+						operator: "gte"
+					}
+				}
+			},
+			{
+				field: "idNo",
+				title: "身分證字號"
+			},
+			{
+				field: "mobile",
+				title: "手機"
+			},
+			{
+				command: "destroy" // display delete button and eable this function
+			}];
+			var dataSample = {};
+			for(var i = 0; i < columns.length; i++){
+				var col = columns[i],
+					field = col.field;
+				if(field){
+					dataSample[field] = null;
+				}
+			}
+			var inputGridId = "#inputGrid";
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
 			var gridId = "#grid";
@@ -131,6 +184,7 @@
 					},
 					parameterMap: function(data, type){// customize sending parameters to remote
 						console.log("parameterMap type: " + type);
+						console.log("parameterMap data: " + JSON.stringify(data));
 						if(type == "read"){
 							if(data.filter && data.filter.filters){
 								var filters = data.filter.filters;
@@ -204,49 +258,7 @@
 				}
 			};
 			$(gridId).kendoGrid({
-				columns:[{ // defining header title and binding data to model
-					field: "id",
-					title: "Member ID",
-					filterable: {
-						cell: {
-							showOperators: false
-						}
-					}
-				},
-				{
-					field: "name",
-					title: "Name",
-					filterable: {
-						cell: {
-							operator: "contains" // default filter operator
-						}
-					}
-				},
-				{
-					field: "birthday",
-					title: "生日",
-					format:"{0:yyyy-MM-dd}",
-					template: '#= kendo.toString(birthday, "yyyy-MM-dd") #',
-					filterable: {
-						ui: function(element){
-							element.kendoDatePicker();
-						},
-						cell: {
-							operator: "gte"
-						}
-					}
-				},
-				{
-					field: "idNo",
-					title: "身分證字號"
-				},
-				{
-					field: "mobile",
-					title: "手機"
-				},
-				{
-					command: "destroy" // display delete button and eable this function
-				}],
+				columns: columns,
 				dataSource: dataSource,
 				toolbar: ["create", "save", "cancel"], // display related operation button
 				editable: {// 可編輯: enable functions: create, update, destroy
@@ -281,6 +293,43 @@
 				}
 			});
 			
+			var inputGridColumns = columns.slice(),
+				last = inputGridColumns[inputGridColumns.length-1];
+			if(last.command){
+				delete last.command;
+				last.title = "";
+			}
+			$(inputGridId).kendoGrid({
+				columns: inputGridColumns,
+				edit: function(e){
+					var grid = this,
+						fieldName = grid.columns[e.container.index()].field, // current editing field name
+						model = e.model,
+						oldVal = model[fieldName],
+						input = e.container.find(".k-input");
+					$("[name='"+fieldName+"']", e.container).one("blur", function(){// 只執行一次就unbind
+						var inputVal = input.val(), // get lastest value
+							dataItems = $(gridId).data("kendoGrid").dataSource.data();
+						for(var i = 0; i < dataItems.length; i++){
+							var dataItem = dataItems[i];
+							var old = dataItem.get(fieldName);
+							dataItem.set(fieldName, inputVal);
+						}
+					});
+				},
+				dataSource: {
+					data: [dataSample],
+					schema:{
+						model: {
+							id: "id",
+							fields: modelFields
+						}
+					}
+				},
+				editable: {
+					update: true
+				}
+			});
 		});
 	</script>
 </body>
