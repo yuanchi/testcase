@@ -171,33 +171,40 @@ public class ProductService {
 		}
 	}
 	
-	public void updateInventoryByProductId(){
-		String productId1 = "asus001";
-		Map<String, Object> updateData1 = new LinkedHashMap<>();
-		updateData1.put("qty", "90");
-		Map<String, Object> update1 = new LinkedHashMap<>();
-		update1.put("productId", productId1);
-		update1.put("updateData", updateData1);
-		
-		String productId2 = "acer001";
-		Map<String, Object> updateData2 = new LinkedHashMap<>();
-		updateData2.put("qty", "180");
-		Map<String, Object> update2 = new LinkedHashMap<>();
-		update2.put("productId", productId2);
-		update2.put("updateData", updateData2);
-		
-		String productId3 = "apple001";
-		Map<String, Object> updateData3 = new LinkedHashMap<>();
-		updateData3.put("qty", "270");
-		Map<String, Object> update3 = new LinkedHashMap<>();
-		update3.put("productId", productId3);
-		update3.put("updateData", updateData3);
+	public void updateInventoryByProductId(Map<String, String> params){
+		// sample
+//		String productId1 = "asus001";
+//		Map<String, Object> updateData1 = new LinkedHashMap<>();
+//		updateData1.put("qty", "90");
+//		Map<String, Object> update1 = new LinkedHashMap<>();
+//		update1.put("productId", productId1);
+//		update1.put("updateData", updateData1);
+//		
+//		String productId2 = "acer001";
+//		Map<String, Object> updateData2 = new LinkedHashMap<>();
+//		updateData2.put("qty", "180");
+//		Map<String, Object> update2 = new LinkedHashMap<>();
+//		update2.put("productId", productId2);
+//		update2.put("updateData", updateData2);
+//		
+//		String productId3 = "apple001";
+//		Map<String, Object> updateData3 = new LinkedHashMap<>();
+//		updateData3.put("qty", "270");
+//		Map<String, Object> update3 = new LinkedHashMap<>();
+//		update3.put("productId", productId3);
+//		update3.put("updateData", updateData3);
 		
 		List<Object> args = new LinkedList<>();
-		args.add(update1);
-		args.add(update2);
-		args.add(update3);
-		
+		for(Map.Entry<String, String> p : params.entrySet()){
+			String productId = p.getKey();
+			Map<String, Object> updateData = new LinkedHashMap<>();
+			updateData.put("qty", p.getValue());
+			Map<String, Object> update = new LinkedHashMap<>();
+			update.put("productId", productId);
+			update.put("updateData", updateData);
+			
+			args.add(update);
+		}		
 		String result = connectToProductApi("updateInventoryByProductId", args);
 	}
 	
@@ -264,13 +271,25 @@ public class ProductService {
 	private static void testChangeToIntranetUrl(){
 		ProductService service = new ProductService();
 		service.changeToIntranetUrl();
-		service.listInventoryByProductIds(Arrays.asList("TT120", "TT121"));
+		service.listInventoryByProductIds(Arrays.asList("AAA003"));
 		
 	}
-	public static void main(String[]args){
-//		ProductService service = new ProductService();
-//		service.updateInventoryByProductId();
+	private static void testUpdateInventoryByProductId(){
+		Map<String, String> params = new LinkedHashMap<>();
+//		params.put("asus001", "88");
+		params.put("TT033", "99");
+//		params.put("apple001", "270");
 		
+		ProductService service = new ProductService();
+		service.updateInventoryByProductId(params);
+	}
+	private static void testListInventoryByProductIds(){
+		ProductService s = new ProductService();
+		s.listInventoryByProductIds(Arrays.asList("TT033"));
+	}
+	public static void main(String[]args){
+		testUpdateInventoryByProductId();
+		testListInventoryByProductIds();
 //		testChangeToIntranetUrl();
 	}
 }
