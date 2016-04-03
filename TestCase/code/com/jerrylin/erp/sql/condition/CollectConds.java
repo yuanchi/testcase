@@ -306,6 +306,7 @@ public class CollectConds extends SqlCondition{
 		c.id(getId());
 		c.groupMark(getGroupMark());
 		c.makeGroupMark = makeGroupMark; // TODO 理論上，使用完畢應該就要呼叫disableGroupMark除去暫存的makeGroupMark，所以這邊不應該有值
+		c.junction(getJunction());
 		return c;
 	}
 	

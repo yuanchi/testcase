@@ -30,6 +30,7 @@ public class ConditionStatement extends SqlCondition {
 		s.id(getId());
 		s.setExpression(expression);
 		s.groupMark(getGroupMark());
+		s.junction(getJunction());
 		return s;
 	}
 

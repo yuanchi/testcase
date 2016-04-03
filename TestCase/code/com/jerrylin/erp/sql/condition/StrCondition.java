@@ -32,7 +32,8 @@ public class StrCondition extends SimpleCondition {
 		c.setCaseInsensitive(caseInsensitive);
 		c.setMatchMode(matchMode);
 		c.instruction(getInstruction());
-		c.groupMark(getGroupMark());
+		c.groupMark(getGroupMark())
+		.junction(getJunction());
 		return c;
 	}
 	public enum MatchMode{

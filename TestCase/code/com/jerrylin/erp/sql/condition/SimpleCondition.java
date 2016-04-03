@@ -60,6 +60,7 @@ public class SimpleCondition extends SqlCondition {
 		 .value(value)
 		 .instruction(instruction)
 		 .groupMark(getGroupMark())
+		 .junction(getJunction())
 		 ;
 		return c;
 	}
