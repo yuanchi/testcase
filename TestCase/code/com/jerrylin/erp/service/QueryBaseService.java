@@ -162,106 +162,6 @@ public class QueryBaseService<T, R> implements Serializable{
 		
 		filterCount = 0;
 		addFilterCondtions(filters, conds, logic);
-		
-//		if(KENDO_UI_FILTER_LOGIC_AND.equals(logic)){
-//			CollectConds conds = null;
-//			List<ISqlNode> children =where.getChildren();
-//			if(!children.isEmpty()){
-//				ISqlNode lastChild = children.get(children.size()-1);
-//				CollectConds last = (CollectConds)lastChild;
-//				if(last.getJunction() == Junction.AND){
-//					conds = last;
-//				}
-//			}
-//			
-//			if(conds == null){
-//				conds = where.andConds();
-//			}
-//			conds.enableGroupMark(GROUP_AS_KENDO_UI_FILTER);
-//			
-//			ListIterator<Map<String, Object>> iterator = filters.listIterator();
-//			String alias = q.findFirstSqlTargetAlias();
-//			int count = 0;
-//			SqlTarget target = q.findFirstSqlTarget();
-//			while(iterator.hasNext()){
-//				Map<String, Object> f = iterator.next();
-//				String operator = (String)f.get("operator");
-//				String field = (String)f.get("field");
-//				Object value = f.get("value");
-//				
-//				count++;
-//				
-//				String expression = alias + "." + field + " ";
-//				String nameParam = " :" + alias + firstLetterToUpperCase(field) + "_FILTER_" + count;
-//				MatchMode matchMode = null;
-//				Object convertedVal = convertValueByType(field, value, target);
-//				switch(operator){
-//					case "isnull":
-//						expression += "IS NULL";
-//						conds.andStatement(expression);
-//						break;
-//					case "isnotnull":
-//						expression += "IS NOT NULL";
-//						conds.andStatement(expression);
-//						break;
-//					case "isempty":
-//						expression += "IS EMPTY";
-//						conds.andStatement(expression);
-//						break;
-//					case "isnotempty":
-//						expression += "IS NOT EMPTY";
-//						conds.andStatement(expression);
-//						break;
-//						
-//					case "eq":
-//						expression += ("=" + nameParam);
-//						conds.andSimpleCond(expression, value.getClass(), convertedVal);
-//						break;						
-//					case "neq":
-//						expression += ("!=" + nameParam);
-//						conds.andSimpleCond(expression, value.getClass(), convertedVal);
-//						break;						
-//					case "gte":
-//						expression += (">=" + nameParam);
-//						conds.andSimpleCond(expression, value.getClass(), convertedVal);
-//						break;						
-//					case "gt":
-//						expression += (">" + nameParam);
-//						conds.andSimpleCond(expression, value.getClass(), convertedVal);
-//						break;						
-//					case "lte":
-//						expression += ("<=" + nameParam);
-//						conds.andSimpleCond(expression, value.getClass(), convertedVal);
-//						break;						
-//					case "lt":
-//						expression += ("<" + nameParam);
-//						conds.andSimpleCond(expression, value.getClass(), convertedVal);
-//						break;
-//						
-//					case "startswith":
-//						matchMode = MatchMode.START;
-//						expression += ("LIKE" + nameParam);
-//						conds.andStrCondition(expression, matchMode, (String)value);						
-//						break;						
-//					case "endswith":
-//						matchMode = MatchMode.END;
-//						expression += ("LIKE" + nameParam);
-//						conds.andStrCondition(expression, matchMode, (String)value);						
-//						break;						
-//					case "contains":
-//						matchMode = MatchMode.ANYWHERE;
-//						expression += ("LIKE" + nameParam);
-//						conds.andStrCondition(expression, matchMode, (String)value);						
-//						break;
-//					case "doesnotcontain":
-//						matchMode = MatchMode.ANYWHERE;
-//						expression += ("NOT LIKE" + nameParam);
-//						conds.andStrCondition(expression, matchMode, (String)value);
-//						break;
-//				}
-//			}
-//			conds.disableGroupMark();
-//		}
 	}
 	
 	private void addFilterCondtions(List<Map<String, Object>> filters, CollectConds parent, String ParentLogic){
@@ -358,7 +258,6 @@ public class QueryBaseService<T, R> implements Serializable{
 	}
 	
 	private void addStrCond(CollectConds conds, String expression, Object value, MatchMode matchMode, String logic){
-		System.out.println("addStrCond logic: " + logic);
 		if("and".equals(logic)){
 			conds.andStrCondition(expression, matchMode, (String)value);
 		}else{
