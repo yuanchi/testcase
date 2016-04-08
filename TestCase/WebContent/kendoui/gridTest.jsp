@@ -287,7 +287,7 @@
 				page: 1,
 				serverSorting: true,
 				serverFiltering: true,
-				serverGrouping: true, // ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource#configuration-schema.groups
+				//serverGrouping: true, // ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource#configuration-schema.groups
 				schema: {
 					type: "json",
 					data: function(response){
