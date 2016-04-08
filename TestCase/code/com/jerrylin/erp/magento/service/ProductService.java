@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -171,6 +172,10 @@ public class ProductService {
 		}
 	}
 	
+	public void listAllInventory(){
+		String result = connectToProductApi("listAllInventory", Collections.emptyList());
+	}
+	
 	public void updateInventoryByProductId(Map<String, String> params){
 		// sample
 //		String productId1 = "asus001";
@@ -196,10 +201,10 @@ public class ProductService {
 		
 		List<Object> args = new LinkedList<>();
 		for(Map.Entry<String, String> p : params.entrySet()){
-			String productId = p.getKey();
 			Map<String, Object> updateData = new LinkedHashMap<>();
 			updateData.put("qty", p.getValue());
 			Map<String, Object> update = new LinkedHashMap<>();
+			String productId = p.getKey();
 			update.put("productId", productId);
 			update.put("updateData", updateData);
 			
@@ -277,7 +282,7 @@ public class ProductService {
 	private static void testUpdateInventoryByProductId(){
 		Map<String, String> params = new LinkedHashMap<>();
 //		params.put("asus001", "88");
-		params.put("TT033", "99");
+		params.put("TT033", "23");
 //		params.put("apple001", "270");
 		
 		ProductService service = new ProductService();
@@ -285,11 +290,21 @@ public class ProductService {
 	}
 	private static void testListInventoryByProductIds(){
 		ProductService s = new ProductService();
-		s.listInventoryByProductIds(Arrays.asList("TT033"));
+		s.listInventoryByProductIds(Arrays.asList("SSERR033"));
+	}
+	private static void testListAllProducts(){
+		ProductService s = new ProductService();
+		s.listAllProducts();
+	}
+	private static void testListAllInventory(){
+		ProductService s = new ProductService();
+		s.listAllInventory();
 	}
 	public static void main(String[]args){
 		testUpdateInventoryByProductId();
-		testListInventoryByProductIds();
+//		testListInventoryByProductIds();
 //		testChangeToIntranetUrl();
+//		testListAllProducts();
+//		testListAllInventory();
 	}
 }
