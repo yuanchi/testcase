@@ -135,11 +135,7 @@ public class QueryBaseService<T, R> implements Serializable{
 		}
 	}
 	
-	private void adjustConditionByKendoUIGridFilter(Object filterObj){
-		Map<String, Object> filter = (Map<String, Object>)filterObj;
-		String logic = (String)filter.get("logic");
-		List<Map<String, Object>> filters = (List<Map<String, Object>>)filter.get("filters");
-		
+	private void adjustConditionByKendoUIGridFilter(Object filterObj){		
 		SqlRoot root = getSqlRootImpl();
 		Where where = root.find(Where.class);
 		if(null == where){
@@ -159,6 +155,10 @@ public class QueryBaseService<T, R> implements Serializable{
 		if(conds == null){
 			conds = where.andConds();
 		}
+		
+		Map<String, Object> filter = (Map<String, Object>)filterObj;
+		String logic = (String)filter.get("logic");
+		List<Map<String, Object>> filters = (List<Map<String, Object>>)filter.get("filters");
 		
 		filterCount = 0;
 		addFilterCondtions(filters, conds, logic);
@@ -336,6 +336,9 @@ public class QueryBaseService<T, R> implements Serializable{
 	}
 	
 	private static Object transformByType(Class<?> type, Object obj){
+		if(null == obj || obj.getClass() == type){
+			return obj;
+		}
 		Object casted = null;
 		try{
 			if(obj instanceof String){
@@ -346,6 +349,8 @@ public class QueryBaseService<T, R> implements Serializable{
 				val = val.trim();
 				if(type == String.class){
 					casted = val;
+				}else if(type == Boolean.class){
+					casted = Boolean.parseBoolean(val);
 				}else if(type == Integer.class){
 					casted = Integer.parseInt(val);
 				}else if(type == Double.class){
@@ -363,6 +368,7 @@ public class QueryBaseService<T, R> implements Serializable{
 		}catch(Throwable e){
 			throw new RuntimeException(e);
 		}
+//		System.out.println("QueryBaseService.transformByType type: " + type + "obj: " + obj + ", casted: " + casted);
 		return casted;
 	}
 	
