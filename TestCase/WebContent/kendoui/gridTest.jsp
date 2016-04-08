@@ -72,13 +72,34 @@
 					filter.value = dateStr;	
 				}
 			}
-			
-			
+			var filterableMessages = {
+				filter: "篩選",
+				clear: "清除篩選",					
+				and: "而且",
+				or: "或",
+				isFalse: "不是",
+				isTrue: "是",
+				selectValue: "請選擇",
+				cancel: "清除",
+				operator: "運算符號",
+				value: "值",
+				checkAll: "全選"
+			}, filterableStringOperators = {
+				eq: "等於",
+				neq: "不等於",
+				isnull: "是空值",
+				isnotnull: "不是空值",
+				startswith: "開頭是",
+				contains: "包含",
+				doesnotcontain: "不包含",
+				endswith: "結尾是"
+			};
 			// MVVM ref. http://demos.telerik.com/kendo-ui/mvvm/remote-binding
 			// http://blog.falafel.com/kendo-ui-creating-an-dynamic-input-form-from-an-external-json-viewmodel/
 			var viewModel = kendo.observable({
 				conds: null
 			});
+			var pk = "id";
 			var modelFields = {
 				id: {
 					editable: false,
@@ -103,6 +124,15 @@
 							return true; // validate success
 						}
 					},									
+					defaultValue: null,
+					type: "string"
+				},
+				nameEng: {
+					editable: true,
+					defaultValue: null
+				},
+				fbNickname: {
+					editable: true,
 					defaultValue: null
 				},
 				birthday: {
@@ -117,10 +147,16 @@
 				mobile:{
 					editable: true,
 					defaultValue: null
+				},
+				important:{
+					type: "boolean",
+					editable: true,
+					defaultValue: false
 				}
 			};
 			var columns = [{ // defining header title and binding data to model
-				field: "id",
+				field: pk, // 已知相關限制，kendo ui grid僅允許一個欄位做為primary key
+				hidden: true, // 已知相關bug，如果啟用隱藏欄位，當keyboard瀏覽filter和header上下變換的時候，移動位置會錯置一格；在最前和最後位置的轉換會導致焦點消失
 				title: "Member ID",
 				filterable: {
 					cell: {
@@ -130,13 +166,31 @@
 			},
 			{
 				field: "name",
-				title: "Name",
+				title: "姓名",
 				filterable: {
 					cell: {
 						operator: "contains" // default filter operator
 					}
 				}
 			},
+			{
+				field: "nameEng",
+				title: "英文姓名",
+				filterable: {
+					cell: {
+						operator: "contains" // default filter operator
+					}
+				}
+			},
+			{
+				field: "fbNickname",
+				title: "臉書名稱",
+				filterable: {
+					cell: {
+						operator: "contains" // default filter operator
+					}
+				}
+			},				
 			{
 				field: "birthday",
 				title: "生日",
@@ -160,17 +214,12 @@
 				title: "手機"
 			},
 			{
-				command: "destroy" // display delete button and eable this function
+				field: "important",
+				title: "是否為VIP"
+			},			
+			{
+				command: ["destroy"] // display delete button and eable this function
 			}];
-			var dataSample = {};
-			for(var i = 0; i < columns.length; i++){
-				var col = columns[i],
-					field = col.field;
-				if(field){
-					dataSample[field] = null;
-				}
-			}
-			var inputGridId = "#inputGrid";
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
 			var gridId = "#grid";
@@ -195,9 +244,9 @@
 					},
 					update: {
 						url: "/TestCase/member/batchSaveOrMerge.json",
-							dataType: "json",
-							type: "POST",
-							contentType: "application/json;charset=utf-8",
+						dataType: "json",
+						type: "POST",
+						contentType: "application/json;charset=utf-8",
 					},
 					destroy: {
 						url: "/TestCase/member/deleteByIds.json",
@@ -238,6 +287,7 @@
 				page: 1,
 				serverSorting: true,
 				serverFiltering: true,
+				serverGrouping: true, // ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource#configuration-schema.groups
 				schema: {
 					type: "json",
 					data: function(response){
@@ -256,7 +306,7 @@
 						return response.pageNavigator.totalCount;
 					},
 					model: {
-						id: "id",
+						id: pk,
 						fields: modelFields
 					},
 					parse: function(response){ //preprocess the response before use
@@ -278,66 +328,80 @@
 				}, 
 				groupable: true, // 分組
 				scrollable: true,// 捲軸
-				pageable: {
+				pageable: { // 分頁
 					refresh: true,
 					pageSizes: true,
 					buttonCount: 5
-				}, // 分頁
+				},
 				sortable: { // 排序
 					mode: "single",
 					allowUnsort: false
 				},
 				navigatable: true, // 可藉由方向鍵上下左右在grid cell上移動
 				filterable: {
-					mode: "row"
+					mode: "row",
+					extra: true,
+					messages: filterableMessages,
+					operators: {
+						string: filterableStringOperators
+					}
 				},
-				columnMenu: true// sorting, hiding or showing columns
+				selectable: "multiple, cell", // 可選擇多個grid cell
+				columnMenu: true// sorting, hiding or showing columns or filtering
 				//resizable: true // column resizing
 			});
 			$(document.body).keydown(function(e){
+				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
 				if(e.altKey && e.keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
 					$(gridId).data("kendoGrid").table.focus();
 				}
-				if(e.altKey && e.keyCode == 67){// Alt + C 跳到Save Changes；
-					$("a.k-grid-save-changes").focus();
+				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Save Changes；
+					$(gridId).data("kendoGrid").dataSource.sync();
 				}
-			});
-			
-			var inputGridColumns = columns.slice(),
-				last = inputGridColumns[inputGridColumns.length-1];
-			if(last.command){
-				delete last.command;
-				last.title = "";
-			}
-			$(inputGridId).kendoGrid({
-				columns: inputGridColumns,
-				edit: function(e){
-					var grid = this,
-						fieldName = grid.columns[e.container.index()].field, // current editing field name
-						model = e.model,
-						oldVal = model[fieldName],
-						input = e.container.find(".k-input");
-					$("[name='"+fieldName+"']", e.container).one("blur", function(){// 只執行一次就unbind
-						var inputVal = input.val(), // get lastest value
-							dataItems = $(gridId).data("kendoGrid").dataSource.data();
-						for(var i = 0; i < dataItems.length; i++){
-							var dataItem = dataItems[i];
-							var old = dataItem.get(fieldName);
-							dataItem.set(fieldName, inputVal);
+				if(e.altKey && e.keyCode == 81){// Alt + Q 直接觸發 Cancel changes
+					$(gridId).data("kendoGrid").dataSource.cancelChanges();
+				}
+				if(e.altKey && e.keyCode == 82){// Alt + R 直接觸發 Add new record
+					$(gridId).data("kendoGrid").dataSource.pushCreate();
+				}				
+				if(e.ctrlKey && e.altKey && e.keyCode == 65){// Ctrl + Alt + A 執行批次複製, ref. http://stackoverflow.com/questions/24273432/kendo-ui-grid-select-single-cell-get-back-dataitem-and-prevent-specific-cells
+					var grid = $(gridId).data("kendoGrid"),
+					    selection = grid.select(); // 回傳jQuery物件，裡面可能是被選取的cells或rows
+					if(!selection){
+						return;
+					};
+				    var startColIdx = selection.index(), // 如果多選column，只會顯示最左邊的欄位index；如果單選column，就是該欄位的index；0 based, 隱藏欄位會被計算
+				    	lastColIdx = selection.last().index(), // td的index, ref. http://stackoverflow.com/questions/788225/table-row-and-column-number-in-jquery
+				    	columnCount = (lastColIdx - startColIdx + 1), // 橫跨的column數量
+				    	selectedCount = selection.size(), // 有幾個cell被選擇
+				    	rowCount = (selectedCount / columnCount), // 包含的row數量
+				    	columnOpts = grid.options.columns,
+				    	colFieldName = grid.options.columns[startColIdx].field, // get column field name
+						firstRow = selection.closest("tr"), // 如果多選的時候，只會拿到第一個row
+						firstDataItem = grid.dataItem(firstRow), // 如果多選的時候，只會拿到第一個dataItem
+						fields = [];
+					
+				    for(var i = startColIdx; i < (lastColIdx+1); i++){
+				    	var field = columnOpts[i].field;
+				    	fields.push(field);
+				    }
+					// 如果多選的時候，要取得所有row的dataItem，要跑迴圈
+					// 如果透過jQuery的each函式更新dataItem，會使selection的elements產生變化，以致於接下來的更新動作全部失敗。解決方式是:先取得所有dataItem，然後一次修改他們。
+					var dataItems = selection.map(function(idx, cell){
+						//alert($(cell).eq(0).text()); // 可直接取得cell值
+						if(idx > (columnCount-1)){
+							var row = $(cell).closest("tr"),
+								dataItem = grid.dataItem(row);
+							return dataItem;
 						}
 					});
-				},
-				dataSource: {
-					data: [dataSample],
-					schema:{
-						model: {
-							id: "id",
-							fields: modelFields
+					for(var i = 0; i < dataItems.length; i++){
+						var dataItem = dataItems[i];
+						for(var j = 0; j < fields.length; j++){
+							var field = fields[j];
+							dataItem.set(field, firstDataItem.get(field));
 						}
-					}
-				},
-				editable: {
-					update: true
+					};
 				}
 			});
 		});
