@@ -125,24 +125,25 @@ public class ConditionalQuery<T> implements Serializable{
 		
 		String selectCount = "SELECT COUNT(DISTINCT " + identifier + ")";
 		String selectCountHql = addLineBreakIfNotBlank(selectCount, fromSql, joinSql, whereSql);
-		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
+//		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
 		System.out.println("selectCountHql: " + selectCountHql + "\n");
 		
 		String selectId = "SELECT DISTINCT " + identifier;
 		String selectIdHql = addLineBreakIfNotBlank(selectCountHql, orderSql).replace(selectCount, selectId);
-		logger.log(Level.INFO, "selectIdHql: " + selectIdHql + "\n");
+//		logger.log(Level.INFO, "selectIdHql: " + selectIdHql + "\n");
 		System.out.println("selectIdHql: " + selectIdHql + "\n");
 		
 		String selectAlias = "SELECT DISTINCT " + alias;
 		String whereInIds = "WHERE " + identifier + " IN (:ids)";
 		String whereInIdsHql = addLineBreakIfNotBlank(selectAlias, fromSql, whereInIds, orderSql);
-		logger.log(Level.INFO, "whereInIdsHql: " + whereInIdsHql + "\n");
+//		logger.log(Level.INFO, "whereInIdsHql: " + whereInIdsHql + "\n");
 		System.out.println("whereInIdsHql: " + whereInIdsHql + "\n");
 		
-		logger.log(Level.INFO, "params:");
+//		logger.log(Level.INFO, "params:");
+		System.out.println("params:");
 		Map<String, Object> params = copyRoot.getCondIdValuePairs();
 		params.forEach((k,v)->{
-			logger.log(Level.INFO, k + ":" + v + ":" + v.getClass());
+//			logger.log(Level.INFO, k + ":" + v + ":" + v.getClass());
 			System.out.println(k + ":" + v + ":" + v.getClass());
 		});
 		
