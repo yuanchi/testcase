@@ -12,4 +12,9 @@ public class BaseTest {
 		consumer.accept(acac);
 		acac.close();
 	}
+	
+	public static void main(String[]args){
+		String t1 = "4/2-4/5 OHM敦南誠品，單筆滿5000送500，可現抵可累贈，詳情請洽02-27716304";
+		System.out.println(t1.length());
+	}
 }
