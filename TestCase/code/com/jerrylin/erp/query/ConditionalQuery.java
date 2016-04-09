@@ -15,7 +15,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +31,6 @@ import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
 import com.jerrylin.erp.sql.Join;
 import com.jerrylin.erp.sql.OrderBy;
-import com.jerrylin.erp.sql.Select;
 import com.jerrylin.erp.sql.SqlRoot;
 import com.jerrylin.erp.sql.SqlTarget;
 import com.jerrylin.erp.sql.Where;
@@ -104,6 +102,7 @@ public class ConditionalQuery<T> implements Serializable{
 	 * @param s
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	public List<T> executeQueryPageable(Session s){
 		String alias = findFirstSqlTargetAlias();
 		String id = getIdFieldName();
@@ -113,7 +112,7 @@ public class ConditionalQuery<T> implements Serializable{
 		SqlRoot copyRoot = copyRootPrepared();
 		addOrderByIdIfAnyNotExisted(copyRoot);
 		
-		String selectSql = copyRoot.findSql(Select.class);
+		//String selectSql = copyRoot.findSql(Select.class);
 		String fromSql = copyRoot.findSql(From.class);
 		String joinSql = copyRoot.findSql(Join.class);
 		String whereSql = copyRoot.findSql(Where.class);
@@ -125,7 +124,7 @@ public class ConditionalQuery<T> implements Serializable{
 		
 		String selectCount = "SELECT COUNT(DISTINCT " + identifier + ")";
 		String selectCountHql = addLineBreakIfNotBlank(selectCount, fromSql, joinSql, whereSql);
-//		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
+		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
 		System.out.println("selectCountHql: " + selectCountHql + "\n");
 		
 		String selectId = "SELECT DISTINCT " + identifier;
@@ -177,6 +176,7 @@ public class ConditionalQuery<T> implements Serializable{
 		return append;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public List<T> executeQueryList(Session s){
 		SqlRoot copyRoot = copyRootPrepared();
 		String queryHql = copyRoot.genSql();
@@ -233,26 +233,6 @@ public class ConditionalQuery<T> implements Serializable{
 	public String findFirstSqlTargetAlias(){
 		String alias = findFirstSqlTarget().getAlias();
 		return alias;
-	}
-	
-	private String getSelectSql(SqlRoot root){
-		ISqlNode target = root
-			.find(n-> (n instanceof Select))
-			.getFounds()
-			.get(0);
-		Select t = (Select)target;
-		String sql = t.genSql();
-		return sql;
-	}
-	
-	private String getWhereSql(SqlRoot root){
-		ISqlNode target = root
-			.find(n-> (n instanceof Where))
-			.getFounds()
-			.get(0);
-		Where t = (Where)target;
-		String sql = t.genSql();
-		return sql;
 	}	
 	
 	private void addOrderByIdIfAnyNotExisted(SqlRoot root){
@@ -273,6 +253,7 @@ public class ConditionalQuery<T> implements Serializable{
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	private static <T>void testConditionalQuery(Consumer<ConditionalQuery<T>> consumer){
 		BaseTest.executeApplicationContext(acac->{
 			ConditionalQuery<T> q = acac.getBean(ConditionalQuery.class);
@@ -280,6 +261,7 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 	
+	@SuppressWarnings("unused")
 	private static <T>void testExecuteQueryPageable(){
 		testConditionalQuery(c->{
 			SqlRoot root = c.getSqlRoot();
@@ -312,6 +294,7 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 
+	@SuppressWarnings("unused")
 	private static <T>void testExecuteQueryPageableOrderBy(){
 		testConditionalQuery(c->{
 			SqlRoot root = c.getSqlRoot();
@@ -343,6 +326,7 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 	
+	@SuppressWarnings("unused")
 	private static void testConditionStatement(){
 		testConditionalQuery(c->{
 			SqlRoot root = c.getSqlRoot();
@@ -359,6 +343,7 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 	
+	@SuppressWarnings("unused")
 	private static void testContainLike(){
 		testConditionalQuery(c->{
 			SqlRoot root = c.getSqlRoot();
@@ -375,6 +360,7 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 	
+	@SuppressWarnings("unused")
 	private static void testAddAfterRemove(){
 		testConditionalQuery(c->{
 			SqlRoot root = c.getSqlRoot();
@@ -391,6 +377,7 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 	
+	@SuppressWarnings("unused")
 	private static void testSimpleConditionId(){
 		testConditionalQuery(c->{
 			SqlRoot root = c.getSqlRoot();
@@ -406,10 +393,9 @@ public class ConditionalQuery<T> implements Serializable{
 		});
 	}
 	
+	@SuppressWarnings("unused")
 	private static void testLocalDateTimeParse(){
 		String time = "2016-03-01T16:00:00.000Z";
-		
-		Pattern ISO_OFFSET_DATE_TIME_PATTERN = Pattern.compile("^[0-9]{4}-[0-9]{2}-[0-]");
 		
 		LocalDateTime ldt = LocalDateTime.parse(time, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 		System.out.println(ldt);
