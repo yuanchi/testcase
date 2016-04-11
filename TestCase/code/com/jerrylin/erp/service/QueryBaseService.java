@@ -256,12 +256,12 @@ public class QueryBaseService<T, R> implements Serializable{
 				break;
 		}
 	}
-	
+	// 這裡直接加入不管大小寫的邏輯
 	private void addStrCond(CollectConds conds, String expression, Object value, MatchMode matchMode, String logic){
 		if("and".equals(logic)){
-			conds.andStrCondition(expression, matchMode, (String)value);
+			conds.andStrToUpperCase(expression, matchMode, (String)value);
 		}else{
-			conds.orStrCondition(expression, matchMode, (String)value);
+			conds.orStrToUpperCase(expression, matchMode, (String)value);
 		}
 	}
 	
