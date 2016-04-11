@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.jerrylin.erp.sql.condition.SimpleCondition;
+import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 
 /**
  * representing root node as starting point
@@ -245,22 +246,33 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 						return;
 					}
 					
-					switch(instruction){
-						case START_LIKE:
-							s.value(((String)s.getValue()) + "%");
-							break;
-						case END_LIKE:
-							s.value("%" + ((String)s.getValue()));
-							break;
-						case CONTAIN_LIKE:
-							s.value("%" + ((String)s.getValue()) + "%");
-							break;
-						case LOWERCASE:
-							s.value(((String)s.getValue()).toLowerCase());
-							break;
-						case UPPERCASE:
-							s.value(((String)s.getValue()).toUpperCase());
-							break;
+					String propertyName = s.getPropertyName();
+					String[] splits = instruction.split("\\|");
+					for(String split : splits){
+						switch(split){
+							case START_LIKE:
+								s.value(((String)s.getValue()) + "%");
+								break;
+							case END_LIKE:
+								s.value("%" + ((String)s.getValue()));
+								break;
+							case CONTAIN_LIKE:
+								s.value("%" + ((String)s.getValue()) + "%");
+								break;
+							case LOWERCASE:
+								if(!propertyName.toUpperCase().contains("LOWER(")){
+									s.propertyName("LOWER(" + propertyName + ")");
+								}
+								s.value(((String)s.getValue()).toLowerCase());
+								break;
+							case UPPERCASE:
+								if(!propertyName.toUpperCase().contains("UPPER(")){
+									s.propertyName("UPPER(" + propertyName + ")");
+								}
+								s.value(((String)s.getValue()).toUpperCase());
+								break;
+						}
+						
 					}
 				}
 			}};
@@ -380,10 +392,23 @@ public class SqlRoot extends SqlNode implements ISqlRoot{
 		root.find(n->((n instanceof Asc) || (n instanceof Desc)))
 			.remove();
 		System.out.println(root.genSql());
-		
+	}
+	
+	private static void testUppercase(){
+		SqlRoot root = getSampleRoot();
+		root.find(Where.class)
+			.andConds()
+				.andStrToUpperCase("p.idNo LIKE :pIdNo", MatchMode.START, "a112334221");
+		ISqlRoot copy = root.transformCopy(); 
+		System.out.println(copy.genSql());
+		Map<String, Object> params = copy.getCondIdValuePairs();
+		for(Map.Entry<String, Object> p : params.entrySet()){
+			System.out.println(p.getKey() + ":" + p.getValue());
+		}
 	}
 	
 	public static void main(String[]args){
-		testExcludeCopy();
+//		testExcludeCopy();
+		testUppercase();
 	}
 }
