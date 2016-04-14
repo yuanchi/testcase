@@ -65,10 +65,14 @@
 					var d = filter.value,
 					fullYear = d.getFullYear(),
 					month = d.getMonth()+1,
-					date = d.getDate();
+					date = d.getDate(),
+					hour = d.getHours(),
+					min = d.getMinutes(),
+					sec = d.getSeconds(),
+					milliSec = d.getMilliseconds();
 					//console.log('date: ' + d); // Thu Mar 03 2016 00:00:00 GMT+0800
 					//console.log('stringify: ' + JSON.stringify(d)); // 2016-03-02T16:00:00.000Z
-					var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date);
+					var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date) + 'T' + (hour < 10 ? ('0'+hour) : hour) + ':' + (min < 10 ? ('0'+min) : min) + ':00.000Z';
 					filter.value = dateStr;	
 				}
 			}
@@ -156,10 +160,12 @@
 			};
 			var columns = [{ // defining header title and binding data to model
 				field: pk, // 已知相關限制，kendo ui grid僅允許一個欄位做為primary key
-				hidden: true, // 已知相關bug，如果啟用隱藏欄位，當keyboard瀏覽filter和header上下變換的時候，移動位置會錯置一格；在最前和最後位置的轉換會導致焦點消失
+				//hidden: true, // 已知相關bug，如果啟用隱藏欄位，當keyboard瀏覽filter和header上下變換的時候，移動位置會錯置一格；在最前和最後位置的轉換會導致焦點消失
+				width: "150px",
 				title: "Member ID",
 				filterable: {
 					cell: {
+						operator: "startswith",
 						showOperators: false
 					}
 				}
@@ -167,15 +173,18 @@
 			{
 				field: "name",
 				title: "姓名",
+				width: "170px",
 				filterable: {
 					cell: {
 						operator: "contains" // default filter operator
-					}
+					},
+					ignoreCase: true
 				}
 			},
 			{
 				field: "nameEng",
 				title: "英文姓名",
+				width: "200px",
 				filterable: {
 					cell: {
 						operator: "contains" // default filter operator
@@ -185,6 +194,7 @@
 			{
 				field: "fbNickname",
 				title: "臉書名稱",
+				width: "200px",
 				filterable: {
 					cell: {
 						operator: "contains" // default filter operator
@@ -194,12 +204,11 @@
 			{
 				field: "birthday",
 				title: "生日",
+				width: "150px",
 				format:"{0:yyyy-MM-dd}",
-				template: '#= kendo.toString(birthday, "yyyy-MM-dd") #',
+				parseFormats:"{0:yyyy-MM-dd}",
 				filterable: {
-					ui: function(element){
-						element.kendoDatePicker();
-					},
+					ui: "datetimepicker",// ref. http://stackoverflow.com/questions/28232575/kendoui-grid-filter-date-format
 					cell: {
 						operator: "gte"
 					}
@@ -207,18 +216,22 @@
 			},
 			{
 				field: "idNo",
-				title: "身分證字號"
+				title: "身分證字號",
+				width: "150px",
 			},
 			{
 				field: "mobile",
-				title: "手機"
+				title: "手機",
+				width: "150px",
 			},
 			{
 				field: "important",
-				title: "是否為VIP"
+				title: "是否為VIP",
+				width: "100px",
 			},			
 			{
-				command: ["destroy"] // display delete button and eable this function
+				command: ["destroy"], // display delete button and eable this function
+				width: "100px",
 			}];
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
@@ -326,7 +339,7 @@
 					update: true,
 					destroy: true // disable the deletion functionality
 				}, 
-				groupable: true, // 分組
+				// groupable: true, // 分組
 				scrollable: true,// 捲軸
 				pageable: { // 分頁
 					refresh: true,
@@ -347,8 +360,9 @@
 					}
 				},
 				selectable: "multiple, cell", // 可選擇多個grid cell
-				columnMenu: true// sorting, hiding or showing columns or filtering
+				columnMenu: true // sorting, hiding or showing columns or filtering
 				//resizable: true // column resizing
+				// adaptive rendering ref. http://docs.telerik.com/kendo-ui/controls/data-management/grid/adaptive
 			});
 			$(document.body).keydown(function(e){
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
