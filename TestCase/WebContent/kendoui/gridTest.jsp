@@ -343,8 +343,8 @@
 				scrollable: true,// 捲軸
 				pageable: { // 分頁
 					refresh: true,
-					pageSizes: true,
-					buttonCount: 5
+					pageSizes: ['5', '10', '15', '20', '25', '30', 'all'],
+					buttonCount: 12
 				},
 				sortable: { // 排序
 					mode: "single",
@@ -368,6 +368,8 @@
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
 				if(e.altKey && e.keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
 					$(gridId).data("kendoGrid").table.focus();
+					var options = $(gridId).data("kendoGrid").getOptions();
+					console.log("options:\n" + JSON.stringify(options));
 				}
 				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Save Changes；
 					$(gridId).data("kendoGrid").dataSource.sync();
