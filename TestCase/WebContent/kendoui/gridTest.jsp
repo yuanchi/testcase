@@ -53,7 +53,16 @@
 	<script type="text/javascript">
 		var moduleName = 'memberTest',
 			cookieKey = moduleName + "State",
-			gridId = "#grid";
+			gridId = "#grid",
+			DEFAULT_PAGE_VALUE = 1,
+			DEFAULT_PAGESIZE_VALUE = 10,
+			DEFAULT_FILTER_VALUE = null,
+			DEFAULT_SORT_VALUE = null,
+			DEFAULT_GROUP_VALUE = null,
+			KENDO_UI_TYPE_DATE = "date",
+			KENDO_UI_TYPE_STRING = "string",
+			KENDO_UI_TYPE_BOOLEAN = "boolean",
+			pk = "id";
 	</script>
 	<script type="text/javascript">
 		$(function(){
@@ -67,7 +76,7 @@
 						modifyFilterDateVal(f, modelFields);
 					}
 				}
-				if(filter.field && 'date' == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
+				if(filter.field && KENDO_UI_TYPE_DATE == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
 					var d = filter.value,
 					fullYear = d.getFullYear(),
 					month = d.getMonth()+1,
@@ -88,7 +97,7 @@
 						parseFilterDates(filter.filters[i], fields);
 					}
 				}else{
-					if(fields[filter.field].type == "date"){
+					if(fields[filter.field].type == KENDO_UI_TYPE_DATE){
 						filter.value = kendo.parseDate(filter.value);
 					}
 				}
@@ -120,7 +129,6 @@
 			var viewModel = kendo.observable({
 				conds: null
 			});
-			var pk = "id";
 			var modelFields = {
 				id: {
 					editable: false,
@@ -146,7 +154,7 @@
 						}
 					},									
 					defaultValue: null,
-					type: "string"
+					type: KENDO_UI_TYPE_STRING
 				},
 				nameEng: {
 					editable: true,
@@ -157,7 +165,7 @@
 					defaultValue: null
 				},
 				birthday: {
-					type: "date",
+					type: KENDO_UI_TYPE_DATE,
 					editable: true,
 					defaultValue: null
 				},
@@ -170,7 +178,7 @@
 					defaultValue: null
 				},
 				important:{
-					type: "boolean",
+					type: KENDO_UI_TYPE_BOOLEAN,
 					editable: true,
 					defaultValue: false
 				}
@@ -193,8 +201,7 @@
 				width: "170px",
 				filterable: {
 					cell: {
-						operator: "contains", // default filter operator
-						template: function(args){}
+						operator: "contains" // default filter operator
 					},
 					ignoreCase: true
 				}
@@ -359,7 +366,12 @@
 				autoBind: false, // grid初始化的時候，是否先去查詢
 				dataBinding: function(e){console.log("dataBinding...");}, // triggered before data binding to widget from its datasource
 				dataBound: function(e){console.log("dataBound...");}, // triggered when data binding to widget from its datasource
-				toolbar: ["create", "save", "cancel"], // display related operation button
+				toolbar: [
+					{name: "create"}, 
+					{name: "save"},
+					{name: "cancel"},
+					{name: "reset", text: "Reset"}
+				], // display related operation button
 				editable: {// 可編輯: enable functions: create, update, destroy
 					create: true,
 					update: true,
@@ -390,6 +402,17 @@
 				//resizable: true // column resizing
 				// adaptive rendering ref. http://docs.telerik.com/kendo-ui/controls/data-management/grid/adaptive
 			}).data("kendoGrid");
+			
+			$(".k-grid-reset").click(function(e){
+				var ds = mainGrid.dataSource;
+				ds.filter(DEFAULT_FILTER_VALUE);
+				ds.page(DEFAULT_PAGE_VALUE);
+				ds.pageSize(DEFAULT_PAGESIZE_VALUE);
+				ds.sort(DEFAULT_SORT_VALUE);
+				ds.group(DEFAULT_GROUP_VALUE);
+				ds.read();
+			}).find("span").addClass("k-font-icon k-i-undo-large"); // kendo font icons ref. http://docs.telerik.com/kendo-ui/styles-and-layout/icons-web
+			
 			$(document.body).keydown(function(e){
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
 				if(e.altKey && e.keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
