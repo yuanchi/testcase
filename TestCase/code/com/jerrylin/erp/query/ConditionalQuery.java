@@ -122,6 +122,14 @@ public class ConditionalQuery<T> implements Serializable{
 			throw new UnsupportedOperationException("ConditionalQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
 		}
 		
+		String defaultDirection = " DESC";
+		if(StringUtils.isBlank(orderSql)){
+			orderSql = "ORDER BY " + identifier + defaultDirection;
+		}
+		if(!orderSql.contains(identifier)){
+			orderSql += ", " + identifier + defaultDirection;
+		}
+		
 		String selectCount = "SELECT COUNT(DISTINCT " + identifier + ")";
 		String selectCountHql = addLineBreakIfNotBlank(selectCount, fromSql, joinSql, whereSql);
 		logger.log(Level.INFO, "selectCountHql: " + selectCountHql + "\n");
