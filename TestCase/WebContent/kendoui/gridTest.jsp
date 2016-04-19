@@ -25,6 +25,7 @@
 	<!-- angualarjs feature supported 
 	ref. http://docs.telerik.com/kendo-ui/AngularJS/introduction
 	-->
+	<script type="text/javascript" src="${kendouiJs}/jquery.cookie.js"></script>
 	<!-- 
 	<script type="text/javascript" src="${kendouiJs}/angular.min.js"></script>
 	 -->
@@ -50,6 +51,11 @@
 		<div id="grid"></div>
 	</div>
 	<script type="text/javascript">
+		var moduleName = 'memberTest',
+			cookieKey = moduleName + "State",
+			gridId = "#grid";
+	</script>
+	<script type="text/javascript">
 		$(function(){
 			function modifyFilterDateVal(filter, modelFields){
 				if(!filter){
@@ -74,6 +80,17 @@
 					//console.log('stringify: ' + JSON.stringify(d)); // 2016-03-02T16:00:00.000Z
 					var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date) + 'T' + (hour < 10 ? ('0'+hour) : hour) + ':' + (min < 10 ? ('0'+min) : min) + ':00.000Z';
 					filter.value = dateStr;	
+				}
+			}
+			function parseFilterDates(filter, fields){
+				if(filter.filters){
+					for(var i = 0; i < filter.filters.length; i++){
+						parseFilterDates(filter.filters[i], fields);
+					}
+				}else{
+					if(fields[filter.field].type == "date"){
+						filter.value = kendo.parseDate(filter.value);
+					}
 				}
 			}
 			var filterableMessages = {
@@ -176,7 +193,8 @@
 				width: "170px",
 				filterable: {
 					cell: {
-						operator: "contains" // default filter operator
+						operator: "contains", // default filter operator
+						template: function(args){}
 					},
 					ignoreCase: true
 				}
@@ -235,7 +253,6 @@
 			}];
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
-			var gridId = "#grid";
 			var dataSource = {
 				batch: true, // 批次更新 ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource
 				transport: {// remote communication
@@ -299,7 +316,7 @@
 				pageSize: 10,
 				page: 1,
 				serverSorting: true,
-				serverFiltering: true,
+				serverFiltering: true, // there's no filter events
 				//serverGrouping: true, // ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource#configuration-schema.groups
 				schema: {
 					type: "json",
@@ -328,11 +345,20 @@
 					errors: function(response){
 						return response.error;
 					}
+				},
+				change: function(e){// triggered after datasource read data
+					// console.log('datasource change...');
+				},
+				requestStart: function(e){// triggered before datasource send remote request
+					// console.log('datasource before requestStart...');
 				}
 			};
-			$(gridId).kendoGrid({
+			var mainGrid = $(gridId).kendoGrid({
 				columns: columns,
 				dataSource: dataSource,
+				autoBind: false, // grid初始化的時候，是否先去查詢
+				dataBinding: function(e){console.log("dataBinding...");}, // triggered before data binding to widget from its datasource
+				dataBound: function(e){console.log("dataBound...");}, // triggered when data binding to widget from its datasource
 				toolbar: ["create", "save", "cancel"], // display related operation button
 				editable: {// 可編輯: enable functions: create, update, destroy
 					create: true,
@@ -352,7 +378,7 @@
 				},
 				navigatable: true, // 可藉由方向鍵上下左右在grid cell上移動
 				filterable: {
-					mode: "row",
+					mode: "menu, row", // mode as row default enabling filtering action when typing, ref. http://docs.telerik.com/kendo-ui/controls/data-management/grid/how-to/grid-filter-as-you-type
 					extra: true,
 					messages: filterableMessages,
 					operators: {
@@ -363,25 +389,25 @@
 				columnMenu: true // sorting, hiding or showing columns or filtering
 				//resizable: true // column resizing
 				// adaptive rendering ref. http://docs.telerik.com/kendo-ui/controls/data-management/grid/adaptive
-			});
+			}).data("kendoGrid");
 			$(document.body).keydown(function(e){
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
 				if(e.altKey && e.keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
-					$(gridId).data("kendoGrid").table.focus();
-					var options = $(gridId).data("kendoGrid").getOptions();
-					console.log("options:\n" + JSON.stringify(options));
+					mainGrid.table.focus();
+					// var options = mainGrid.getOptions();
+					// console.log("options:\n" + JSON.stringify(options));
 				}
 				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Save Changes；
-					$(gridId).data("kendoGrid").dataSource.sync();
+					mainGrid.dataSource.sync();
 				}
 				if(e.altKey && e.keyCode == 81){// Alt + Q 直接觸發 Cancel changes
-					$(gridId).data("kendoGrid").dataSource.cancelChanges();
+					mainGrid.dataSource.cancelChanges();
 				}
 				if(e.altKey && e.keyCode == 82){// Alt + R 直接觸發 Add new record
-					$(gridId).data("kendoGrid").dataSource.pushCreate();
+					mainGrid.dataSource.pushCreate();
 				}				
 				if(e.ctrlKey && e.altKey && e.keyCode == 65){// Ctrl + Alt + A 執行批次複製, ref. http://stackoverflow.com/questions/24273432/kendo-ui-grid-select-single-cell-get-back-dataitem-and-prevent-specific-cells
-					var grid = $(gridId).data("kendoGrid"),
+					var grid = mainGrid,
 					    selection = grid.select(); // 回傳jQuery物件，裡面可能是被選取的cells或rows
 					if(!selection){
 						return;
@@ -420,6 +446,29 @@
 					};
 				}
 			});
+			var state = JSON.parse($.cookie(cookieKey));
+			if(state){
+				if(state.filter){
+					parseFilterDates(state.filter, mainGrid.dataSource.options.schema.model.fields);
+				}
+				mainGrid.dataSource.query(state);
+			}else{
+				mainGrid.dataSource.read();
+			}
+		});
+	</script>
+	<script type="text/javascript">
+		$(window).unload(function(){
+			var dataSource = $(gridId).data("kendoGrid").dataSource,
+				state = kendo.stringify({
+					page: dataSource.page(),
+					pageSize: dataSource.pageSize(),
+					sort: dataSource.sort(),
+					group: dataSource.group(),
+					filter: dataSource.filter()
+				});
+			// TODO stored customized conds
+			$.cookie(cookieKey, state);
 		});
 	</script>
 </body>
