@@ -66,29 +66,41 @@
 	</script>
 	<script type="text/javascript">
 		$(function(){
-			function modifyFilterDateVal(filter, modelFields){
+			// JavaScript Date預設會帶入時區(標記)，譬如台灣就是GMT+0800
+			// 不管JSON.stringify()或new Date().toISOString()輸出的時間則是UTC，即移除時區的影響；如果時區是GMT+0800，他就會減掉八個小時
+			// var d = new Date()	Fri Apr 01 2016 09:30:00 GMT+0800
+			// JSON.stringify(d):	"2016-04-01T01:30:00.000Z"
+			// d.toISOString():		2016-04-01T01:30:00.000Z
+			// 日期轉UTC字串的時候，在GMT+0800時區下，會自動減掉8小時，所以我們加上(-(-8))8小時，就可以抵銷影響
+			function removeTimezoneOffset(d){
+				var hours = d.getHours(),
+					mins = d.getMinutes(),
+					secs = d.getSeconds(),
+					milliSecs = d.getMilliseconds();
+				d.setHours(hours, mins-d.getTimezoneOffset(), secs, milliSecs); // GMT+0800 timezoneoffset is -480
+				return d;
+			}
+			// 加上timezoneoffset
+			function addTimezoneOffset(d){
+				var hours = d.getHours(),
+					mins = d.getMinutes(),
+					secs = d.getSeconds(),
+					milliSecs = d.getMilliseconds();
+				d.setHours(hours, mins+d.getTimezoneOffset(), secs, milliSecs);
+				return d;				
+			}
+			function removeFilterDateTimezoneOffset(filter, modelFields){
 				if(!filter){
 					return;
 				}
 				if(filter.filters){
 					for(var i = 0; i < filter.filters.length; i++){
 						var f = filter.filters[i];
-						modifyFilterDateVal(f, modelFields);
+						removeFilterDateTimezoneOffset(f, modelFields);
 					}
 				}
 				if(filter.field && KENDO_UI_TYPE_DATE == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
-					var d = filter.value,
-					fullYear = d.getFullYear(),
-					month = d.getMonth()+1,
-					date = d.getDate(),
-					hour = d.getHours(),
-					min = d.getMinutes(),
-					sec = d.getSeconds(),
-					milliSec = d.getMilliseconds();
-					//console.log('date: ' + d); // Thu Mar 03 2016 00:00:00 GMT+0800
-					//console.log('stringify: ' + JSON.stringify(d)); // 2016-03-02T16:00:00.000Z
-					var dateStr = fullYear + '-' + (month < 10 ? ('0'+month) : month) + '-' + (date < 10 ? ('0'+date) : date) + 'T' + (hour < 10 ? ('0'+hour) : hour) + ':' + (min < 10 ? ('0'+min) : min) + ':00.000Z';
-					filter.value = dateStr;	
+					filter.value = removeTimezoneOffset(filter.value);
 				}
 			}
 			function parseFilterDates(filter, fields){
@@ -98,7 +110,9 @@
 					}
 				}else{
 					if(fields[filter.field].type == KENDO_UI_TYPE_DATE){
-						filter.value = kendo.parseDate(filter.value);
+						console.log('store cookie date: ' + filter.value);
+						filter.value = addTimezoneOffset(kendo.parseDate(filter.value));
+						console.log('transform cookie date: ' + filter.value);
 					}
 				}
 			}
@@ -296,7 +310,7 @@
 						console.log("parameterMap data: " + JSON.stringify(data));
 						if(type == "read"){
 							if(data.filter && data.filter.filters){
-								modifyFilterDateVal(data.filter, modelFields);
+								removeFilterDateTimezoneOffset(data.filter, modelFields);
 							}
 							var conds = $.extend({}, viewModel.get("conds"), {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort, filter: data.filter});
 							var r = {
