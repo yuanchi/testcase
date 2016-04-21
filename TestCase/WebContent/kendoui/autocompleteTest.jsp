@@ -53,6 +53,7 @@
 				dataTextField: "name",
 				filter: "contains",
 				template: "<span>#: id # | #: name # | #: nameEng #</span>",
+				// autoBind: false, // 不該使用這個選項，否則會出現錯誤訊息: e._preselect is not a function
 				dataSource: {
 					serverFiltering: true,
 					transport: {
@@ -82,7 +83,7 @@
 						data: function(response){
 							var results = response.results; // read
 							return results;
-						},
+						}
 					}
 				}
 			});
