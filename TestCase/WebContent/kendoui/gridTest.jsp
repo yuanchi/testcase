@@ -62,7 +62,8 @@
 			KENDO_UI_TYPE_DATE = "date",
 			KENDO_UI_TYPE_STRING = "string",
 			KENDO_UI_TYPE_BOOLEAN = "boolean",
-			pk = "id";
+			pk = "id",
+			fieldsToFilter = ["nameEng", "id", "fbNickname"];
 	</script>
 	<script type="text/javascript">
 		$(function(){
@@ -110,11 +111,76 @@
 					}
 				}else{
 					if(fields[filter.field].type == KENDO_UI_TYPE_DATE){
-						console.log('store cookie date: ' + filter.value);
+						// console.log('store cookie date: ' + filter.value);
 						filter.value = addTimezoneOffset(kendo.parseDate(filter.value));
-						console.log('transform cookie date: ' + filter.value);
+						// console.log('transform cookie date: ' + filter.value);
 					}
 				}
+			}
+			function changeFilterToMulti(filterObj, fields){
+				if(!filterObj.logic && !filterObj.filters){
+					return;
+				}
+				filterObj.logic = "or";
+				var filters = filterObj.filters,
+					oriFilter = filters[0];
+				for(var i = 0; i < fields.length; i++){
+					var field = fields[i];
+					filters.push($.extend({}, oriFilter, {field: field}));
+				}
+				return filterObj;
+			}
+			function getAutoCompleteEditor(settings){
+				var textField = settings.textField,
+					valueField = settings.valueField;
+				return function(container, options){
+					$('<input data-text-field="'+ textField +'" data-bind="value:'+ options.field +'"/>')
+						.appendTo(container)
+						.kendoAutoComplete({
+							filter: "contains",
+							template: "<span>#: id # | #: name # | #: nameEng #</span>",
+							// autoBind: false, // 如果加上這行，會出現e._preselect is not a function錯誤訊息，根據官方說法，這是因為autocomplete沒有支援deferred binding
+							valuePrimitive: true, // 如果不設定valuePrimitive，選了值之後，他會顯示[object Object]
+							dataTextField: textField,
+							dataSource: {
+								serverFiltering: true,
+								transport: {
+									read:{
+										url: "/TestCase/member/queryConditional.json",
+										type: "POST",
+										dataType: "json",
+										contentType: "application/json;charset=utf-8",
+										cache: false	
+									},
+									parameterMap: function(data, type){
+										if(type === "read"){
+											// console.log("data: " + JSON.stringify(data));
+											var r = {
+												conds: {
+													currentPage: 1,
+													countPerPage: 20,
+													filter: changeFilterToMulti(data.filter, fieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+												}
+											};
+											return JSON.stringify(r);
+										}
+									}
+								},
+								schema:{
+									type: "json",
+									data: function(response){
+										var results = response.results; // read
+										return results;
+									}
+								}
+							},
+							select: function(e){
+								var item = e.item;
+								var text = item.text(); // text is template result
+								//console.log("item: " + JSON.stringify(item) + ", text: " + text);
+							}
+						});
+				};
 			}
 			var filterableMessages = {
 				filter: "篩選",
@@ -166,7 +232,7 @@
 							}
 							return true; // validate success
 						}
-					},									
+					},
 					defaultValue: null,
 					type: KENDO_UI_TYPE_STRING
 				},
@@ -228,7 +294,8 @@
 					cell: {
 						operator: "contains" // default filter operator
 					}
-				}
+				},
+				editor: getAutoCompleteEditor({textField: "name"})
 			},
 			{
 				field: "fbNickname",
