@@ -47,11 +47,11 @@ import com.jerrylin.erp.test.BaseTest;
  *
  * @param <T>
  */
-public class ConditionalQuery<T> implements Serializable{
+public class ExecutableQuery<T> implements Serializable{
 	private static final long serialVersionUID = 5747837071652296027L;
 	private static final String ID_FIELD = "id";
 	
-	private Logger logger = Logger.getLogger(ConditionalQuery.class.getName());
+	private Logger logger = Logger.getLogger(ExecutableQuery.class.getName());
 	private String idFieldName = ID_FIELD;
 	
 	@Autowired
@@ -119,7 +119,7 @@ public class ConditionalQuery<T> implements Serializable{
 		String orderSql = copyRoot.findSql(OrderBy.class);
 		
 		if(joinSql.toLowerCase().contains("join fetch")){
-			throw new UnsupportedOperationException("ConditionalQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
+			throw new UnsupportedOperationException("ExecutableQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
 		}
 		
 		String defaultDirection = " DESC";
@@ -201,7 +201,7 @@ public class ConditionalQuery<T> implements Serializable{
 		return r;
 	}
 	/**
-	 * this is the BASIC starting point of all OUTPUT methods on ConditionalQuery.
+	 * this is the BASIC starting point of all OUTPUT methods on ExecutableQuery.
 	 * first exclude nodes not required and copy,
 	 * secondly transform nodes meeting the criteria and copy,
 	 * lastly get copy root node
@@ -262,16 +262,16 @@ public class ConditionalQuery<T> implements Serializable{
 	}
 	
 	@SuppressWarnings("unchecked")
-	private static <T>void testConditionalQuery(Consumer<ConditionalQuery<T>> consumer){
+	private static <T>void testExecutableQuery(Consumer<ExecutableQuery<T>> consumer){
 		BaseTest.executeApplicationContext(acac->{
-			ConditionalQuery<T> q = acac.getBean(ConditionalQuery.class);
+			ExecutableQuery<T> q = acac.getBean(ExecutableQuery.class);
 			consumer.accept(q);
 		});
 	}
 	
 	@SuppressWarnings("unused")
 	private static <T>void testExecuteQueryPageable(){
-		testConditionalQuery(c->{
+		testExecutableQuery(c->{
 			SqlRoot root = c.getSqlRoot();
 			root.select()
 					.target("p", "member").getRoot()
@@ -304,7 +304,7 @@ public class ConditionalQuery<T> implements Serializable{
 
 	@SuppressWarnings("unused")
 	private static <T>void testExecuteQueryPageableOrderBy(){
-		testConditionalQuery(c->{
+		testExecutableQuery(c->{
 			SqlRoot root = c.getSqlRoot();
 			root.select()
 					.target("p", "member").getRoot()
@@ -336,7 +336,7 @@ public class ConditionalQuery<T> implements Serializable{
 	
 	@SuppressWarnings("unused")
 	private static void testConditionStatement(){
-		testConditionalQuery(c->{
+		testExecutableQuery(c->{
 			SqlRoot root = c.getSqlRoot();
 			root.select()
 					.target("p", "member").getRoot()
@@ -353,7 +353,7 @@ public class ConditionalQuery<T> implements Serializable{
 	
 	@SuppressWarnings("unused")
 	private static void testContainLike(){
-		testConditionalQuery(c->{
+		testExecutableQuery(c->{
 			SqlRoot root = c.getSqlRoot();
 			root.select()
 					.target("p", "member").getRoot()
@@ -370,7 +370,7 @@ public class ConditionalQuery<T> implements Serializable{
 	
 	@SuppressWarnings("unused")
 	private static void testAddAfterRemove(){
-		testConditionalQuery(c->{
+		testExecutableQuery(c->{
 			SqlRoot root = c.getSqlRoot();
 			root.select()
 					.target("p", "member").getRoot()
@@ -387,7 +387,7 @@ public class ConditionalQuery<T> implements Serializable{
 	
 	@SuppressWarnings("unused")
 	private static void testSimpleConditionId(){
-		testConditionalQuery(c->{
+		testExecutableQuery(c->{
 			SqlRoot root = c.getSqlRoot();
 			root.select()
 					.target("p", "member").getRoot()

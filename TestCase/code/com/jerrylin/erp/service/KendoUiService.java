@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.UnknownFormatConversionException;
 import java.util.logging.Logger;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.model.Member;
-import com.jerrylin.erp.query.ConditionalQuery;
+import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
 import com.jerrylin.erp.sql.OrderBy;
@@ -37,7 +36,7 @@ import com.jerrylin.erp.test.BaseTest;
 
 @Service
 @Scope("prototype")
-public class QueryBaseService<T, R> implements Serializable{
+public class KendoUiService<T, R> implements Serializable{
 
 	private static final long serialVersionUID = 5612145044684815434L;
 	
@@ -50,10 +49,10 @@ public class QueryBaseService<T, R> implements Serializable{
 	private static final String KENDO_UI_FILTER_LOGIC_OR	= "or";
 	private static final String GROUP_AS_KENDO_UI_FILTER = "GROUP_AS_KENDO_UI_FILTER";
 	
-	private Logger logger = Logger.getLogger(QueryBaseService.class.getName());
+	private Logger logger = Logger.getLogger(KendoUiService.class.getName());
 	
 	@Autowired
-	private ConditionalQuery<T> q;
+	private ExecutableQuery<T> q;
 	@Resource(name="classFieldType")
 	private Map<Class<?>, Map<String, Class<?>>> classFieldType;
 	
@@ -368,7 +367,7 @@ public class QueryBaseService<T, R> implements Serializable{
 		}catch(Throwable e){
 			throw new RuntimeException(e);
 		}
-//		System.out.println("QueryBaseService.transformByType type: " + type + "obj: " + obj + ", casted: " + casted);
+//		System.out.println("KendoUiService.transformByType type: " + type + "obj: " + obj + ", casted: " + casted);
 		return casted;
 	}
 	
@@ -410,7 +409,7 @@ public class QueryBaseService<T, R> implements Serializable{
 	
 	private static void testBaseOperation(){
 		BaseTest.executeApplicationContext(acac->{
-			QueryBaseService<Member, Member> q = acac.getBean(QueryBaseService.class);
+			KendoUiService<Member, Member> q = acac.getBean(KendoUiService.class);
 			q.getSqlRoot()
 			.select()
 				.target("p").getRoot()
@@ -456,7 +455,7 @@ public class QueryBaseService<T, R> implements Serializable{
 	
 	private static void testClassFieldType(){
 		BaseTest.executeApplicationContext(acac->{
-			QueryBaseService<Member, Member> ser = acac.getBean(QueryBaseService.class);
+			KendoUiService<Member, Member> ser = acac.getBean(KendoUiService.class);
 			ser.classFieldType.forEach((k,v)->{
 				System.out.println(k+":"+v);
 				v.forEach((key, val)->{

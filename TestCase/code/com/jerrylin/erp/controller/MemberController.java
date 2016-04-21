@@ -21,7 +21,7 @@ import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.jackson.mixin.MemberIgnoreDetail;
 import com.jerrylin.erp.model.Member;
-import com.jerrylin.erp.service.QueryBaseService;
+import com.jerrylin.erp.service.KendoUiService;
 import com.jerrylin.erp.util.JsonParseUtil;
 
 @Controller
@@ -30,13 +30,13 @@ import com.jerrylin.erp.util.JsonParseUtil;
 public class MemberController implements Serializable{
 	private static final long serialVersionUID = -7172365121730602834L;
 	@Autowired
-	private QueryBaseService<Member, Member> queryBaseService;
+	private KendoUiService<Member, Member> kendoUiService;
 	@Autowired
 	private SessionFactoryWrapper sfw;
 	
 	@PostConstruct
 	public void init(){
-		queryBaseService.getSqlRoot()
+		kendoUiService.getSqlRoot()
 		.select()
 			.target("p").getRoot()
 		.from()
@@ -53,7 +53,7 @@ public class MemberController implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryAll(){
-		ConditionConfig<Member> cc = queryBaseService.genCondtitionsAfterExecuteQueryPageable();
+		ConditionConfig<Member> cc = kendoUiService.genCondtitionsAfterExecuteQueryPageable();
 		String json = conditionConfigToJsonStr(cc);
 		return json;
 	}
@@ -66,7 +66,7 @@ public class MemberController implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryConditional(@RequestBody ConditionConfig<Member> conditionConfig){
-		ConditionConfig<Member> cc = queryBaseService.executeQueryPageable(conditionConfig);
+		ConditionConfig<Member> cc = kendoUiService.executeQueryPageable(conditionConfig);
 		String result = conditionConfigToJsonStr(cc);
 		return result;
 	}
