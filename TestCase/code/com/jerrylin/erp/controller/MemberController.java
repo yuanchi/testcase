@@ -30,13 +30,13 @@ import com.jerrylin.erp.util.JsonParseUtil;
 public class MemberController implements Serializable{
 	private static final long serialVersionUID = -7172365121730602834L;
 	@Autowired
-	private KendoUiService<Member, Member> kendoUiService;
+	private KendoUiService<Member, Member> kendoUiGridService;
 	@Autowired
 	private SessionFactoryWrapper sfw;
 	
 	@PostConstruct
 	public void init(){
-		kendoUiService.getSqlRoot()
+		kendoUiGridService.getSqlRoot()
 		.select()
 			.target("p").getRoot()
 		.from()
@@ -53,7 +53,7 @@ public class MemberController implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryAll(){
-		ConditionConfig<Member> cc = kendoUiService.genCondtitionsAfterExecuteQueryPageable();
+		ConditionConfig<Member> cc = kendoUiGridService.genCondtitionsAfterExecuteQueryPageable();
 		String json = conditionConfigToJsonStr(cc);
 		return json;
 	}
@@ -66,7 +66,7 @@ public class MemberController implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryConditional(@RequestBody ConditionConfig<Member> conditionConfig){
-		ConditionConfig<Member> cc = kendoUiService.executeQueryPageable(conditionConfig);
+		ConditionConfig<Member> cc = kendoUiGridService.executeQueryPageable(conditionConfig);
 		String result = conditionConfigToJsonStr(cc);
 		return result;
 	}
