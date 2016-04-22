@@ -56,14 +56,37 @@
 			gridId = "#grid",
 			DEFAULT_PAGE_VALUE = 1,
 			DEFAULT_PAGESIZE_VALUE = 10,
-			DEFAULT_FILTER_VALUE = null,
+			DEFAULT_FILTER_VALUE = [],
 			DEFAULT_SORT_VALUE = null,
 			DEFAULT_GROUP_VALUE = null,
 			KENDO_UI_TYPE_DATE = "date",
 			KENDO_UI_TYPE_STRING = "string",
 			KENDO_UI_TYPE_BOOLEAN = "boolean",
 			pk = "id",
-			fieldsToFilter = ["nameEng", "id", "fbNickname"];
+			fieldsToFilter = ["nameEng", "id", "fbNickname"],
+			filterableMessages = {
+				filter: "篩選",
+				clear: "清除篩選",					
+				and: "而且",
+				or: "或",
+				isFalse: "不是",
+				isTrue: "是",
+				selectValue: "請選擇",
+				cancel: "清除",
+				operator: "運算符號",
+				value: "值",
+				checkAll: "全選"
+			},
+			filterableStringOperators = {
+				eq: "等於",
+				neq: "不等於",
+				isnull: "是空值",
+				isnotnull: "不是空值",
+				startswith: "開頭是",
+				contains: "包含",
+				doesnotcontain: "不包含",
+				endswith: "結尾是"
+			};
 	</script>
 	<script type="text/javascript">
 		$(function(){
@@ -132,13 +155,15 @@
 			}
 			function getAutoCompleteEditor(settings){
 				var textField = settings.textField,
-					valueField = settings.valueField;
+					readUrl = settings.readUrl
+					filter = settings.filter ? settings.filter : "contains",
+					template = settings.template;
 				return function(container, options){
 					$('<input data-text-field="'+ textField +'" data-bind="value:'+ options.field +'"/>')
 						.appendTo(container)
 						.kendoAutoComplete({
-							filter: "contains",
-							template: "<span>#: id # | #: name # | #: nameEng #</span>",
+							filter: filter,
+							template: template,
 							// autoBind: false, // 如果加上這行，會出現e._preselect is not a function錯誤訊息，根據官方說法，這是因為autocomplete沒有支援deferred binding
 							valuePrimitive: true, // 如果不設定valuePrimitive，選了值之後，他會顯示[object Object]
 							dataTextField: textField,
@@ -146,7 +171,7 @@
 								serverFiltering: true,
 								transport: {
 									read:{
-										url: "/TestCase/member/queryConditional.json",
+										url: readUrl,
 										type: "POST",
 										dataType: "json",
 										contentType: "application/json;charset=utf-8",
@@ -182,28 +207,6 @@
 						});
 				};
 			}
-			var filterableMessages = {
-				filter: "篩選",
-				clear: "清除篩選",					
-				and: "而且",
-				or: "或",
-				isFalse: "不是",
-				isTrue: "是",
-				selectValue: "請選擇",
-				cancel: "清除",
-				operator: "運算符號",
-				value: "值",
-				checkAll: "全選"
-			}, filterableStringOperators = {
-				eq: "等於",
-				neq: "不等於",
-				isnull: "是空值",
-				isnotnull: "不是空值",
-				startswith: "開頭是",
-				contains: "包含",
-				doesnotcontain: "不包含",
-				endswith: "結尾是"
-			};
 			// MVVM ref. http://demos.telerik.com/kendo-ui/mvvm/remote-binding
 			// http://blog.falafel.com/kendo-ui-creating-an-dynamic-input-form-from-an-external-json-viewmodel/
 			var viewModel = kendo.observable({
@@ -295,7 +298,11 @@
 						operator: "contains" // default filter operator
 					}
 				},
-				editor: getAutoCompleteEditor({textField: "name"})
+				editor: getAutoCompleteEditor({
+					textField: "name", 
+					readUrl: "/TestCase/member/queryConditional.json", 
+					filter: "contains", 
+					template: "<span>#: id # | #: name # | #: nameEng #</span>"})
 			},
 			{
 				field: "fbNickname",
@@ -323,21 +330,21 @@
 			{
 				field: "idNo",
 				title: "身分證字號",
-				width: "150px",
+				width: "150px"
 			},
 			{
 				field: "mobile",
 				title: "手機",
-				width: "150px",
+				width: "150px"
 			},
 			{
 				field: "important",
 				title: "是否為VIP",
-				width: "100px",
+				width: "100px"
 			},			
 			{
 				command: ["destroy"], // display delete button and eable this function
-				width: "100px",
+				width: "100px"
 			}];
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
@@ -400,9 +407,10 @@
 						}
 					}
 				},
+				//sort: {field: pk, dir: 'desc'},
 				serverPaging: true,
-				pageSize: 10,
-				page: 1,
+				pageSize: DEFAULT_PAGESIZE_VALUE,
+				page: DEFAULT_PAGE_VALUE,
 				serverSorting: true,
 				serverFiltering: true, // there's no filter events
 				//serverGrouping: true, // ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource#configuration-schema.groups
@@ -434,12 +442,12 @@
 						return response.error;
 					}
 				},
-				change: function(e){// triggered after datasource read data
-					// console.log('datasource change...');
-				},
-				requestStart: function(e){// triggered before datasource send remote request
-					// console.log('datasource before requestStart...');
-				}
+				change: function(e){console.log('datasource change...');},// triggered after datasource read data
+				requestStart: function(e){console.log('datasource before requestStart...');},// triggered before datasource send remote request
+				requestEnd: function(e){console.log('datasource after requestEnd...');},
+				error: function(e){console.log('datasource error...');},
+				push: function(e){console.log('datasource push...');},
+				sync: function(e){console.log('datasource sync...');}
 			};
 			var mainGrid = $(gridId).kendoGrid({
 				columns: columns,
@@ -484,14 +492,56 @@
 				// adaptive rendering ref. http://docs.telerik.com/kendo-ui/controls/data-management/grid/adaptive
 			}).data("kendoGrid");
 			
-			$(".k-grid-reset").click(function(e){
-				var ds = mainGrid.dataSource;
-				ds.filter(DEFAULT_FILTER_VALUE);
+			$(".k-grid-reset")
+			.click(function(e){
+				/*
+				read搭配其他任一直接設定如page,pageSize,sort,group,filter，會觸發兩次請求，譬如:
+				ds.page(1);
+				ds.read();
+				或者:
+				ds.page(1);
+				ds.pageSize(10);
+				ds.read();
+				或者:
+				ds.page(1);
+				ds.pageSize(10);
+				ds.sort(null);
+				ds.read();
+				都是送兩次請求
+				*/
+							
+				var ds = mainGrid.dataSource,
+					page = ds.page(),
+					pageSize = ds.pageSize(),
+					sort = ds.sort(),
+					group = ds.group(),
+					filter = ds.filter();
+				// console.log("filter" + JSON.stringify(filter) + "page: " + JSON.stringify(page) + ", pageSize: " + JSON.stringify(pageSize) + ", sort: " + JSON.stringify(sort) + ", group: " + JSON.stringify(group));
+				function clearArray(array){
+					while(array.length){
+						array.pop();
+					}
+				}
+				/*方案一: 最直接將ds還原預設值的方式，但缺點是在呼叫read的時候會觸發兩次request
 				ds.page(DEFAULT_PAGE_VALUE);
 				ds.pageSize(DEFAULT_PAGESIZE_VALUE);
 				ds.sort(DEFAULT_SORT_VALUE);
 				ds.group(DEFAULT_GROUP_VALUE);
+				ds.filter(DEFAULT_FILTER_VALUE);
+				
 				ds.read();
+				*/
+				/*方案二: 不去動到ds原來的設定，就是原來的物件還在，但直接清空他內部的陣列，或刪除物件屬性；這樣在read的時候，不會觸發兩次request；壞處是譬如page只是數字，沒辦法去改內部屬性*/
+				if(sort && (sort instanceof Array)){
+					clearArray(sort);
+				}
+				if(filter){
+					var filters = filter["filters"];
+					clearArray(filters);
+					delete filter["logic"];
+				}
+				ds.read();
+
 			}).find("span").addClass("k-font-icon k-i-undo-large"); // kendo font icons ref. http://docs.telerik.com/kendo-ui/styles-and-layout/icons-web
 			
 			$(document.body).keydown(function(e){
@@ -550,6 +600,7 @@
 					};
 				}
 			});
+			
 			var state = JSON.parse($.cookie(cookieKey));
 			if(state){
 				if(state.filter){
@@ -571,6 +622,7 @@
 					group: dataSource.group(),
 					filter: dataSource.filter()
 				});
+			console.log("window.unload sort" + JSON.stringify(dataSource.sort()));
 			// TODO stored customized conds
 			$.cookie(cookieKey, state);
 		});
