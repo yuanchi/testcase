@@ -12,14 +12,21 @@ import java.util.logging.Logger;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.jerrylin.erp.component.ConditionConfig;
+import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.SalesDetail;
 import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
@@ -55,6 +62,8 @@ public class KendoUiService<T, R> implements Serializable{
 	private ExecutableQuery<T> q;
 	@Resource(name="classFieldType")
 	private Map<Class<?>, Map<String, Class<?>>> classFieldType;
+	@Autowired
+	private SessionFactoryWrapper sfw;
 	
 	private int filterCount;
 	private String alias;
@@ -132,6 +141,54 @@ public class KendoUiService<T, R> implements Serializable{
 				}
 			}
 		}
+	}
+	
+	@Transactional
+	public List<T> batchSaveOrMerge(List<T> targets){
+		Session s = sfw.getCurrentSession();
+		int batchSize = sfw.getBatchSize();
+		int count = 0;
+		
+		for(int i = 0; i < targets.size(); i++){
+			T target = targets.get(i);
+			String pk = null;
+			try{
+				Object propVal = PropertyUtils.getProperty(target, q.getIdFieldName());
+				if(null != propVal && propVal.getClass() == String.class){
+					pk = (String)propVal;
+				}
+			}catch(Throwable e){
+				throw new RuntimeException(e);
+			}
+			if(StringUtils.isBlank(pk)){
+				s.save(target);
+			}else{
+				s.update(target);
+			}
+			if(++count % batchSize == 0){
+				s.flush();
+				s.clear();
+			}
+		}
+		s.flush();
+		s.clear();
+		
+		return targets;
+	}
+	
+	@Transactional
+	public String deleteByIds(List<String> ids){
+		Session s = sfw.getCurrentSession();
+		String queryHql = "SELECT DISTINCT p FROM " + q.findFirstSqlTarget().getClass().getName() + " p WHERE p."+ q.getIdFieldName() +" IN (:ids)";
+		ScrollableResults results = s.createQuery(queryHql).setParameterList("ids", ids).scroll(ScrollMode.FORWARD_ONLY);
+		while(results.next()){
+			Object target = results.get()[0];
+			s.delete(target);
+		}
+		s.flush();
+		s.clear();
+		
+		return "";
 	}
 	
 	private void adjustConditionByKendoUIGridFilter(Object filterObj){		
