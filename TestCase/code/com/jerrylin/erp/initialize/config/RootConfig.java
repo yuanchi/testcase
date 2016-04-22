@@ -18,6 +18,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.SalesDetail;
 import com.jerrylin.erp.model.VipDiscountDetail;
 import com.jerrylin.erp.sql.SqlRoot;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -112,6 +113,33 @@ public class RootConfig {
 		vipDiscountDetailFieldType.put("available", Boolean.class);
 		vipDiscountDetailFieldType.put("useStatus", String.class);
 		types.put(VipDiscountDetail.class, vipDiscountDetailFieldType);
+		
+		Map<String, Class<?>> salesDetailFieldType = new LinkedHashMap<>();
+		salesDetailFieldType.put("id", String.class);
+		salesDetailFieldType.put("memberId", String.class);
+		salesDetailFieldType.put("salePoint", String.class);
+		salesDetailFieldType.put("saleStatus", String.class);
+		salesDetailFieldType.put("fbName", String.class);
+		salesDetailFieldType.put("activity", String.class);
+		salesDetailFieldType.put("modelId", String.class);
+		salesDetailFieldType.put("productName", String.class);
+		salesDetailFieldType.put("price", Double.class);
+		salesDetailFieldType.put("memberPrice", Double.class);
+		salesDetailFieldType.put("priority", String.class);
+		salesDetailFieldType.put("orderDate", Date.class);
+		salesDetailFieldType.put("otherNote", String.class);
+		salesDetailFieldType.put("checkBillStatus", String.class);
+		salesDetailFieldType.put("idNo", String.class);
+		salesDetailFieldType.put("discountType", String.class);
+		salesDetailFieldType.put("arrivalStatus", String.class);
+		salesDetailFieldType.put("shippingDate", Date.class);
+		salesDetailFieldType.put("sendMethod", String.class);
+		salesDetailFieldType.put("note", String.class);
+		salesDetailFieldType.put("payDate", Date.class);
+		salesDetailFieldType.put("contactInfo", String.class);
+		salesDetailFieldType.put("registrant", String.class);
+		salesDetailFieldType.put("rowId", String.class);
+		types.put(SalesDetail.class, salesDetailFieldType);
 		
 		return types;
 	}
