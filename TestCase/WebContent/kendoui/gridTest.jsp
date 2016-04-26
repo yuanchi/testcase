@@ -7,7 +7,10 @@
 <c:set value="${pageContext.request.contextPath}" var="rootPath"/>
 <c:set value="${rootPath}/kendoui/professional.2016.1.226.trial" var="kendouiRoot"/>
 <c:set value="${kendouiRoot}/styles" var="kendouiStyle"/>
-<c:set value="${kendouiRoot}/js" var="kendouiJs"/> 
+<c:set value="${kendouiRoot}/js" var="kendouiJs"/>
+<c:set value="member" var="moduleName"/>
+<c:set value="${moduleName}KendoData" var="kendoDataKey"/>
+<c:set value="${rootPath}/${moduleName}" var="moduleBaseUrl"/>
 <!DOCTYPE html>
 
 <html>
@@ -51,7 +54,8 @@
 		<div id="grid"></div>
 	</div>
 	<script type="text/javascript">
-		var moduleName = 'memberTest',
+		var moduleName = "${moduleName}",
+			moduleBaseUrl = "${moduleBaseUrl}",
 			cookieKey = moduleName + "State",
 			gridId = "#grid",
 			DEFAULT_PAGE_VALUE = 1,
@@ -182,9 +186,11 @@
 											// console.log("data: " + JSON.stringify(data));
 											var r = {
 												conds: {
-													currentPage: 1,
-													countPerPage: 20,
-													filter: changeFilterToMulti(data.filter, fieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+													kendoData: {
+														page: 1,
+														pageSize: 20,
+														filter: changeFilterToMulti(data.filter, fieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+													} 
 												}
 											};
 											return JSON.stringify(r);
@@ -300,7 +306,7 @@
 				},
 				editor: getAutoCompleteEditor({
 					textField: "name", 
-					readUrl: "/TestCase/member/queryConditional.json", 
+					readUrl: moduleBaseUrl + "/queryConditional.json", 
 					filter: "contains", 
 					template: "<span>#: id # | #: name # | #: nameEng #</span>"})
 			},
@@ -343,8 +349,8 @@
 				width: "100px"
 			},			
 			{
-				command: ["destroy"], // display delete button and eable this function
-				width: "100px"
+				command: ["edit", "destroy"], // display delete button and eable this function; if there's edit in command options, and grid.editable.mode as "inline", it would disable batch operation
+				width: "150px"
 			}];
 			// http://docs.telerik.com/kendo-ui/controls/data-management/grid/overview
 			// initialize grid widget
@@ -352,13 +358,13 @@
 				batch: true, // 批次更新 ref. http://docs.telerik.com/kendo-ui/api/javascript/data/datasource
 				transport: {// remote communication
 					create: {
-						url: "/TestCase/member/batchSaveOrMerge.json",
+						url: moduleBaseUrl + "/batchSaveOrMerge.json",
 						dataType: "json",
 						type: "POST",
 						contentType: "application/json;charset=utf-8",
 					},
 					read: {
-						url: "/TestCase/member/queryConditional.json",
+						url: moduleBaseUrl + "/queryConditional.json",
 						type: "POST",
 						dataType: "json",
 						contentType: "application/json;charset=utf-8",
@@ -368,13 +374,13 @@
 						}
 					},
 					update: {
-						url: "/TestCase/member/batchSaveOrMerge.json",
+						url: moduleBaseUrl + "/batchSaveOrMerge.json",
 						dataType: "json",
 						type: "POST",
 						contentType: "application/json;charset=utf-8",
 					},
 					destroy: {
-						url: "/TestCase/member/deleteByIds.json",
+						url: moduleBaseUrl + "/deleteByIds.json",
 						dataType: "json",
 						type: "POST",
 						contentType: "application/json;charset=utf-8",
@@ -386,7 +392,7 @@
 							if(data.filter && data.filter.filters){
 								removeFilterDateTimezoneOffset(data.filter, modelFields);
 							}
-							var conds = $.extend({}, viewModel.get("conds"), {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort, filter: data.filter});
+							var conds = $.extend({moduleName: moduleName}, viewModel.get("conds"), {kendoData: data});
 							var r = {
 								conds: conds
 							};
@@ -456,15 +462,24 @@
 				dataBinding: function(e){console.log("dataBinding...");}, // triggered before data binding to widget from its datasource
 				dataBound: function(e){console.log("dataBound...");}, // triggered when data binding to widget from its datasource
 				toolbar: [
-					{name: "create"}, 
-					{name: "save"},
-					{name: "cancel"},
-					{name: "reset", text: "Reset"}
+					{
+						text: "Add new record",
+						name: "popupAdd",
+						iconClass: "k-icon k-add"
+					}, 
+					//{name: "save"},
+					//{name: "cancel"},
+					{
+						name: "reset", 
+						text: "Reset",
+						iconClass: "k-font-icon k-i-undo-large"// kendo font icons ref. http://docs.telerik.com/kendo-ui/styles-and-layout/icons-web
+					}
 				], // display related operation button
 				editable: {// 可編輯: enable functions: create, update, destroy
 					create: true,
 					update: true,
-					destroy: true // disable the deletion functionality
+					destroy: true, // disable the deletion functionality
+					mode: "inline" // edit modes: incell, inline, and popup
 				}, 
 				// groupable: true, // 分組
 				scrollable: true,// 捲軸
@@ -491,6 +506,12 @@
 				//resizable: true // column resizing
 				// adaptive rendering ref. http://docs.telerik.com/kendo-ui/controls/data-management/grid/adaptive
 			}).data("kendoGrid");
+			
+			$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
+				mainGrid.options.editable.mode = "popup";
+				mainGrid.addRow();
+				mainGrid.options.editable.mode = "inline";
+			});
 			
 			$(".k-grid-reset")
 			.click(function(e){
@@ -531,7 +552,7 @@
 				
 				ds.read();
 				*/
-				/*方案二: 不去動到ds原來的設定，就是原來的物件還在，但直接清空他內部的陣列，或刪除物件屬性；這樣在read的時候，不會觸發兩次request；壞處是譬如page只是數字，沒辦法去改內部屬性*/
+				/*方案二: 不去動到ds原來的設定，就是原來的物件還在，但直接清空他內部的陣列，或刪除物件屬性；這樣在read的時候，不會觸發兩次request；壞處是譬如page只是數字，沒辦法去改內部屬性
 				if(sort && (sort instanceof Array)){
 					clearArray(sort);
 				}
@@ -541,8 +562,16 @@
 					delete filter["logic"];
 				}
 				ds.read();
-
-			}).find("span").addClass("k-font-icon k-i-undo-large"); // kendo font icons ref. http://docs.telerik.com/kendo-ui/styles-and-layout/icons-web
+				*/
+				/*方案三: 這種方式也不會額外觸發一次請求*/
+				ds.query({
+					filter: DEFAULT_FILTER_VALUE,
+					page: DEFAULT_PAGE_VALUE,
+					pageSize: DEFAULT_PAGESIZE_VALUE,
+					sort: DEFAULT_SORT_VALUE,
+					group: DEFAULT_GROUP_VALUE
+				});
+			});
 			
 			$(document.body).keydown(function(e){
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
@@ -600,7 +629,7 @@
 					};
 				}
 			});
-			
+			/*
 			var state = JSON.parse($.cookie(cookieKey));
 			if(state){
 				if(state.filter){
@@ -610,9 +639,18 @@
 			}else{
 				mainGrid.dataSource.read();
 			}
+			*/
+			var lastKendoData = ${sessionScope[kendoDataKey] == null ? "null" : sessionScope[kendoDataKey]};
+			console.log("lastKendoData: " + JSON.stringify(lastKendoData));
+			if(lastKendoData){
+				mainGrid.dataSource.query(lastKendoData);
+			}else{
+				mainGrid.dataSource.read();
+			}
 		});
 	</script>
 	<script type="text/javascript">
+		/*
 		$(window).unload(function(){
 			var dataSource = $(gridId).data("kendoGrid").dataSource,
 				state = kendo.stringify({
@@ -626,6 +664,7 @@
 			// TODO stored customized conds
 			$.cookie(cookieKey, state);
 		});
+		*/
 	</script>
 </body>
 </html>
