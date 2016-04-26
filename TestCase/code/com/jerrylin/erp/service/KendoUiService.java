@@ -11,6 +11,7 @@ import java.util.UnknownFormatConversionException;
 import java.util.logging.Logger;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -22,11 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
-import com.jerrylin.erp.model.SalesDetail;
 import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
@@ -40,6 +42,7 @@ import com.jerrylin.erp.sql.condition.SimpleCondition;
 import com.jerrylin.erp.sql.condition.SqlCondition.Junction;
 import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 import com.jerrylin.erp.test.BaseTest;
+import com.jerrylin.erp.util.JsonParseUtil;
 
 @Service
 @Scope("prototype")
@@ -54,6 +57,7 @@ public class KendoUiService<T, R> implements Serializable{
 	private static final String KENDO_UI_GRID_FILTER	= "filter";
 	private static final String KENDO_UI_FILTER_LOGIC_AND	= "and";
 	private static final String KENDO_UI_FILTER_LOGIC_OR	= "or";
+	private static final String KENDO_UI_DATA	= "kendoData";
 	private static final String GROUP_AS_KENDO_UI_FILTER = "GROUP_AS_KENDO_UI_FILTER";
 	
 	private Logger logger = Logger.getLogger(KendoUiService.class.getName());
@@ -102,44 +106,54 @@ public class KendoUiService<T, R> implements Serializable{
 			}
 		});
 		
-		// kendo ui filter conditions
-		Object filter = all.get(KENDO_UI_GRID_FILTER);
-		// remove kendo ui filter conditions
-		root.find(n->(n instanceof ISqlCondition && (GROUP_AS_KENDO_UI_FILTER.equals(((ISqlCondition)n).getGroupMark())))).remove();
-		if(null != filter){
-			adjustConditionByKendoUIGridFilter(filter);
-		}
+		Map<String, Object> kendoData = (Map<String, Object>)all.get(KENDO_UI_DATA);		
+		if(kendoData != null){
+			if(all.get("moduleName")!=null){
+				String moduleName = (String)all.get("moduleName");
+				System.out.println("moduleName: " + moduleName);
+				HttpSession session = (((ServletRequestAttributes)RequestContextHolder.currentRequestAttributes()).getRequest()).getSession();
+				session.setAttribute(moduleName + "KendoData", JsonParseUtil.parseToJson(kendoData));
+			}
+			
+			// kendo ui filter conditions
+			Object filter = kendoData.get(KENDO_UI_GRID_FILTER);
+			// remove kendo ui filter conditions
+			root.find(n->(n instanceof ISqlCondition && (GROUP_AS_KENDO_UI_FILTER.equals(((ISqlCondition)n).getGroupMark())))).remove();
+			if(null != filter){
+				adjustConditionByKendoUIGridFilter(filter);
+			}
+			
+			// paging configuration
+			Integer currentPage = getInteger(kendoData.get("page"));
+			Integer countPerPage = getInteger(kendoData.get("pageSize"));
+			if(null != currentPage){
+				q.setCurrentPage(currentPage);
+			}
+			if(null != countPerPage){
+				q.setCountPerPage(countPerPage);
+			}
 		
-		// paging configuration
-		Integer currentPage = getInteger(all.get(CURRENT_PAGE));
-		Integer countPerPage = getInteger(all.get(COUNT_PER_PAGE));
-		if(null != currentPage){
-			q.setCurrentPage(currentPage);
-		}
-		if(null != countPerPage){
-			q.setCountPerPage(countPerPage);
-		}
-		
-		// order by configuration
-		List<Map<String, String>> orderTypes = (List<Map<String, String>>)all.get(ORDER_TYPE);
-		if(null != orderTypes){
+			// order by configuration
+			List<Map<String, String>> orderTypes = (List<Map<String, String>>)kendoData.get("sort");
 			OrderBy orderBy = root.find(OrderBy.class);
 			if(null == orderBy){
 				orderBy = root.orderBy();
 			}
 			orderBy.getChildren().clear();
-			
-			String alias = getAlias();
-			for(int i = 0; i < orderTypes.size(); i++){
-				Map<String, String> orderType = orderTypes.get(i); // Kendo UI Grid排序回傳的資料結構 
-				String field = orderType.get("field");
-				String dir = orderType.get("dir");
-				if("asc".equals(dir)){
-					orderBy.asc(alias + "." + field);
-				}else if("desc".equals(dir)){
-					orderBy.desc(alias + "." + field);
+			if(null != orderTypes){
+				String alias = getAlias();
+				for(int i = 0; i < orderTypes.size(); i++){
+					Map<String, String> orderType = orderTypes.get(i); // Kendo UI Grid排序回傳的資料結構 
+					String field = orderType.get("field");
+					String dir = orderType.get("dir");
+					if("asc".equals(dir)){
+						orderBy.asc(alias + "." + field);
+					}else if("desc".equals(dir)){
+						orderBy.desc(alias + "." + field);
+					}
 				}
 			}
+			
 		}
 	}
 	
@@ -179,7 +193,7 @@ public class KendoUiService<T, R> implements Serializable{
 	@Transactional
 	public String deleteByIds(List<String> ids){
 		Session s = sfw.getCurrentSession();
-		String queryHql = "SELECT DISTINCT p FROM " + q.findFirstSqlTarget().getClass().getName() + " p WHERE p."+ q.getIdFieldName() +" IN (:ids)";
+		String queryHql = "SELECT DISTINCT p FROM " + q.findFirstSqlTarget().getTargetClass().getName() + " p WHERE p."+ q.getIdFieldName() +" IN (:ids)";
 		ScrollableResults results = s.createQuery(queryHql).setParameterList("ids", ids).scroll(ScrollMode.FORWARD_ONLY);
 		while(results.next()){
 			Object target = results.get()[0];
