@@ -6,6 +6,7 @@
 
 <c:set value="${pageContext.request.contextPath}" var="rootPath"/>
 <c:set value="salesdetail" var="moduleName"/>
+<c:set value="${moduleName}KendoData" var="kendoDataKey"/>
 <c:set value="${rootPath}/${moduleName}" var="moduleBaseUrl"/>
 <c:set value="${rootPath}/kendoui/professional.2016.1.226.trial" var="kendouiRoot"/>
 <c:set value="${kendouiRoot}/styles" var="kendouiStyle"/>
@@ -39,7 +40,7 @@
 	<div id="mainGrid">
 	</div>
 	<script type="text/javascript">
-		var moduleName = 'salesDetail',
+		var moduleName = "${moduleName}",
 			cookieKey = moduleName + "State",
 			gridId = "#mainGrid",
 			updateInfoWindowId = "#updateInfoWindow",
@@ -48,35 +49,20 @@
 			DEFAULT_FILTER_VALUE = null,
 			DEFAULT_SORT_VALUE = null,
 			DEFAULT_GROUP_VALUE = null,
+			DEFAULT_OPTIONS = {
+				filter: DEFAULT_FILTER_VALUE,
+				page: DEFAULT_PAGE_VALUE,
+				pageSize: DEFAULT_PAGESIZE_VALUE,
+				sort: DEFAULT_SORT_VALUE,
+				group: DEFAULT_GROUP_VALUE
+			},
+			DEFAULT_EDIT_MODE = "incell",
 			KENDO_UI_TYPE_DATE = "date",
 			KENDO_UI_TYPE_STRING = "string",
 			KENDO_UI_TYPE_BOOLEAN = "boolean",
 			KENDO_UI_TYPE_NUMBER = "number",
 			pk = "id",
-			fieldsToFilter = ["modelId", "productName"],
-			filterableMessages = {
-				filter: "篩選",
-				clear: "清除篩選",					
-				and: "而且",
-				or: "或",
-				isFalse: "不是",
-				isTrue: "是",
-				selectValue: "請選擇",
-				cancel: "清除",
-				operator: "運算符號",
-				value: "值",
-				checkAll: "全選"
-			},
-			filterableStringOperators = {
-				eq: "等於",
-				neq: "不等於",
-				isnull: "是空值",
-				isnotnull: "不是空值",
-				startswith: "開頭是",
-				contains: "包含",
-				doesnotcontain: "不包含",
-				endswith: "結尾是"
-			};		
+			fieldsToFilter = ["modelId", "productName"];		
 	</script>
 	<script type="text/javascript">
 	function removeTimezoneOffset(d){
@@ -148,7 +134,7 @@
 					filter: filter,
 					template: template,
 					// autoBind: false, // 如果加上這行，會出現e._preselect is not a function錯誤訊息，根據官方說法，這是因為autocomplete沒有支援deferred binding
-					valuePrimitive: true, // 如果不設定valuePrimitive，選了值之後，他會顯示[object Object]
+					// valuePrimitive: true, // 如果選定的值，要對應物件，valuePrimitive應設為false，否則選了值之後，他會顯示[object Object]
 					dataTextField: textField,
 					dataSource: {
 						serverFiltering: true,
@@ -165,9 +151,11 @@
 									// console.log("data: " + JSON.stringify(data));
 									var r = {
 										conds: {
-											currentPage: 1,
-											countPerPage: 20,
-											filter: changeFilterToMulti(data.filter, fieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+											kendoData: {
+												page: 1,
+												pageSize: 20,
+												filter: changeFilterToMulti(data.filter, fieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+											}
 										}
 									};
 									return JSON.stringify(r);
@@ -186,6 +174,21 @@
 						var item = e.item;
 						var text = item.text(); // text is template result
 						//console.log("item: " + JSON.stringify(item) + ", text: " + text);
+					}
+				});
+		};
+	}
+	function getDropDownEditor(settings){
+		var dataTextField = settings.dataTextField,
+			dataValueField = settings.dataValueField,
+			data = settings.data;
+		return function(container, options){
+			var select = '<input data-text-field="'+dataTextField+'" data-value-field="'+ dataValueField +'" data-bind="value:'+ options.field +'"/>';
+			$(select)
+				.appendTo(container)
+				.kendoDropDownList({
+					dataSource: {
+						data: data
 					}
 				});
 		};
@@ -212,21 +215,40 @@
 	}
 	function getDefaultColumns(fields){
 		var columns = [];
+		columns.push({
+			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置
+			width: "100px"
+		});
+		if("incell" !== DEFAULT_EDIT_MODE){
+			columns[0].command.push("edit");
+		}
 		for(var i = 0; i < fields.length; i++){
 			var field = fields[i],
 				fieldName = field[0],
-				width = field[2];
+				width = field[2],
+				editor = field[7];
 			var column = {
 					field: fieldName,
 					width: width+"px",
 					title: field[1],
 					filterable: {
 						cell: {
-							operator: field[4]
+							operator: field[4],
+							template: function(args){// 透過重新定義filter輸入欄位的template，可以阻止onchange事件每次都觸發發送request的預設行為；這樣就剩下onblur才會真的觸發查詢請求
+								var parent = '<span tabindex="-1" role="presentation" style="" class="k-widget k-autocomplete k-header k-state-default"></span>';
+								args.element
+									.css("width", "90%") // 輸入欄位隨欄位寬度變動
+									.addClass("k-input") // 讓kendo ui元件認出這是輸入欄位
+									.attr("type", "text") // 讓版型更為一致
+									.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
+							}
 						}
 					},
 					template: "<span title='#="+ fieldName +"#'>#="+ fieldName +"#</span>"
 				};
+			if(editor){
+				column["editor"] = editor;
+			}
 			if("date" === field[3]){
 				column["format"] = "{0:yyyy-MM-dd}";
 				column["parseFormats"] = "{0:yyyy-MM-dd}";
@@ -238,10 +260,6 @@
 			}
 			columns.push(column);
 		}
-		columns.push({
-			command: ["destroy"],
-			width: "100px"
-		});
 		return columns;
 	}
 	function getDefaultRemoteConfig(moduleBaseUrl, action){
@@ -257,7 +275,6 @@
 		var moduleBaseUrl = options.moduleBaseUrl,
 			modelFields = options.modelFields,
 			gridId = options.gridId,
-			gridWrapper = $(gridId).data("kendoGrid").wrapper,
 			updateInfoWindowId = options.updateInfoWindowId,
 			viewModel = options.viewModel; // not required		
 		return {
@@ -280,7 +297,7 @@
 							removeFilterDateTimezoneOffset(data.filter, modelFields);
 						}
 						var viewModelConds = viewModel ? viewModel.get("conds"): {},
-							conds = $.extend({}, viewModelConds, {currentPage: data.page, countPerPage: data.pageSize, orderType: data.sort, filter: data.filter});
+							conds = $.extend({moduleName: moduleName}, viewModelConds, {kendoData: data});
 						return JSON.stringify({conds: conds});
 					}else if(type == "create" || type == "update"){
 						var dataModels = data['models'];
@@ -340,7 +357,20 @@
 			modal: true,
 			action: [
 				"Close" // other options: "Pin", "Minimize", "Maximize"
-			]
+			],
+			animation:{
+				close:{
+					effects: "fade:out",
+					duration: 2000
+				}
+			},
+			open: function(e){
+				var win = this;
+				setTimeout(function(){
+					win.close();
+				},
+				3000);
+			}
 		});
 	}
 	</script>
@@ -348,10 +378,10 @@
 		var hidden = {hidden: true},
 			uneditable = {editable: false},
 			fields = [
-		       //0fieldName			1column title		2column width	3field type	4column filter operator	5field custom		6column custom
+		       //0fieldName			1column title		2column width	3field type	4column filter operator	5field custom		6column custom		7column editor
 				[pk,				"SalesDetail ID",	150,			"string",	"eq",					null,				hidden],
 				["memberId",		"會員 ID",			150,			"string",	"eq",					uneditable,			hidden],
-				["salePoint",		"銷售點",				100,			"string",	"eq"],
+				["salePoint",		"銷售點",				100,			"string",	"eq",					null,				null],
 				["saleStatus",		"狀態",				100,			"string",	"eq"],
 				["fbName",			"FB名稱/客人姓名",		150,			"string",	"contains"],
 				["activity",		"活動",				150,			"string",	"contains"],
@@ -376,9 +406,22 @@
 			],
 			modelFields = getDefaultModelFields(fields),
 			columns = getDefaultColumns(fields),
-			dataSource = getDefaultGridDataSource({modelFields: modelFields, moduleBaseUrl: "${moduleBaseUrl}", gridId: gridId, updateInfoWindowId: updateInfoWindowId});
+			dataSource = getDefaultGridDataSource({modelFields: modelFields, moduleBaseUrl: "${moduleBaseUrl}", gridId: gridId, updateInfoWindowId: updateInfoWindowId}),
+			toolbar = [
+			{
+				name: "create",
+			},
+			{
+				text: " 重查",
+				name: "reset",
+				iconClass: "k-font-icon k-i-undo-large"
+			}];
 		
 		modelFields["rowId"]["editable"] = false;
+		if("incell" === DEFAULT_EDIT_MODE){// in relation with batch update
+			toolbar.push({name: "save"});
+			toolbar.push({name: "cancel"});
+		}
 	</script>
 	<script type="text/javascript">
 		$(document).ready(function(){
@@ -386,8 +429,13 @@
 				columns: columns,
 				dataSource: dataSource,
 				autoBind: false,
-				toolbar: [{name: "create"},{name: "save"},{name: "cancel"},{name: "reset", text: " 清空"}],
-				editable: {create: true, update: true, destroy: true},
+				toolbar: toolbar,
+				editable: {
+					create: true, 
+					update: true, 
+					destroy: true,
+					mode: DEFAULT_EDIT_MODE
+				},
 				scrollable: true,
 				pageable: {
 					refresh: true,
@@ -407,38 +455,17 @@
 				selectable: "multiple, cell",
 				columnMenu: true
 			}).data("kendoGrid");
-			
+			/* 在新增的時候，切換編輯模式為popup
+			$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
+				mainGrid.options.editable.mode = "popup";
+				mainGrid.addRow();
+				mainGrid.options.editable.mode = DEFAULT_EDIT_MODE;
+			});
+			*/
 			$(".k-grid-reset").click(function(e){
-				var ds = mainGrid.dataSource,
-					page = ds.page(),
-					pageSize = ds.pageSize(),
-					sort = ds.sort(),
-					group = ds.group(),
-					filter = ds.filter();
-				/* 方案一: 最直接將ds還原預設值的方式，但缺點是在呼叫read的時候會觸發兩次request
-				ds.filter(DEFAULT_FILTER_VALUE);
-				ds.page(DEFAULT_PAGE_VALUE);
-				ds.pageSize(DEFAULT_PAGESIZE_VALUE);
-				ds.sort(DEFAULT_SORT_VALUE);
-				ds.group(DEFAULT_GROUP_VALUE);
-				ds.read();
-				*/
-				/*方案二: 不去動到ds原來的設定，就是原來的物件還在，但直接清空他內部的陣列，或刪除物件屬性；這樣在read的時候，不會觸發兩次request；壞處是譬如page只是數字，沒辦法去改內部屬性*/
-				function clearArray(array){
-					while(array.length){
-						array.pop();
-					}
-				}
-				if(sort && (sort instanceof Array)){
-					clearArray(sort);
-				}
-				if(filter){
-					var filters = filter["filters"];
-					clearArray(filters);
-					delete filter["logic"];
-				}
-				ds.read();
-			}).find("span").addClass("k-font-icon k-i-undo-large");
+				var ds = mainGrid.dataSource;
+				ds.query(DEFAULT_OPTIONS);
+			});
 			
 			$(document.body).keydown(function(e){
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
@@ -496,52 +523,14 @@
 					};
 				}
 			});
-			
-			var state = JSON.parse($.cookie(cookieKey));
-			if(state){
-				if(state.filter){
-					parseFilterDates(state.filter, mainGrid.dataSource.options.schema.model.fields);
-				}
-				mainGrid.dataSource.query(state);
+			var lastKendoData = ${sessionScope[kendoDataKey] == null ? "null" : sessionScope[kendoDataKey]}; // sync with session
+			if(lastKendoData){
+				mainGrid.dataSource.query(lastKendoData);
 			}else{
 				mainGrid.dataSource.read();
 			}
-			
 			initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
 		});
 	</script>
-	
-	<script type="text/javascript">
-		$(window).unload(function(){
-			var dataSource = $(gridId).data("kendoGrid").dataSource,
-				state = kendo.stringify({
-					page: dataSource.page(),
-					pageSize: dataSource.pageSize(),
-					sort: dataSource.sort(),
-					group: dataSource.group(),
-					filter: dataSource.filter()
-				});
-			// TODO stored customized conds
-			$.cookie(cookieKey, state);
-		});
-	</script>
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 </body>
 </html>
