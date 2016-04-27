@@ -28,6 +28,7 @@
 	<script type="text/javascript" src="${kendouiJs}/messages/kendo.messages.zh-TW.min.js"></script>
 
 	<style type="text/css">
+	/*keep kendo ui grid same height*/
 	.k-grid tbody tr td {
     	overflow: hidden;
     	text-overflow: ellipsis;
@@ -41,7 +42,7 @@
 	</div>
 	<script type="text/javascript">
 		var moduleName = "${moduleName}",
-			cookieKey = moduleName + "State",
+			moduleBaseUrl = "${moduleBaseUrl}",
 			gridId = "#mainGrid",
 			updateInfoWindowId = "#updateInfoWindow",
 			DEFAULT_PAGE_VALUE = 1,
@@ -61,8 +62,7 @@
 			KENDO_UI_TYPE_STRING = "string",
 			KENDO_UI_TYPE_BOOLEAN = "boolean",
 			KENDO_UI_TYPE_NUMBER = "number",
-			pk = "id",
-			fieldsToFilter = ["modelId", "productName"];		
+			pk = "id";		
 	</script>
 	<script type="text/javascript">
 	function removeTimezoneOffset(d){
@@ -126,7 +126,8 @@
 		var textField = settings.textField,
 			readUrl = settings.readUrl
 			filter = settings.filter ? settings.filter : "contains",
-			template = settings.template;
+			template = settings.template,
+			autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter;
 		return function(container, options){
 			$('<input data-text-field="'+ textField +'" data-bind="value:'+ options.field +'"/>')
 				.appendTo(container)
@@ -134,8 +135,7 @@
 					filter: filter,
 					template: template,
 					// autoBind: false, // 如果加上這行，會出現e._preselect is not a function錯誤訊息，根據官方說法，這是因為autocomplete沒有支援deferred binding
-					// valuePrimitive: true, // 如果選定的值，要對應物件，valuePrimitive應設為false，否則選了值之後，他會顯示[object Object]
-					dataTextField: textField,
+					valuePrimitive: false, // 如果選定的值，要對應物件，valuePrimitive應設為false，否則選了值之後，他會顯示[object Object]
 					dataSource: {
 						serverFiltering: true,
 						transport: {
@@ -154,7 +154,7 @@
 											kendoData: {
 												page: 1,
 												pageSize: 20,
-												filter: changeFilterToMulti(data.filter, fieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+												filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
 											}
 										}
 									};
@@ -178,7 +178,7 @@
 				});
 		};
 	}
-	function getDropDownEditor(settings){
+	function getLocalDropDownEditor(settings){
 		var dataTextField = settings.dataTextField,
 			dataValueField = settings.dataValueField,
 			data = settings.data;
@@ -214,7 +214,16 @@
 		return modelFields;
 	}
 	function getDefaultColumns(fields){
-		var columns = [];
+		var columns = [],
+			defaultTemplate = "<span title='#=({field} ? {field} : '')#'>#=({field} ? {field} : '')#</span>",
+			defaultFilterTemplate = function(args){// 透過重新定義filter輸入欄位的template，可以阻止onchange事件每次都觸發發送request的預設行為；這樣就剩下onblur才會真的觸發查詢請求
+				var parent = '<span tabindex="-1" role="presentation" style="" class="k-widget k-autocomplete k-header k-state-default"></span>';
+				args.element
+					.css("width", "90%") // 輸入欄位隨欄位寬度變動
+					.addClass("k-input") // 讓kendo ui元件認出這是輸入欄位
+					.attr("type", "text") // 讓版型更為一致
+					.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
+			};
 		columns.push({
 			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置
 			width: "100px"
@@ -234,17 +243,10 @@
 					filterable: {
 						cell: {
 							operator: field[4],
-							template: function(args){// 透過重新定義filter輸入欄位的template，可以阻止onchange事件每次都觸發發送request的預設行為；這樣就剩下onblur才會真的觸發查詢請求
-								var parent = '<span tabindex="-1" role="presentation" style="" class="k-widget k-autocomplete k-header k-state-default"></span>';
-								args.element
-									.css("width", "90%") // 輸入欄位隨欄位寬度變動
-									.addClass("k-input") // 讓kendo ui元件認出這是輸入欄位
-									.attr("type", "text") // 讓版型更為一致
-									.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
-							}
+							template: defaultFilterTemplate
 						}
 					},
-					template: "<span title='#="+ fieldName +"#'>#="+ fieldName +"#</span>"
+					template: defaultTemplate.replace(/{field}/g, fieldName)
 				};
 			if(editor){
 				column["editor"] = editor;
@@ -262,7 +264,7 @@
 		}
 		return columns;
 	}
-	function getDefaultRemoteConfig(moduleBaseUrl, action){
+	function getDefaultRemoteConfig(action){
 		return {
 			url: (moduleBaseUrl + "/" + action + ".json"),
 			type: "POST",
@@ -272,10 +274,7 @@
 		};
 	}
 	function getDefaultGridDataSource(options){
-		var moduleBaseUrl = options.moduleBaseUrl,
-			modelFields = options.modelFields,
-			gridId = options.gridId,
-			updateInfoWindowId = options.updateInfoWindowId,
+		var modelFields = options.modelFields,
 			viewModel = options.viewModel; // not required		
 		return {
 			batch: true,
@@ -285,10 +284,10 @@
 			serverSorting: true,
 			serverFiltering: true,
 			transport: {
-				create: getDefaultRemoteConfig(moduleBaseUrl, "batchSaveOrMerge"),
-				read: getDefaultRemoteConfig(moduleBaseUrl, "queryConditional"),
-				update: getDefaultRemoteConfig(moduleBaseUrl, "batchSaveOrMerge"),
-				destroy: getDefaultRemoteConfig(moduleBaseUrl, "deleteByIds"),
+				create: getDefaultRemoteConfig("batchSaveOrMerge"),
+				read: getDefaultRemoteConfig("queryConditional"),
+				update: getDefaultRemoteConfig("batchSaveOrMerge"),
+				destroy: getDefaultRemoteConfig("deleteByIds"),
 				parameterMap: function(data, type){
 					console.log("parameterMap type: " + type);
 					console.log("parameterMap data: " + JSON.stringify(data));
@@ -377,10 +376,20 @@
 	<script type="text/javascript">
 		var hidden = {hidden: true},
 			uneditable = {editable: false},
+			memberField = {type: null},
+			memberColumn = {template: "<span title='#=(member ? member.name : '')#'>#=(member ? member.name : '')#</span>"},
+			memberEditor = getAutoCompleteEditor({
+				textField: "name",
+				valueField: "id",
+				readUrl: moduleBaseUrl + "/queryMemberAutocomplete.json", 
+				filter: "contains", 
+				template: "<span>#: name # | #: nameEng #</span>",
+				autocompleteFieldsToFilter: ["name", "nameEng", "idNo"]
+			}),
 			fields = [
 		       //0fieldName			1column title		2column width	3field type	4column filter operator	5field custom		6column custom		7column editor
 				[pk,				"SalesDetail ID",	150,			"string",	"eq",					null,				hidden],
-				["memberId",		"會員 ID",			150,			"string",	"eq",					uneditable,			hidden],
+				["member",			"會員 ID",			150,			"string",	"eq",					memberField,		memberColumn,		memberEditor],
 				["salePoint",		"銷售點",				100,			"string",	"eq",					null,				null],
 				["saleStatus",		"狀態",				100,			"string",	"eq"],
 				["fbName",			"FB名稱/客人姓名",		150,			"string",	"contains"],
@@ -406,7 +415,7 @@
 			],
 			modelFields = getDefaultModelFields(fields),
 			columns = getDefaultColumns(fields),
-			dataSource = getDefaultGridDataSource({modelFields: modelFields, moduleBaseUrl: "${moduleBaseUrl}", gridId: gridId, updateInfoWindowId: updateInfoWindowId}),
+			dataSource = getDefaultGridDataSource({modelFields: modelFields}),
 			toolbar = [
 			{
 				name: "create",
