@@ -6,6 +6,8 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -19,7 +21,7 @@ public class SalesDetail {
 	public static final String SALE_POINT_ESLITE_DUNNAN = "敦南誠品";
 	
 	private String id;
-	private String memberId;
+	private Member member;
 	
 	private String salePoint;
 	private String saleStatus;
@@ -56,12 +58,13 @@ public class SalesDetail {
 	public void setId(String id) {
 		this.id = id;
 	}
-	@Column(name="memberId")
-	public String getMemberId() {
-		return memberId;
+	@ManyToOne(targetEntity=Member.class)
+	@JoinColumn(name="memberId")
+	public Member getMember() {
+		return member;
 	}
-	public void setMemberId(String memberId) {
-		this.memberId = memberId;
+	public void setMember(Member member) {
+		this.member = member;
 	}
 	@Column(name="salePoint")
 	public String getSalePoint() {
