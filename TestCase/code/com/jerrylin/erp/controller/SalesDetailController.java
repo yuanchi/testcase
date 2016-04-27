@@ -1,6 +1,8 @@
 package com.jerrylin.erp.controller;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -17,7 +19,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
+import com.jerrylin.erp.jackson.mixin.MemberIgnoreDetail;
+import com.jerrylin.erp.model.Member;
 import com.jerrylin.erp.model.SalesDetail;
+import com.jerrylin.erp.service.KendoUiAutocompleteService;
 import com.jerrylin.erp.service.KendoUiService;
 import com.jerrylin.erp.util.JsonParseUtil;
 
@@ -25,8 +30,16 @@ import com.jerrylin.erp.util.JsonParseUtil;
 @RequestMapping("/salesdetail")
 @Scope("session")
 public class SalesDetailController {
+	private static final Map<String, String> filterFieldConverter;
+	static{
+		filterFieldConverter = new LinkedHashMap<>();
+		filterFieldConverter.put("member", "member.name");
+	}
+	
 	@Autowired
 	private KendoUiService<SalesDetail, SalesDetail> kendoUiGridService;
+	@Autowired
+	private KendoUiAutocompleteService kendoUiAutocompleteService;	
 	@Autowired
 	private SessionFactoryWrapper sfw;
 	
@@ -37,7 +50,7 @@ public class SalesDetailController {
 				.target("p").getRoot()
 			.from()
 				.target(SalesDetail.class, "p");
-			
+		kendoUiGridService.setFilterFieldConverter(filterFieldConverter);
 	}
 	
 	public String list(HttpServletRequest request, Model model){
@@ -48,7 +61,7 @@ public class SalesDetailController {
 	}
 	
 	private String conditionConfigToJsonStr(ConditionConfig<SalesDetail> cc){
-		String json = JsonParseUtil.parseToJson(cc);
+		String json = JsonParseUtil.parseToJson(cc, Member.class, MemberIgnoreDetail.class);
 		return json;
 	}
 	
@@ -59,6 +72,15 @@ public class SalesDetailController {
 	public @ResponseBody String queryConditional(@RequestBody ConditionConfig<SalesDetail> conditionConfig){
 		ConditionConfig<SalesDetail> cc = kendoUiGridService.executeQueryPageable(conditionConfig);
 		String result = conditionConfigToJsonStr(cc);
+		return result;
+	}
+	
+	@RequestMapping(value="/queryMemberAutocomplete",
+			method=RequestMethod.POST,
+			produces={"application/xml", "application/json"},
+			headers="Accept=*/*")
+	public @ResponseBody String queryMemberAutocomplete(@RequestBody ConditionConfig<Member> conditionConfig){
+		String result = kendoUiAutocompleteService.queryMembers(conditionConfig);
 		return result;
 	}
 	
