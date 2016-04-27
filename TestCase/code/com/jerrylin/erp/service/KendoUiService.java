@@ -3,8 +3,11 @@ package com.jerrylin.erp.service;
 import static com.jerrylin.erp.service.TimeService.DF_yyyyMMdd_DASHED;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UnknownFormatConversionException;
@@ -64,14 +67,16 @@ public class KendoUiService<T, R> implements Serializable{
 	
 	@Autowired
 	private ExecutableQuery<T> q;
-	@Resource(name="classFieldType")
-	private Map<Class<?>, Map<String, Class<?>>> classFieldType;
 	@Autowired
 	private SessionFactoryWrapper sfw;
+	@Autowired
+	private ModelPropertyService modelPropertyService;
 	
 	private int filterCount;
 	private String alias;
 	private SqlTarget target;
+	private Map<String, String> filterFieldConverter = Collections.emptyMap(); // 將前端回傳的field，轉成適當或預期的名字，讓hql可以正常執行；譬如member->member.name
+	private Map<String, Class<?>> customDeclaredFieldTypes = Collections.emptyMap(); // 自定義field的型別，一般來說應該不需要
 	
 	public ConditionConfig<T> copyToConditionConfig(){
 		ConditionConfig<T> cc = new ConditionConfig<T>();
@@ -110,7 +115,6 @@ public class KendoUiService<T, R> implements Serializable{
 		if(kendoData != null){
 			if(all.get("moduleName")!=null){
 				String moduleName = (String)all.get("moduleName");
-				System.out.println("moduleName: " + moduleName);
 				HttpSession session = (((ServletRequestAttributes)RequestContextHolder.currentRequestAttributes()).getRequest()).getSession();
 				session.setAttribute(moduleName + "KendoData", JsonParseUtil.parseToJson(kendoData));
 			}
@@ -145,6 +149,7 @@ public class KendoUiService<T, R> implements Serializable{
 				for(int i = 0; i < orderTypes.size(); i++){
 					Map<String, String> orderType = orderTypes.get(i); // Kendo UI Grid排序回傳的資料結構 
 					String field = orderType.get("field");
+					field = convertFilterField(field);
 					String dir = orderType.get("dir");
 					if("asc".equals(dir)){
 						orderBy.asc(alias + "." + field);
@@ -252,6 +257,7 @@ public class KendoUiService<T, R> implements Serializable{
 	private void addFilterCondition(Map<String, Object> f, CollectConds conds, String logic){
 		String operator = (String)f.get("operator");
 		String field = (String)f.get("field");
+		field = convertFilterField(field);
 		Object value = f.get("value");
 		
 		filterCount++;
@@ -351,6 +357,18 @@ public class KendoUiService<T, R> implements Serializable{
 		}
 	}
 	
+	/**
+	 * 必要時轉換Kendo UI所提供的fieldName，如果沒有轉換就輸出原來的值
+	 * @param fieldName
+	 * @return
+	 */
+	private String convertFilterField(String fieldName){
+		if(filterFieldConverter.containsKey(fieldName)){
+			return filterFieldConverter.get(fieldName);
+		}
+		return fieldName;
+	}
+	
 	private Integer getInteger(Object val){
 		if(val == null){
 			return null;
@@ -386,6 +404,14 @@ public class KendoUiService<T, R> implements Serializable{
 		return (SqlRoot)getSqlRoot();
 	}
 	
+	public void setFilterFieldConverter(Map<String, String> filterFieldConverter){
+		this.filterFieldConverter = filterFieldConverter;
+	}
+	
+	public void setCustomDeclaredFieldTypes(Map<String, Class<?>> customDeclaredFieldTypes){
+		this.customDeclaredFieldTypes = customDeclaredFieldTypes;
+	}
+	
 	private void addValToSimpleCondition(SimpleCondition s, Object obj){
 		if(obj == null){
 			return;
@@ -397,9 +423,10 @@ public class KendoUiService<T, R> implements Serializable{
 	}
 	
 	private Object convertValueByType(String field, Object obj){
-		Class<?> targetClass = getFirstSqlTarget().getTargetClass();
-		Map<String, Class<?>> types = classFieldType.get(targetClass);
-		Class<?> type = types.get(field);
+		Class<?> type = this.customDeclaredFieldTypes.get(field);
+		if(type == null){
+			type = this.modelPropertyService.getModelPropertyTypes().get(getFirstSqlTarget().getTargetClass()).get(field);
+		}
 		
 		Object casted = transformByType(type, obj);
 		return casted;
@@ -524,19 +551,7 @@ public class KendoUiService<T, R> implements Serializable{
 		System.out.println(transformByType(Date.class, "2016-03-01T16:00:00.000Z"));
 	}
 	
-	private static void testClassFieldType(){
-		BaseTest.executeApplicationContext(acac->{
-			KendoUiService<Member, Member> ser = acac.getBean(KendoUiService.class);
-			ser.classFieldType.forEach((k,v)->{
-				System.out.println(k+":"+v);
-				v.forEach((key, val)->{
-					System.out.println(key +":"+ val);
-				});
-			});
-		});
-	}
-	
 	public static void main(String[]args){
-		testClassFieldType();
+
 	}
 }
