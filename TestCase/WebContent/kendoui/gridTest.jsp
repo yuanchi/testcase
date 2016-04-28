@@ -35,6 +35,13 @@
 	<!-- ref. http://docs.telerik.com/kendo-ui/intro/installation/what-you-need -->
 	<!-- Kendo UI combined JavaScript -->
 	<script type="text/javascript" src="${kendouiJs}/kendo.web.min.js"></script>
+	<style type="text/css">
+		.k-grid tbody tr td {
+    		overflow: hidden;
+    		text-overflow: ellipsis;
+    		white-space: nowrap;
+		}
+	</style>
 </head>
 <body>
 	<div class="container">
@@ -479,7 +486,7 @@
 					create: true,
 					update: true,
 					destroy: true, // disable the deletion functionality
-					mode: "inline" // edit modes: incell, inline, and popup
+					mode: "incell" // edit modes: incell, inline, and popup
 				}, 
 				// groupable: true, // 分組
 				scrollable: true,// 捲軸
