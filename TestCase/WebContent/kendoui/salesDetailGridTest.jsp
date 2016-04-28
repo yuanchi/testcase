@@ -457,8 +457,8 @@
 							var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
 								var div = td.find("div");
 								if(div.length > 0){
-									div.detach().appendTo(td); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
 									clearInterval(timer);
+									div.detach().appendTo(td); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
 								}
 							},200);
 							
