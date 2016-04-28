@@ -28,6 +28,18 @@
 	<script type="text/javascript" src="${kendouiJs}/messages/kendo.messages.zh-TW.min.js"></script>
 
 	<style type="text/css">
+	/*
+	.k-tooltip-validation {
+		margin-top: 0 !important;
+		display: block;
+		position: static;
+		padding: 0;
+	} 
+
+	.k-callout {
+		display: none;
+	}
+	*/
 	/*keep kendo ui grid same height*/
 	.k-grid tbody tr td {
     	overflow: hidden;
@@ -122,14 +134,23 @@
 		}
 		return filterObj;
 	}
+	function getModelDataItem(ele){
+		row = ele.closest("tr"),
+		grid = row.closest("[data-role=grid]").data("kendoGrid"),
+		dataItem = grid.dataItem(row);
+		return dataItem;
+	}
 	function getAutoCompleteEditor(settings){
 		var textField = settings.textField,
 			readUrl = settings.readUrl
 			filter = settings.filter ? settings.filter : "contains",
 			template = settings.template,
-			autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter;
+			autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
+			errorMsgFieldName = settings.errorMsgFieldName;
 		return function(container, options){
-			$('<input data-text-field="'+ textField +'" data-bind="value:'+ options.field +'"/>')
+			var model = options.model,
+				field = options.field;
+			$('<input data-text-field="'+ textField +'" data-bind="value:'+ field +'"/>')
 				.appendTo(container)
 				.kendoAutoComplete({
 					filter: filter,
@@ -172,8 +193,14 @@
 					},
 					select: function(e){
 						var item = e.item;
+						//console.log("select item:" + JSON.stringify(item));
 						var text = item.text(); // text is template result
 						//console.log("item: " + JSON.stringify(item) + ", text: " + text);
+						var dataItem = this.dataItem(e.item.index());
+						model.set(field, dataItem); // ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
+					},
+					change: function(e){
+						//console.log("change val: " + this.value() + ", first dataItem: " + this.dataItem(0));
 					}
 				});
 		};
@@ -331,7 +358,7 @@
 				}
 			},
 			error: function(e){
-				
+				alert("server錯誤訊息: " + JSON.stringify(e));
 			},
 			requestStart: function(e){
 				kendo.ui.progress($(gridId).data("kendoGrid").wrapper, true);
@@ -376,7 +403,30 @@
 	<script type="text/javascript">
 		var hidden = {hidden: true},
 			uneditable = {editable: false},
-			memberField = {type: null},
+			memberFieldName = "member",
+			memberField = {
+				type: null,
+				validation: {
+					isEffectiveMember: function(input){
+						var fieldName = memberFieldName,
+							row = input.closest("tr"),
+							grid = row.closest("[data-role=grid]").data("kendoGrid"),
+							dataItem = grid.dataItem(row),
+							val = dataItem.get(fieldName);
+						console.log("validate...dataItem val: " + val + ", input val: " + input.val());
+						
+						if(!input.val()){
+							return true;
+						}
+						if((input.val() && !val) || (val && !val.id)){
+							input.attr("data-isEffectiveMember-msg", "請選擇有效會員資料");
+							input.siblings("div").detach().appendTo(input.closest("td")); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+							return false;
+						}
+						return true;
+					}
+				}
+			},
 			memberColumn = {template: "<span title='#=(member ? member.name : '')#'>#=(member ? member.name : '')#</span>"},
 			memberEditor = getAutoCompleteEditor({
 				textField: "name",
@@ -384,12 +434,13 @@
 				readUrl: moduleBaseUrl + "/queryMemberAutocomplete.json", 
 				filter: "contains", 
 				template: "<span>#: name # | #: nameEng #</span>",
-				autocompleteFieldsToFilter: ["name", "nameEng", "idNo"]
+				autocompleteFieldsToFilter: ["name", "nameEng", "idNo"],
+				errorMsgFieldName: memberFieldName
 			}),
 			fields = [
 		       //0fieldName			1column title		2column width	3field type	4column filter operator	5field custom		6column custom		7column editor
 				[pk,				"SalesDetail ID",	150,			"string",	"eq",					null,				hidden],
-				["member",			"會員 ID",			150,			"string",	"eq",					memberField,		memberColumn,		memberEditor],
+				["member",			"會員姓名",			150,			"string",	"contains",				memberField,		memberColumn,		memberEditor],
 				["salePoint",		"銷售點",				100,			"string",	"eq",					null,				null],
 				["saleStatus",		"狀態",				100,			"string",	"eq"],
 				["fbName",			"FB名稱/客人姓名",		150,			"string",	"contains"],
@@ -431,6 +482,13 @@
 			toolbar.push({name: "save"});
 			toolbar.push({name: "cancel"});
 		}
+		/*
+		dataSource.change = function(e){
+			var field = e.field,
+				items = e.items;
+			//console.log("field: " + field + ", items: " + JSON.stringify(items));
+			console.log("view: " + JSON.stringify(this.view()));
+		};*/
 	</script>
 	<script type="text/javascript">
 		$(document).ready(function(){
@@ -462,7 +520,21 @@
 					extra: true
 				},
 				selectable: "multiple, cell",
-				columnMenu: true
+				columnMenu: true,
+				// edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
+				edit: function(e){
+					var container = e.container, // if edit mode is incell, the container is table cell
+						inputVal = container.find("input").val(),
+						dataItem = getModelDataItem(container);
+					if((inputVal && !dataItem.member) || (dataItem.member && !dataItem.member.id)){
+						//e.preventDefault();
+						var grid = $(gridId).data("kendoGrid");
+						container.find("input").val(null);
+						dataItem.member = null;
+					}
+					console.log("editing...inputVal: " + inputVal + ", dataItem: " + JSON.stringify(dataItem));
+					
+				}
 			}).data("kendoGrid");
 			/* 在新增的時候，切換編輯模式為popup
 			$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
