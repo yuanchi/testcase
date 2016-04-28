@@ -40,10 +40,23 @@
 		display: none;
 	}
 	*/
-	/*keep kendo ui grid same height*/
+	/*
+		keep kendo ui grid same height
+		ref. http://jsfiddle.net/GxSpN/41/
+	*/
 	.k-grid tbody tr td {
     	overflow: hidden;
     	text-overflow: ellipsis;
+    	white-space: nowrap;
+	}
+	/*keep kendo autocomplete width same as text content*/
+	.k-autocomplete {
+    	width: auto;
+	}
+	.k-list-container {
+    	width: auto !important;
+	}
+	.k-list-container .k-list .k-item {
     	white-space: nowrap;
 	}
 	</style>
@@ -140,12 +153,21 @@
 		dataItem = grid.dataItem(row);
 		return dataItem;
 	}
+	function getAutoCompleteDefaultTemplate(fields){
+		var items = 
+			$.map(fields, function(element, idx){
+				return "#:" + element + "#";
+			});
+		var result = items.join("|");
+		result = ("<span>" + result + "</span>");
+		return result;
+	}
 	function getAutoCompleteEditor(settings){
 		var textField = settings.textField,
 			readUrl = settings.readUrl
 			filter = settings.filter ? settings.filter : "contains",
-			template = settings.template,
 			autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
+			template = settings.template ? settings.template : getAutoCompleteDefaultTemplate(autocompleteFieldsToFilter),
 			errorMsgFieldName = settings.errorMsgFieldName;
 		return function(container, options){
 			var model = options.model,
@@ -153,12 +175,24 @@
 			$('<input data-text-field="'+ textField +'" data-bind="value:'+ field +'"/>')
 				.appendTo(container)
 				.kendoAutoComplete({
+					minLength: 1,
 					filter: filter,
 					template: template,
 					// autoBind: false, // 如果加上這行，會出現e._preselect is not a function錯誤訊息，根據官方說法，這是因為autocomplete沒有支援deferred binding
 					valuePrimitive: false, // 如果選定的值，要對應物件，valuePrimitive應設為false，否則選了值之後，他會顯示[object Object]
+					/*
+					height: 520,
+					virtual: {
+						itemHeight: 26,
+						valueMapper: function(options){
+							console.log("valueMapper options.value: " + JSON.stringify(options.value));
+							return options.value;
+						}
+					},*/
 					dataSource: {
+						serverPaging: true,
 						serverFiltering: true,
+						pageSize: DEFAULT_PAGESIZE_VALUE,
 						transport: {
 							read:{
 								url: readUrl,
@@ -174,7 +208,7 @@
 										conds: {
 											kendoData: {
 												page: 1,
-												pageSize: 20,
+												pageSize: data.pageSize? data.pageSize : DEFAULT_PAGESIZE_VALUE,
 												filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
 											}
 										}
@@ -197,10 +231,9 @@
 						var text = item.text(); // text is template result
 						//console.log("item: " + JSON.stringify(item) + ", text: " + text);
 						var dataItem = this.dataItem(e.item.index());
-						model.set(field, dataItem); // ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
-					},
-					change: function(e){
-						//console.log("change val: " + this.value() + ", first dataItem: " + this.dataItem(0));
+						// ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
+						// 這裡要自行綁定model值，因為如果grid該欄位有設定檢核，而且有檢核未過的記錄，第二次以後在autocomplete選到的值都無法正常加到model上
+						model.set(field, dataItem); 
 					}
 				});
 		};
@@ -418,9 +451,17 @@
 						if(!input.val()){
 							return true;
 						}
-						if((input.val() && !val) || (val && !val.id)){
+						if(val && !val.id){
 							input.attr("data-isEffectiveMember-msg", "請選擇有效會員資料");
-							input.siblings("div").detach().appendTo(input.closest("td")); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+							var td = input.closest("td");
+							var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
+								var div = td.find("div");
+								if(div.length > 0){
+									div.detach().appendTo(td); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+									clearInterval(timer);
+								}
+							},200);
+							
 							return false;
 						}
 						return true;
@@ -433,7 +474,7 @@
 				valueField: "id",
 				readUrl: moduleBaseUrl + "/queryMemberAutocomplete.json", 
 				filter: "contains", 
-				template: "<span>#: name # | #: nameEng #</span>",
+				//template: "<span>#: name # | #: nameEng #</span>",
 				autocompleteFieldsToFilter: ["name", "nameEng", "idNo"],
 				errorMsgFieldName: memberFieldName
 			}),
@@ -520,8 +561,9 @@
 					extra: true
 				},
 				selectable: "multiple, cell",
-				columnMenu: true,
+				columnMenu: true
 				// edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
+				/*
 				edit: function(e){
 					var container = e.container, // if edit mode is incell, the container is table cell
 						inputVal = container.find("input").val(),
@@ -534,7 +576,7 @@
 					}
 					console.log("editing...inputVal: " + inputVal + ", dataItem: " + JSON.stringify(dataItem));
 					
-				}
+				}*/
 			}).data("kendoGrid");
 			/* 在新增的時候，切換編輯模式為popup
 			$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
