@@ -495,13 +495,20 @@ public class KendoUiService<T, R> implements Serializable{
 		}
 		return i;
 	}
-	
+	/**
+	 * ex: name->Name, member.name->MemberName
+	 * @param input
+	 * @return
+	 */
 	private static String firstLetterToUpperCase(String input){
-		String first = input.substring(0, 1);
-		String firstToUpper = first.toUpperCase();
-		String firstRemoved = StringUtils.removeStart(input, first);
-		String result = firstToUpper + firstRemoved;
-		
+		String result = "";
+		String[]splits = input.split("\\.");
+		for(String split : splits){
+			String first = split.substring(0, 1);
+			String firstToUpper = first.toUpperCase();
+			String firstRemoved = StringUtils.removeStart(split, first);
+			result += (firstToUpper + firstRemoved);
+		}		
 		return result;
 	}
 	
@@ -543,15 +550,18 @@ public class KendoUiService<T, R> implements Serializable{
 	
 	private static void testFirstLetterToUpperCase(){
 		String t1 = "name";
-		String result = firstLetterToUpperCase(t1);
-		System.out.println(result);
+		String result1 = firstLetterToUpperCase(t1);
+		System.out.println(result1);
+		String t2 = "member.name";
+		String result2 = firstLetterToUpperCase(t2);
+		System.out.println(result2);
 	}
 	
 	private static void testTransformByType(){
 		System.out.println(transformByType(Date.class, "2016-03-01T16:00:00.000Z"));
 	}
-	
-	public static void main(String[]args){
 
+	public static void main(String[]args){
+		testFirstLetterToUpperCase();
 	}
 }
