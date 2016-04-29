@@ -3,17 +3,15 @@ package com.jerrylin.erp.service;
 import static com.jerrylin.erp.service.TimeService.DF_yyyyMMdd_DASHED;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UnknownFormatConversionException;
 import java.util.logging.Logger;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.beanutils.PropertyUtils;
@@ -32,6 +30,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.SalesDetail;
 import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
@@ -196,18 +195,21 @@ public class KendoUiService<T, R> implements Serializable{
 	}
 	
 	@Transactional
-	public String deleteByIds(List<String> ids){
+	public List<?> deleteByIds(List<String> ids){
 		Session s = sfw.getCurrentSession();
 		String queryHql = "SELECT DISTINCT p FROM " + q.findFirstSqlTarget().getTargetClass().getName() + " p WHERE p."+ q.getIdFieldName() +" IN (:ids)";
 		ScrollableResults results = s.createQuery(queryHql).setParameterList("ids", ids).scroll(ScrollMode.FORWARD_ONLY);
+		List<Object> saved = new ArrayList<>();
 		while(results.next()){
 			Object target = results.get()[0];
+			s.evict(target);
+			saved.add(target);
 			s.delete(target);
 		}
 		s.flush();
 		s.clear();
 		
-		return "";
+		return saved;
 	}
 	
 	private void adjustConditionByKendoUIGridFilter(Object filterObj){		
