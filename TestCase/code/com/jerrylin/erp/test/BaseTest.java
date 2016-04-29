@@ -1,11 +1,15 @@
 package com.jerrylin.erp.test;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
-
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
+import org.hibernate.Session;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
+import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.initialize.config.RootConfig;
@@ -72,10 +76,37 @@ public class BaseTest {
 			System.out.println(s.genSql());
 				
 		});
-	}	
+	}
+	private static void testListToStr(){
+		List<String> ids = new ArrayList<>();
+		ids.add("1");
+		ids.add("2");
+		System.out.println(ids.toString());
+	}
+	private static void testSaveBeforeDelete(){
+		executeApplicationContext(acac->{
+			SessionFactoryWrapper sfw = acac.getBean(SessionFactoryWrapper.class);
+			SalesDetail d = sfw.executeTxReturnResults(s->{
+				ScrollableResults results = s.createQuery("SELECT p FROM " + SalesDetail.class.getName() + " p WHERE p.id = :id").setString("id", "20160429-120527627-XDffi").scroll(ScrollMode.FORWARD_ONLY);
+				List<SalesDetail> saved = new ArrayList<>();
+				while(results.next()){
+					Object target = results.get()[0];
+					s.evict(target);
+					saved.add((SalesDetail)target);
+					s.delete(target);
+				}
+				s.flush();
+				s.clear();
+				return saved.get(0);
+			});
+			System.out.println(d.getId());
+		});
+	}
 	public static void main(String[]args){
 //		testSalesDetailToJson();
-		testSalesDetailManyToOne();
+//		testSalesDetailManyToOne();
+//		testListToStr();
+		testSaveBeforeDelete();
 	}
 	
 	
