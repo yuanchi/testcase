@@ -1,5 +1,6 @@
 package com.jerrylin.erp.controller;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class SalesDetailController {
 		return listPath;
 	}
 	
-	private String conditionConfigToJsonStr(ConditionConfig<SalesDetail> cc){
+	private String conditionConfigToJsonStr(Object cc){
 		String json = JsonParseUtil.parseToJson(cc, Member.class, MemberIgnoreDetail.class);
 		return json;
 	}
@@ -89,8 +90,7 @@ public class SalesDetailController {
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody List<SalesDetail> batchSaveOrMerge(@RequestBody List<SalesDetail> salesDetails){
-		kendoUiGridService.batchSaveOrMerge(salesDetails);
-		return salesDetails;
+		return kendoUiGridService.batchSaveOrMerge(salesDetails);
 	}
 	
 	@RequestMapping(value="/deleteByIds",
@@ -98,8 +98,8 @@ public class SalesDetailController {
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String deleteByIds(@RequestBody List<String> ids){
-		kendoUiGridService.deleteByIds(ids);
-		return "";
+		List<?> deletedItems = kendoUiGridService.deleteByIds(ids);
+		return conditionConfigToJsonStr(deletedItems);
 	}
 	
 }
