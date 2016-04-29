@@ -106,20 +106,11 @@ public class MemberController implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String deleteByIds(@RequestBody List<String> ids){
-		sfw.executeTransaction(s->{
-			String queryHql = "SELECT DISTINCT p FROM " + Member.class.getName() + " p WHERE p.id IN (:ids)";
-			ScrollableResults results = s.createQuery(queryHql).setParameterList("ids", ids).scroll(ScrollMode.FORWARD_ONLY);
-			while(results.next()){
-				Object target = results.get()[0];
-				s.delete(target);
-			}
-			s.flush();
-			s.clear();
-		});
-		return "";
+		List<?> deletedItems = kendoUiGridService.deleteByIds(ids);
+		return conditionConfigToJsonStr(deletedItems);
 	}
 	
-	private String conditionConfigToJsonStr(ConditionConfig<Member> cc){
+	private String conditionConfigToJsonStr(Object cc){
 		String json = JsonParseUtil.parseToJson(cc, Member.class, MemberIgnoreDetail.class);
 		return json;
 	}
