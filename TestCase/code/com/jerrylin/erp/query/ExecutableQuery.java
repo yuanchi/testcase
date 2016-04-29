@@ -126,7 +126,7 @@ public class ExecutableQuery<T> implements Serializable{
 		if(StringUtils.isBlank(orderSql)){
 			orderSql = "ORDER BY " + identifier + defaultDirection;
 		}
-		if(!orderSql.contains(identifier)){
+		if(!orderSql.contains(identifier + " ")){
 			orderSql += ", " + identifier + defaultDirection;
 		}
 		
