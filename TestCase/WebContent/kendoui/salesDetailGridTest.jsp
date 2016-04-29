@@ -42,14 +42,16 @@
 	*/
 	/*
 		keep kendo ui grid same height
-		ref. http://jsfiddle.net/GxSpN/41/
 	*/
 	.k-grid tbody tr td {
     	overflow: hidden;
     	text-overflow: ellipsis;
     	white-space: nowrap;
 	}
-	/*keep kendo autocomplete width same as text content*/
+	/*
+		keep kendo autocomplete width same as text content
+		ref. http://jsfiddle.net/GxSpN/41/
+	*/
 	.k-autocomplete {
     	width: auto;
 	}
@@ -168,7 +170,8 @@
 			filter = settings.filter ? settings.filter : "contains",
 			autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
 			template = settings.template ? settings.template : getAutoCompleteDefaultTemplate(autocompleteFieldsToFilter),
-			errorMsgFieldName = settings.errorMsgFieldName;
+			errorMsgFieldName = settings.errorMsgFieldName,
+			selectExtraAction = settings.selectExtraAction;
 		return function(container, options){
 			var model = options.model,
 				field = options.field;
@@ -233,7 +236,10 @@
 						var dataItem = this.dataItem(e.item.index());
 						// ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
 						// 這裡要自行綁定model值，因為如果grid該欄位有設定檢核，而且有檢核未過的記錄，第二次以後在autocomplete選到的值都無法正常加到model上
-						model.set(field, dataItem); 
+						model.set(field, dataItem);
+						if(selectExtraAction && (typeof selectExtraAction === "function")){// 如果有更動其他欄位，會用原來的檢核
+							selectExtraAction(model, dataItem);
+						}
 					}
 				});
 		};
@@ -284,13 +290,6 @@
 					.attr("type", "text") // 讓版型更為一致
 					.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
 			};
-		columns.push({
-			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置
-			width: "100px"
-		});
-		if("incell" !== DEFAULT_EDIT_MODE){
-			columns[0].command.push("edit");
-		}
 		for(var i = 0; i < fields.length; i++){
 			var field = fields[i],
 				fieldName = field[0],
@@ -322,6 +321,13 @@
 			}
 			columns.push(column);
 		}
+		columns.push({
+			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置；在某些狀況下，
+			width: "100px"
+		});
+		if("incell" !== DEFAULT_EDIT_MODE){
+			columns[0].command.push("edit");
+		}		
 		return columns;
 	}
 	function getDefaultRemoteConfig(action){
@@ -350,7 +356,7 @@
 				destroy: getDefaultRemoteConfig("deleteByIds"),
 				parameterMap: function(data, type){
 					console.log("parameterMap type: " + type);
-					console.log("parameterMap data: " + JSON.stringify(data));
+					//console.log("parameterMap data: " + JSON.stringify(data));
 					if(type === "read"){
 						if(data.filter && data.filter.filters){
 							removeFilterDateTimezoneOffset(data.filter, modelFields);
@@ -391,18 +397,23 @@
 				}
 			},
 			error: function(e){
-				alert("server錯誤訊息: " + JSON.stringify(e));
+				var status = (e && e.xhr && e.xhr.status) ? e.xhr.status : null;
+				if(status != 200){
+					alert("server錯誤訊息: " + JSON.stringify(e));	
+				}
 			},
 			requestStart: function(e){
 				kendo.ui.progress($(gridId).data("kendoGrid").wrapper, true);
 			},
 			requestEnd: function(e){
 				// e.response comes from dataSource.schema.data, that is not really returned response
-				var type = e.type;
+				var type = e.type,
+					grid = $(gridId).data("kendoGrid");
+				/*
 				if("update" === type){
 					$(updateInfoWindowId).data("kendoWindow").content("<h3 style='color:red;'>更新成功</h3>").center().open();
-				}
-				kendo.ui.progress($(gridId).data("kendoGrid").wrapper, false);
+				}*/
+				kendo.ui.progress(grid.wrapper, false);
 			}
 		};
 	}
@@ -441,9 +452,12 @@
 				type: null,
 				validation: {
 					isEffectiveMember: function(input){
+						if(input.length == 0){ // 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
+							return true;
+						}
 						var fieldName = memberFieldName,
 							row = input.closest("tr"),
-							grid = row.closest("[data-role=grid]").data("kendoGrid"),
+							grid = row.closest("[data-role='grid']").data("kendoGrid"),
 							dataItem = grid.dataItem(row),
 							val = dataItem.get(fieldName);
 						console.log("validate...dataItem val: " + val + ", input val: " + input.val());
@@ -476,7 +490,10 @@
 				filter: "contains", 
 				//template: "<span>#: name # | #: nameEng #</span>",
 				autocompleteFieldsToFilter: ["name", "nameEng", "idNo"],
-				errorMsgFieldName: memberFieldName
+				errorMsgFieldName: memberFieldName,
+				selectExtraAction: function(model, dataItem){
+					model.set("fbName", dataItem.fbNickname);
+				}
 			}),
 			fields = [
 		       //0fieldName			1column title		2column width	3field type	4column filter operator	5field custom		6column custom		7column editor
@@ -561,7 +578,12 @@
 					extra: true
 				},
 				selectable: "multiple, cell",
-				columnMenu: true
+				columnMenu: true,
+				dataBound: function(e){
+					//var cell = this.tbody.find("tr[row='row'] td:first");
+					//this.current(cell);
+					//this.table.focus();
+				}
 				// edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
 				/*
 				edit: function(e){
