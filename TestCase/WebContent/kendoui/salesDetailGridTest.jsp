@@ -65,12 +65,13 @@
 </head>
 <body>
 	<div id="updateInfoWindow"></div>
-	<div id="mainGrid">
-	</div>
+	<div id="mainGrid"></div>
+	<div id="updateNoti"></div>
 	<script type="text/javascript">
 		var moduleName = "${moduleName}",
 			moduleBaseUrl = "${moduleBaseUrl}",
 			gridId = "#mainGrid",
+			notiId = "#updateNoti",
 			updateInfoWindowId = "#updateInfoWindow",
 			DEFAULT_PAGE_VALUE = 1,
 			DEFAULT_PAGESIZE_VALUE = 15,
@@ -149,6 +150,14 @@
 		}
 		return filterObj;
 	}
+	function addSortsAsc(fields){
+		var sortArray = [];
+		for(var i = 0; i < fields.length; i++){
+			var field = fields[i];
+			sortArray.push({field: field, dir: "asc"});
+		}
+		return sortArray;
+	}
 	function getModelDataItem(ele){
 		row = ele.closest("tr"),
 		grid = row.closest("[data-role=grid]").data("kendoGrid"),
@@ -206,13 +215,14 @@
 							},
 							parameterMap: function(data, type){
 								if(type === "read"){
-									// console.log("data: " + JSON.stringify(data));
+									//console.log("data: " + JSON.stringify(data));
 									var r = {
 										conds: {
 											kendoData: {
 												page: 1,
 												pageSize: data.pageSize? data.pageSize : DEFAULT_PAGESIZE_VALUE,
-												filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter) // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+												filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter), // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+												sort: addSortsAsc(autocompleteFieldsToFilter)
 											}
 										}
 									};
@@ -258,6 +268,34 @@
 					}
 				});
 		};
+	}
+	function initDefaultNotification(options){
+		var defaultOnShow = function(e){
+				if(e.sender.getNotifications().length == 1){
+					var element = e.element.parent(),
+						eWidth = element.width(),
+						eHeight = element.height(),
+						wWidth = $(window).width(),
+						wHeight = $(window).height(),
+						newTop, newLeft;
+					
+					newLeft = Math.floor(wWidth / 2 - eWidth / 2);
+					newTop = Math.floor(wHeight / 2 - eHeight / 2);
+					
+					e.element.parent().css({top: newTop, left: newLeft});
+				}
+			},
+			notiId = options.notiId,
+			onShow = options.onShow ? options.onShow : defaultOnShow;
+		$(notiId).kendoNotification({
+			stacking: "default",
+			show: onShow,
+			button: true,
+			position: {
+				right: 20,
+				bottom: 20
+			}
+		});
 	}
 	function getDefaultModelFields(fields){
 		var modelFields = {};
@@ -385,6 +423,17 @@
 				data: function(response){
 					// response.results from reading
 					// response from adding or updating
+					/* 
+					不管任何遠端存取的動作，都需要回傳所操作的資料集，包含刪除(destroy)。
+					文件上雖然說刪除不需要回傳資料，實際上如果在刪除時沒有回傳被刪除的資料，
+					會讓client端的grid元件以為資料沒有commit，所以如果再次saveChange的時候，
+					他會再送一次請求，而且cancel還可以恢復原狀，理論上這些都不應該發生。
+					如果又加上batchUpdate的狀態下，混用新增或修改資料的動作，一次更新，
+					重複saveChange，會造成重複的新增資料，但這不會在畫面上正常顯示，直到下一次更新頁面才看得出來。
+					根據這篇http://www.telerik.com/forums/delete-save-changes-revert
+					解決這些問題的根本做法，就是提供和讀取資料一樣的格式。
+					目前已由後端提供被刪的資料。
+					*/
 					var results = response.results ? response.results: response;
 					return results;
 				},
@@ -400,6 +449,8 @@
 				var status = (e && e.xhr && e.xhr.status) ? e.xhr.status : null;
 				if(status != 200){
 					alert("server錯誤訊息: " + JSON.stringify(e));	
+				}else{
+					$(notiId).data("kendoNotification").show("xxxxxeee");
 				}
 			},
 			requestStart: function(e){
@@ -675,6 +726,7 @@
 				mainGrid.dataSource.read();
 			}
 			initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
+			initDefaultNotification({notiId: notiId});
 		});
 	</script>
 </body>
