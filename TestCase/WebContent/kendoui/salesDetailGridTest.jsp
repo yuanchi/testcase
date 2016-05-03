@@ -61,10 +61,11 @@
 	.k-list-container .k-list .k-item {
     	white-space: nowrap;
 	}
+	
 	</style>
 </head>
 <body>
-	<div id="updateInfoWindow"></div>
+	<span id="updateInfoWindow" style="display:none;"></span>
 	<div id="mainGrid"></div>
 	<div id="updateNoti"></div>
 	<script type="text/javascript">
@@ -85,12 +86,9 @@
 				sort: DEFAULT_SORT_VALUE,
 				group: DEFAULT_GROUP_VALUE
 			},
-			DEFAULT_EDIT_MODE = "incell",
-			KENDO_UI_TYPE_DATE = "date",
-			KENDO_UI_TYPE_STRING = "string",
-			KENDO_UI_TYPE_BOOLEAN = "boolean",
-			KENDO_UI_TYPE_NUMBER = "number",
-			pk = "id";		
+			DEFAULT_EDIT_MODE = "inline",
+			pk = "id",
+			actionExpressions = {"create": "新增", "update": "修改", "destroy": "刪除"};		
 	</script>
 	<script type="text/javascript">
 	function removeTimezoneOffset(d){
@@ -120,7 +118,7 @@
 				removeFilterDateTimezoneOffset(f, modelFields);
 			}
 		}
-		if(filter.field && KENDO_UI_TYPE_DATE == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
+		if(filter.field && "date" == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
 			filter.value = removeTimezoneOffset(filter.value);
 		}
 	}
@@ -130,7 +128,7 @@
 				parseFilterDates(filter.filters[i], fields);
 			}
 		}else{
-			if(fields[filter.field].type == KENDO_UI_TYPE_DATE){
+			if(fields[filter.field].type == "date"){
 				// console.log('store cookie date: ' + filter.value);
 				filter.value = addTimezoneOffset(kendo.parseDate(filter.value));
 				// console.log('transform cookie date: ' + filter.value);
@@ -250,6 +248,9 @@
 						if(selectExtraAction && (typeof selectExtraAction === "function")){// 如果有更動其他欄位，會用原來的檢核
 							selectExtraAction(model, dataItem);
 						}
+					},
+					filtering: function(e){
+						model.set(field, null);
 					}
 				});
 		};
@@ -270,7 +271,7 @@
 		};
 	}
 	function initDefaultNotification(options){
-		var defaultOnShow = function(e){
+		var centerOnShow = function(e){
 				if(e.sender.getNotifications().length == 1){
 					var element = e.element.parent(),
 						eWidth = element.width(),
@@ -286,14 +287,15 @@
 				}
 			},
 			notiId = options.notiId,
-			onShow = options.onShow ? options.onShow : defaultOnShow;
+			onShow = options.onShow ? options.onShow : centerOnShow;
 		$(notiId).kendoNotification({
 			stacking: "default",
-			show: onShow,
-			button: true,
+			width: 300,
+			height: 50,
 			position: {
-				right: 20,
-				bottom: 20
+				pinned: false,
+				bottom: 20,
+				right: 20
 			}
 		});
 	}
@@ -328,6 +330,15 @@
 					.attr("type", "text") // 讓版型更為一致
 					.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
 			};
+		columns.push({
+			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置；在某些狀況下，
+			width: "100px"
+		});
+		if("incell" !== DEFAULT_EDIT_MODE){
+			var idx = columns.length - 1;
+			columns[idx].command.push("edit");
+			columns[idx].width = "180px";
+		}			
 		for(var i = 0; i < fields.length; i++){
 			var field = fields[i],
 				fieldName = field[0],
@@ -358,14 +369,7 @@
 				$.extend(column, field[6]);
 			}
 			columns.push(column);
-		}
-		columns.push({
-			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置；在某些狀況下，
-			width: "100px"
-		});
-		if("incell" !== DEFAULT_EDIT_MODE){
-			columns[0].command.push("edit");
-		}		
+		}			
 		return columns;
 	}
 	function getDefaultRemoteConfig(action){
@@ -449,8 +453,6 @@
 				var status = (e && e.xhr && e.xhr.status) ? e.xhr.status : null;
 				if(status != 200){
 					alert("server錯誤訊息: " + JSON.stringify(e));	
-				}else{
-					$(notiId).data("kendoNotification").show("xxxxxeee");
 				}
 			},
 			requestStart: function(e){
@@ -503,32 +505,39 @@
 				type: null,
 				validation: {
 					isEffectiveMember: function(input){
-						if(input.length == 0){ // 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
+						if(input.length == 0// 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
+						|| !input.is("[data-bind='value:member']")
+						){ 
 							return true;
 						}
-						var fieldName = memberFieldName,
+						
+						var td = input.closest("td"),
+							fieldName = memberFieldName,
 							row = input.closest("tr"),
 							grid = row.closest("[data-role='grid']").data("kendoGrid"),
 							dataItem = grid.dataItem(row),
 							val = dataItem.get(fieldName);
 						console.log("validate...dataItem val: " + val + ", input val: " + input.val());
+						td.find("div").remove();
 						
 						if(!input.val()){
+							td.focus();
 							return true;
 						}
+						
 						if(val && !val.id){
 							input.attr("data-isEffectiveMember-msg", "請選擇有效會員資料");
-							var td = input.closest("td");
 							var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
 								var div = td.find("div");
 								if(div.length > 0){
 									clearInterval(timer);
-									div.detach().appendTo(td); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+									div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
 								}
 							},200);
-							
 							return false;
 						}
+						
+						td.focus();
 						return true;
 					}
 				}
@@ -630,10 +639,18 @@
 				},
 				selectable: "multiple, cell",
 				columnMenu: true,
-				dataBound: function(e){
+				dataBinding: function(e){
 					//var cell = this.tbody.find("tr[row='row'] td:first");
 					//this.current(cell);
 					//this.table.focus();
+					var action = e.action,
+						actionExpression = actionExpressions[action],
+						items = e.items,
+						idx = e.index;
+					if(actionExpression){
+						console.log("e items: " + idx);
+						$(notiId).data("kendoNotification").show(actDescrib[action] + "成功");	
+					}
 				}
 				// edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
 				/*
