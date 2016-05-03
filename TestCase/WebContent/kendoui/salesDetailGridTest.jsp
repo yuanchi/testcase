@@ -461,12 +461,16 @@
 			requestEnd: function(e){
 				// e.response comes from dataSource.schema.data, that is not really returned response
 				var type = e.type,
-					grid = $(gridId).data("kendoGrid");
+					grid = $(gridId).data("kendoGrid"),
+					action = actionExpressions[type];
 				/*
 				if("update" === type){
 					$(updateInfoWindowId).data("kendoWindow").content("<h3 style='color:red;'>更新成功</h3>").center().open();
 				}*/
 				kendo.ui.progress(grid.wrapper, false);
+				if(action){
+					$(notiId).data("kendoNotification").show(action + "成功");	
+				}
 			}
 		};
 	}
@@ -643,14 +647,6 @@
 					//var cell = this.tbody.find("tr[row='row'] td:first");
 					//this.current(cell);
 					//this.table.focus();
-					var action = e.action,
-						actionExpression = actionExpressions[action],
-						items = e.items,
-						idx = e.index;
-					if(actionExpression){
-						console.log("e items: " + idx);
-						$(notiId).data("kendoNotification").show(actDescrib[action] + "成功");	
-					}
 				}
 				// edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
 				/*
