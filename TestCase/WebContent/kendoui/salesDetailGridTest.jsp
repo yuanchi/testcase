@@ -69,6 +69,36 @@
 	<div id="mainGrid"></div>
 	<div id="updateNoti"></div>
 	<script type="text/javascript">
+		// on closeCell function, add custom event
+		kendo.ui.Grid.fn.closeCell = (function(closeCell){ // ref. http://jsfiddle.net/lhoeppner/nx96g/10/
+			return function(cancel){
+				var that = this,
+					container = that._editContainer;				
+				closeCell.call(this, cancel);
+				if(!container){
+					return;
+				}
+				var tdIdx = container.index(),
+					model = that.dataSource.getByUid(container.closest("tr").attr(window.kendo.attr("uid"))),
+					event = {
+						container: container,
+						model: model,
+						preventDefault: function(){
+							this.isDefaultPrevented = true;
+						}
+					};
+				var afterCloseHandler = this.options.afterCloseTriggerOne;
+				if(model && typeof afterCloseHandler === "function"){
+					afterCloseHandler.call(this, event);
+					this.options.afterCloseTriggerOne = null; // 每使用過一次，就刪掉
+					if(event.isDefaultPrevented){
+						return;
+					}
+				}
+			};
+		})(kendo.ui.Grid.fn.closeCell);
+	</script>
+	<script type="text/javascript">
 		var moduleName = "${moduleName}",
 			moduleBaseUrl = "${moduleBaseUrl}",
 			gridId = "#mainGrid",
@@ -86,9 +116,11 @@
 				sort: DEFAULT_SORT_VALUE,
 				group: DEFAULT_GROUP_VALUE
 			},
-			DEFAULT_EDIT_MODE = "inline",
+			DEFAULT_EDIT_MODE = "incell",
 			pk = "id",
-			actionExpressions = {"create": "新增", "update": "修改", "destroy": "刪除"};		
+			actionExpressions = {"create": "新增", "update": "修改", "destroy": "刪除"},
+			isEffectiveMember = "data-isEffectiveMember-msg",
+			validateMsgNames = [isEffectiveMember];		
 	</script>
 	<script type="text/javascript">
 	function removeTimezoneOffset(d){
@@ -337,8 +369,8 @@
 		if("incell" !== DEFAULT_EDIT_MODE){
 			var idx = columns.length - 1;
 			columns[idx].command.push("edit");
-			columns[idx].width = "180px";
-		}			
+			columns[idx].width = "170px";
+		}				
 		for(var i = 0; i < fields.length; i++){
 			var field = fields[i],
 				fieldName = field[0],
@@ -369,7 +401,7 @@
 				$.extend(column, field[6]);
 			}
 			columns.push(column);
-		}			
+		}		
 		return columns;
 	}
 	function getDefaultRemoteConfig(action){
@@ -514,7 +546,6 @@
 						){ 
 							return true;
 						}
-						
 						var td = input.closest("td"),
 							fieldName = memberFieldName,
 							row = input.closest("tr"),
@@ -525,23 +556,21 @@
 						td.find("div").remove();
 						
 						if(!input.val()){
-							td.focus();
 							return true;
 						}
 						
 						if(val && !val.id){
-							input.attr("data-isEffectiveMember-msg", "請選擇有效會員資料");
+							input.attr(isEffectiveMember, "請選擇有效會員資料");
 							var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
 								var div = td.find("div");
 								if(div.length > 0){
 									clearInterval(timer);
 									div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
 								}
-							},200);
+							},10);
 							return false;
 						}
 						
-						td.focus();
 						return true;
 					}
 				}
@@ -648,32 +677,74 @@
 					//this.current(cell);
 					//this.table.focus();
 				}
-				// edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
-				/*
+				/*edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
 				edit: function(e){
 					var container = e.container, // if edit mode is incell, the container is table cell
-						inputVal = container.find("input").val(),
-						dataItem = getModelDataItem(container);
-					if((inputVal && !dataItem.member) || (dataItem.member && !dataItem.member.id)){
-						//e.preventDefault();
-						var grid = $(gridId).data("kendoGrid");
-						container.find("input").val(null);
-						dataItem.member = null;
-					}
-					console.log("editing...inputVal: " + inputVal + ", dataItem: " + JSON.stringify(dataItem));
-					
+						sender = e.sender;
+					sender.current().focus();
 				}*/
-			}).data("kendoGrid");
-			/* 在新增的時候，切換編輯模式為popup
-			$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
-				mainGrid.options.editable.mode = "popup";
-				mainGrid.addRow();
+			}).data("kendoGrid");			
+
+			/* 在新增的時候，切換編輯模式為...
+			function recoverToDefaultEditMode(){
 				mainGrid.options.editable.mode = DEFAULT_EDIT_MODE;
+			}
+			$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
+				mainGrid.options.editable.mode = "inline";
+				mainGrid.addRow();
+				var current = mainGrid.current();
+				current.closest(".k-grid-update").one("click", recoverToDefaultEditMode);
+				current.closest(".k-grid-cancel").one("click", recoverToDefaultEditMode);				
+				// mainGrid.options.editable.mode = DEFAULT_EDIT_MODE;
 			});
 			*/
 			$(".k-grid-reset").click(function(e){
 				var ds = mainGrid.dataSource;
 				ds.query(DEFAULT_OPTIONS);
+			});
+			
+			mainGrid.tbody.on("keydown", "td[data-role='editable'] input", function(e){
+				$target = $(e.target);
+				if(e.keyCode == 13){
+					/* not work!!
+					$(gridId).data("kendoGrid").one("afterCloseTriggerOne", function(e){
+						var $td = e.container,
+							tdIdx = $td.index(),
+							$tr = $td.closest("tr");
+					
+						do{
+							var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
+						}while(nextCell.css("display") === "none");
+				
+						if(nextCell.length === 0){
+							return;
+						}
+						setTimeout(function(){
+							var grid = $(gridId).data("kendoGrid");
+							grid.current(nextCell);
+							grid.editCell(nextCell);
+						},0);
+					});
+					*/
+					mainGrid.options["afterCloseTriggerOne"] = function(e){ // 不得已直接從kendo ui widget的options加入事件處理器
+						var $td = e.container,
+							tdIdx = $td.index(),
+							$tr = $td.closest("tr");
+						
+						do{
+							var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
+						}while(nextCell.css("display") === "none");
+					
+						if(nextCell.length === 0){
+							return;
+						}
+						setTimeout(function(){
+							var grid = $(gridId).data("kendoGrid");
+							grid.current(nextCell);
+							grid.editCell(nextCell);
+						},0);
+					};
+				}
 			});
 			
 			$(document.body).keydown(function(e){
@@ -683,14 +754,29 @@
 					// var options = mainGrid.getOptions();
 					// console.log("options:\n" + JSON.stringify(options));
 				}
+				/*
 				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Save Changes；
 					mainGrid.dataSource.sync();
 				}
 				if(e.altKey && e.keyCode == 81){// Alt + Q 直接觸發 Cancel changes
 					mainGrid.dataSource.cancelChanges();
+				}*/
+				if(e.altKey && e.keyCode == 68){// Alt + D 直接觸發 Delete；
+					mainGrid.current().closest(".k-grid-delete");
 				}
+				/*
+				if(e.altKey && e.keyCode == 69){// Alt + E 直接觸發 Edit；
+					mainGrid.current().closest(".k-grid-edit");
+				}*/
+				if(e.altKey && e.keyCode == 85){// Alt + U 直接觸發 Update；
+					mainGrid.current().closest(".k-grid-update").click();
+				}	
+				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Cancel；
+					mainGrid.current().closest(".k-grid-cancel").click();
+				}
+				
 				if(e.altKey && e.keyCode == 82){// Alt + R 直接觸發 Add new record
-					mainGrid.dataSource.pushCreate();
+					$(gridId).find(".k-grid-add").click();
 				}				
 				if(e.ctrlKey && e.altKey && e.keyCode == 65){// Ctrl + Alt + A 執行批次複製, ref. http://stackoverflow.com/questions/24273432/kendo-ui-grid-select-single-cell-get-back-dataitem-and-prevent-specific-cells
 					var grid = mainGrid,
@@ -738,7 +824,7 @@
 			}else{
 				mainGrid.dataSource.read();
 			}
-			initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
+			// initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
 			initDefaultNotification({notiId: notiId});
 		});
 	</script>
