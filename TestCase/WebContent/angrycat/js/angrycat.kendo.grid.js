@@ -97,7 +97,7 @@
 				autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
 				template = settings.template ? settings.template : getAutoCompleteDefaultTemplate(autocompleteFieldsToFilter),
 				errorMsgFieldName = settings.errorMsgFieldName,
-				selectExtraAction = settings.selectExtraAction;
+				selectAction = settings.selectAction;
 			return function(container, options){
 				var model = options.model,
 					field = options.field;
@@ -161,9 +161,9 @@
 								dataItem = this.dataItem(item.index());
 							// ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
 							// 這裡要自行綁定model值，因為如果grid該欄位有設定檢核，而且有檢核未過的記錄，第二次以後在autocomplete選到的值都無法正常加到model上
-							model.set(field, dataItem);
-							if(selectExtraAction && (typeof selectExtraAction === "function")){// 如果有更動其他欄位，會用原來的檢核
-								selectExtraAction(model, dataItem);
+							// model.set(field, dataItem);
+							if(selectAction && (typeof selectAction === "function")){// 如果有更動其他欄位，會用原來的檢核
+								selectAction(model, dataItem);
 							}
 						},
 						filtering: function(e){
@@ -266,7 +266,47 @@
 			}
 			return modelFields;
 		}
-
+		
+		function getDefaultFieldAutoCompleteValidation(settings){
+			var field = settings.field,
+				method = settings.method,
+				validate = settings.validate,
+				msg = settings.msg;
+			
+			return function(input){
+				if(input.length == 0// 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
+				|| !input.is("[data-bind='value:"+ field +"']")){ 
+					return true;
+				}
+				var td = input.closest("td"),
+					fieldName = field,
+					row = input.closest("tr"),
+					grid = row.closest("[data-role='grid']").data("kendoGrid"),
+					dataItem = grid.dataItem(row),
+					val = dataItem.get(fieldName);
+				console.log("validate...dataItem val: " + val + ", input val: " + input.val());
+				td.find("div").remove();
+					
+				if(!input.val()){
+					return true;
+				}
+					
+				if(validate({val: val})){
+					input.attr("data-"+ method +"-msg", msg);
+					var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
+							var div = td.find("div");
+							if(div.length > 0){
+								clearInterval(timer);
+								div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+							}
+						}, 10);
+					return false;
+				}
+					
+				return true;
+			};
+		}
+		
 		function getDefaultColumns(fields){
 			var columns = [],
 				defaultTemplate = "<span title='#=({field} ? {field} : '')#'>#=({field} ? {field} : '')#</span>",
@@ -402,7 +442,10 @@
 				error: function(e){
 					var status = (e && e.xhr && e.xhr.status) ? e.xhr.status : null;
 					if(status != 200){
-						alert("server錯誤訊息: " + JSON.stringify(e));	
+						$(updateInfoWindowId).data("kendoWindow")
+							.content("<h3 style='color:red;'>主機發生錯誤</h3><br><h4><xmp>"+ JSON.stringify(e) +"</xmp></h4>")
+							.center()
+							.open();
 					}
 				},
 				requestStart: function(e){
@@ -589,6 +632,7 @@
 			getDefaultModelFields: getDefaultModelFields,
 			getDefaultColumns: getDefaultColumns,
 			getDefaultGridDataSource: getDefaultGridDataSource,
+			getDefaultFieldAutoCompleteValidation: getDefaultFieldAutoCompleteValidation,
 			ready: ready
 		};
 	}
