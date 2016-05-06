@@ -12,6 +12,7 @@
 			updateInfoWindowId = opts.updateInfoWindowId || "#updateInfoWindow",
 			DEFAULT_PAGE_VALUE = opts.page || 1,
 			DEFAULT_PAGESIZE_VALUE = opts.pageSize || 15,
+			DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE = opts.autoCompletePageSize || 25,
 			DEFAULT_FILTER_VALUE = opts.filter || null,
 			DEFAULT_SORT_VALUE = opts.sort || null,
 			DEFAULT_GROUP_VALUE = opts.group || null,
@@ -120,7 +121,7 @@
 						dataSource: {
 							serverPaging: true,
 							serverFiltering: true,
-							pageSize: DEFAULT_PAGESIZE_VALUE,
+							pageSize: DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
 							transport: {
 								read:{
 									url: readUrl,
@@ -136,7 +137,7 @@
 											conds: {
 												kendoData: {
 													page: 1,
-													pageSize: data.pageSize? data.pageSize : DEFAULT_PAGESIZE_VALUE,
+													pageSize: data.pageSize? data.pageSize : DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
 													filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter), // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
 													sort: addSortsAsc(autocompleteFieldsToFilter)
 												}
