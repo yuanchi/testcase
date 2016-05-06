@@ -108,7 +108,7 @@
 			DEFAULT_FILTER_VALUE = null,
 			DEFAULT_SORT_VALUE = null,
 			DEFAULT_GROUP_VALUE = null,
-			DEFAULT_OPTIONS = {
+			DEFAULT_QUERY_OPTIONS = {
 				filter: DEFAULT_FILTER_VALUE,
 				page: DEFAULT_PAGE_VALUE,
 				pageSize: DEFAULT_PAGESIZE_VALUE,
@@ -116,10 +116,7 @@
 				group: DEFAULT_GROUP_VALUE
 			},
 			DEFAULT_EDIT_MODE = "incell",
-			pk = "id",
-			actionExpressions = {"create": "新增", "update": "修改", "destroy": "刪除"},
-			isEffectiveMember = "data-isEffectiveMember-msg",
-			validateMsgNames = [isEffectiveMember];		
+			pk = "id";		
 	</script>
 	<script type="text/javascript">
 	function once(func){
@@ -130,7 +127,7 @@
 			f.apply(this, arguments);
 		};
 	}
-	function removeTimezoneOffset(d){
+	function minusTimezoneOffset(d){
 		var hours = d.getHours(),
 			mins = d.getMinutes(),
 			secs = d.getSeconds(),
@@ -139,7 +136,7 @@
 		return d;
 	}
 	// 加上timezoneoffset
-	function addTimezoneOffset(d){
+	function plusTimezoneOffset(d){
 		var hours = d.getHours(),
 			mins = d.getMinutes(),
 			secs = d.getSeconds(),
@@ -147,18 +144,18 @@
 		d.setHours(hours, mins+d.getTimezoneOffset(), secs, milliSecs);
 		return d;				
 	}
-	function removeFilterDateTimezoneOffset(filter, modelFields){
+	function minusFilterDateTimezoneOffset(filter, modelFields){
 		if(!filter){
 			return;
 		}
 		if(filter.filters){
 			for(var i = 0; i < filter.filters.length; i++){
 				var f = filter.filters[i];
-				removeFilterDateTimezoneOffset(f, modelFields);
+				minusFilterDateTimezoneOffset(f, modelFields);
 			}
 		}
 		if(filter.field && "date" == modelFields[filter.field].type && filter.value && (filter.value instanceof Date)){
-			filter.value = removeTimezoneOffset(filter.value);
+			filter.value = minusTimezoneOffset(filter.value);
 		}
 	}
 	function parseFilterDates(filter, fields){
@@ -169,7 +166,7 @@
 		}else{
 			if(fields[filter.field].type == "date"){
 				// console.log('store cookie date: ' + filter.value);
-				filter.value = addTimezoneOffset(kendo.parseDate(filter.value));
+				filter.value = plusTimezoneOffset(kendo.parseDate(filter.value));
 				// console.log('transform cookie date: ' + filter.value);
 			}
 		}
@@ -422,6 +419,7 @@
 	}
 	function getDefaultGridDataSource(options){
 		var modelFields = options.modelFields,
+			messages = $(gridId).data("kendoGrid").options.messages.commands,
 			viewModel = options.viewModel; // not required		
 		return {
 			batch: true,
@@ -440,7 +438,7 @@
 					//console.log("parameterMap data: " + JSON.stringify(data));
 					if(type === "read"){
 						if(data.filter && data.filter.filters){
-							removeFilterDateTimezoneOffset(data.filter, modelFields);
+							minusFilterDateTimezoneOffset(data.filter, modelFields);
 						}
 						var viewModelConds = viewModel ? viewModel.get("conds"): {},
 							conds = $.extend({moduleName: moduleName}, viewModelConds, {kendoData: data});
@@ -501,7 +499,7 @@
 				// e.response comes from dataSource.schema.data, that is not really returned response
 				var type = e.type,
 					grid = $(gridId).data("kendoGrid"),
-					action = actionExpressions[type];
+					action = messages[type];
 				/*
 				if("update" === type){
 					$(updateInfoWindowId).data("kendoWindow").content("<h3 style='color:red;'>更新成功</h3>").center().open();
@@ -567,7 +565,7 @@
 						}
 						
 						if(val && !val.id){
-							input.attr(isEffectiveMember, "請選擇有效會員資料");
+							input.attr("data-isEffectiveMember-msg", "請選擇有效會員資料");
 							var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
 								var div = td.find("div");
 								if(div.length > 0){
@@ -707,7 +705,7 @@
 			*/
 			$(".k-grid-reset").click(function(e){
 				var ds = mainGrid.dataSource;
-				ds.query(DEFAULT_OPTIONS);
+				ds.query(DEFAULT_QUERY_OPTIONS);
 			});
 			
 			
@@ -742,14 +740,13 @@
 						if(!tdTotal){
 							tdTotal = $tr.find("td").length;
 						}
-						console.log("tdTotal:" + tdTotal);
 						do{
-							if(tdIdx+1 >= tdTotal){
+							if(tdIdx+1 >= tdTotal){// 如果已經是該行最後一欄，從下一行前面開始
 								$tr = $tr.next("tr");
-								tdIdx = 0;
+								tdIdx = 0;// TODO 第一列可能是或不是可編輯儲存格
 							}
 							var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
-						}while(nextCell.css("display") === "none");
+						}while(nextCell.css("display") === "none"); // 如果是隱藏欄位就跳下一筆
 					
 						if(nextCell.length === 0){
 							return;
@@ -841,6 +838,7 @@
 			}
 			// initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
 			initDefaultNotification({notiId: notiId});
+			
 		});
 	</script>
 </body>
