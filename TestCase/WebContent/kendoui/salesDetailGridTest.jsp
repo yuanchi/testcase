@@ -87,10 +87,9 @@
 							this.isDefaultPrevented = true;
 						}
 					};
-				var afterCloseHandler = this.options.afterCloseTriggerOne;
+				var afterCloseHandler = this.options.afterClose;
 				if(model && typeof afterCloseHandler === "function"){
 					afterCloseHandler.call(this, event);
-					this.options.afterCloseTriggerOne = null; // 每使用過一次，就刪掉
 					if(event.isDefaultPrevented){
 						return;
 					}
@@ -123,6 +122,14 @@
 			validateMsgNames = [isEffectiveMember];		
 	</script>
 	<script type="text/javascript">
+	function once(func){
+		function empty(){}
+		return function(){
+			var f = func;
+			func = empty;
+			f.apply(this, arguments);
+		};
+	}
 	function removeTimezoneOffset(d){
 		var hours = d.getHours(),
 			mins = d.getMinutes(),
@@ -363,7 +370,7 @@
 					.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
 			};
 		columns.push({
-			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置；在某些狀況下，
+			command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置；
 			width: "100px"
 		});
 		if("incell" !== DEFAULT_EDIT_MODE){
@@ -703,11 +710,13 @@
 				ds.query(DEFAULT_OPTIONS);
 			});
 			
+			
+			var tdTotal = 0;
 			mainGrid.tbody.on("keydown", "td[data-role='editable'] input", function(e){
 				$target = $(e.target);
 				if(e.keyCode == 13){
 					/* not work!!
-					$(gridId).data("kendoGrid").one("afterCloseTriggerOne", function(e){
+					$(gridId).data("kendoGrid").one("afterClose", function(e){
 						var $td = e.container,
 							tdIdx = $td.index(),
 							$tr = $td.closest("tr");
@@ -726,12 +735,19 @@
 						},0);
 					});
 					*/
-					mainGrid.options["afterCloseTriggerOne"] = function(e){ // 不得已直接從kendo ui widget的options加入事件處理器
+					mainGrid.options["afterClose"] = once(function(e){ // 不得已直接從kendo ui widget的options加入事件處理器
 						var $td = e.container,
 							tdIdx = $td.index(),
 							$tr = $td.closest("tr");
-						
+						if(!tdTotal){
+							tdTotal = $tr.find("td").length;
+						}
+						console.log("tdTotal:" + tdTotal);
 						do{
+							if(tdIdx+1 >= tdTotal){
+								$tr = $tr.next("tr");
+								tdIdx = 0;
+							}
 							var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
 						}while(nextCell.css("display") === "none");
 					
@@ -743,42 +759,41 @@
 							grid.current(nextCell);
 							grid.editCell(nextCell);
 						},0);
-					};
+					});
 				}
 			});
 			
 			$(document.body).keydown(function(e){
+				var altKey = e.altKey,
+					keyCode = e.keyCode;
 				// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
-				if(e.altKey && e.keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
+				if(altKey && keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
 					mainGrid.table.focus();
-					// var options = mainGrid.getOptions();
-					// console.log("options:\n" + JSON.stringify(options));
 				}
-				/*
-				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Save Changes；
+				if(altKey && keyCode == 82){// Alt + R 直接觸發 Add new record
+					mainGrid.addRow();
+				}
+				if(altKey && keyCode == 67){// Alt + C 直接觸發 Save Changes；
 					mainGrid.dataSource.sync();
 				}
-				if(e.altKey && e.keyCode == 81){// Alt + Q 直接觸發 Cancel changes
+				if(altKey && keyCode == 81){// Alt + Q 直接觸發 Cancel changes
 					mainGrid.dataSource.cancelChanges();
-				}*/
-				if(e.altKey && e.keyCode == 68){// Alt + D 直接觸發 Delete；
-					mainGrid.current().closest(".k-grid-delete");
+				}
+				if(altKey && keyCode == 68){// Alt + D 直接觸發 Delete；
+					mainGrid.current().closest(".k-grid-delete").click();
 				}
 				/*
 				if(e.altKey && e.keyCode == 69){// Alt + E 直接觸發 Edit；
 					mainGrid.current().closest(".k-grid-edit");
-				}*/
+				}
 				if(e.altKey && e.keyCode == 85){// Alt + U 直接觸發 Update；
 					mainGrid.current().closest(".k-grid-update").click();
 				}	
 				if(e.altKey && e.keyCode == 67){// Alt + C 直接觸發 Cancel；
 					mainGrid.current().closest(".k-grid-cancel").click();
 				}
-				
-				if(e.altKey && e.keyCode == 82){// Alt + R 直接觸發 Add new record
-					$(gridId).find(".k-grid-add").click();
-				}				
-				if(e.ctrlKey && e.altKey && e.keyCode == 65){// Ctrl + Alt + A 執行批次複製, ref. http://stackoverflow.com/questions/24273432/kendo-ui-grid-select-single-cell-get-back-dataitem-and-prevent-specific-cells
+				*/				
+				if(e.ctrlKey && altKey && keyCode == 65){// Ctrl + Alt + A 執行批次複製, ref. http://stackoverflow.com/questions/24273432/kendo-ui-grid-select-single-cell-get-back-dataitem-and-prevent-specific-cells
 					var grid = mainGrid,
 					    selection = grid.select(); // 回傳jQuery物件，裡面可能是被選取的cells或rows
 					if(!selection){
