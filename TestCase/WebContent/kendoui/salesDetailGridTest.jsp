@@ -419,7 +419,6 @@
 	}
 	function getDefaultGridDataSource(options){
 		var modelFields = options.modelFields,
-			messages = $(gridId).data("kendoGrid").options.messages.commands,
 			viewModel = options.viewModel; // not required		
 		return {
 			batch: true,
@@ -497,8 +496,9 @@
 			},
 			requestEnd: function(e){
 				// e.response comes from dataSource.schema.data, that is not really returned response
-				var type = e.type,
-					grid = $(gridId).data("kendoGrid"),
+				var grid = $(gridId).data("kendoGrid"),
+					messages = grid.options.messages.commands,
+					type = e.type,
 					action = messages[type];
 				/*
 				if("update" === type){
