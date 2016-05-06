@@ -1,0 +1,22 @@
+@CHARSET "UTF-8";
+/*
+	keep kendo ui grid same height
+*/
+.k-grid tbody tr td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/*
+	keep kendo autocomplete width same as text content
+	ref. http://jsfiddle.net/GxSpN/41/
+*/
+.k-autocomplete {
+    width: auto;
+}
+.k-list-container {
+    width: auto !important;
+}
+.k-list-container .k-list .k-item {
+    white-space: nowrap;
+}
