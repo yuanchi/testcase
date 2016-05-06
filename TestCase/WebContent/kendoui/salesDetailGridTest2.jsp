@@ -68,39 +68,15 @@
 					memberField = {
 						type: null,
 						validation: {
-							isEffectiveMember: function(input){
-								if(input.length == 0// 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
-								|| !input.is("[data-bind='value:member']")
-								){ 
-									return true;
-								}
-								var td = input.closest("td"),
-									fieldName = memberFieldName,
-									row = input.closest("tr"),
-									grid = row.closest("[data-role='grid']").data("kendoGrid"),
-									dataItem = grid.dataItem(row),
-									val = dataItem.get(fieldName);
-								console.log("validate...dataItem val: " + val + ", input val: " + input.val());
-								td.find("div").remove();
-							
-								if(!input.val()){
-									return true;
-								}
-							
-								if(val && !val.id){
-									input.attr("data-isEffectiveMember-msg", "請選擇有效會員資料");
-									var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
-										var div = td.find("div");
-										if(div.length > 0){
-											clearInterval(timer);
-											div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
-										}
-									},10);
-									return false;
-								}
-							
-								return true;
-							}
+							isEffectiveMember: this.getDefaultFieldAutoCompleteValidation({
+								field: memberFieldName,
+								method: "isEffectiveMember",
+								validate: function(opts){
+									var val = opts.val;
+									return val && !val.id;
+								},
+								msg: "請選擇有效會員資料"
+							})
 						}
 					},
 					memberColumn = {template: "<span title='#=(member ? member.name : '')#'>#=(member ? member.name : '')#</span>"},
@@ -112,19 +88,32 @@
 						//template: "<span>#: name # | #: nameEng #</span>",
 						autocompleteFieldsToFilter: ["name", "nameEng", "idNo"],
 						errorMsgFieldName: memberFieldName,
-						selectExtraAction: function(model, dataItem){
+						selectAction: function(model, dataItem){
+							model.set(memberFieldName, dataItem);
 							model.set("fbName", dataItem.fbNickname);
+							model.set("idNo", dataItem.idNo);
 						}
 					}),
+					modelIdFieldName = "modelId",
+					modelIdEditor = this.getAutoCompleteEditor({
+						textField: "modelId",
+						readUrl: opts.moduleBaseUrl + "/queryProductAutocomplete.json", 
+						filter: "contains", 
+						autocompleteFieldsToFilter: ["modelId", "nameEng"],
+						selectAction: function(model, dataItem){
+							model.set(modelIdFieldName, dataItem.modelId);
+							model.set("productName", dataItem.nameEng);
+						}
+					}),				
 					fields = [
-			       		//0fieldName			1column title		2column width	3field type	4column filter operator	5field custom		6column custom		7column editor
+			       		//0fieldName		1column title		2column width	3field type	4column filter operator	5field custom		6column custom		7column editor
 						[opts.pk,			"SalesDetail ID",	150,			"string",	"eq",					null,				hidden],
-						["member",			"會員姓名",			150,			"string",	"contains",				memberField,		memberColumn,		memberEditor],
+						[memberFieldName,	"會員姓名",			150,			"string",	"contains",				memberField,		memberColumn,		memberEditor],
 						["salePoint",		"銷售點",				100,			"string",	"eq",					null,				null],
 						["saleStatus",		"狀態",				100,			"string",	"eq"],
 						["fbName",			"FB名稱/客人姓名",		150,			"string",	"contains"],
 						["activity",		"活動",				150,			"string",	"contains"],
-						["modelId",			"型號",				150,			"string",	"startswith"],
+						[modelIdFieldName,	"型號",				150,			"string",	"startswith",			null,				null,				modelIdEditor],
 						["productName",		"明細",				150,			"string",	"contains"],
 						["price",			"定價",				100,			"number",	"gte"],
 						["memberPrice",		"會員價(實收價格)",		100,			"number",	"gte"],
