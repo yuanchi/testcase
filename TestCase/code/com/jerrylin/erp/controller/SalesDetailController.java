@@ -1,6 +1,5 @@
 package com.jerrylin.erp.controller;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,7 @@ import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.jackson.mixin.MemberIgnoreDetail;
 import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.Product;
 import com.jerrylin.erp.model.SalesDetail;
 import com.jerrylin.erp.service.KendoUiAutocompleteService;
 import com.jerrylin.erp.service.KendoUiService;
@@ -84,6 +84,15 @@ public class SalesDetailController {
 		String result = kendoUiAutocompleteService.queryMembers(conditionConfig);
 		return result;
 	}
+	
+	@RequestMapping(value="/queryProductAutocomplete",
+			method=RequestMethod.POST,
+			produces={"application/xml", "application/json"},
+			headers="Accept=*/*")
+	public @ResponseBody String queryProductAutocomplete(@RequestBody ConditionConfig<Product> conditionConfig){
+		String result = kendoUiAutocompleteService.queryProducts(conditionConfig);
+		return result;
+	}	
 	
 	@RequestMapping(value="/batchSaveOrMerge",
 			method=RequestMethod.POST,
