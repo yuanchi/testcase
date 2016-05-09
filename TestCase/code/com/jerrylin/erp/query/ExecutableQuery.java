@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -18,10 +19,13 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
@@ -110,7 +114,7 @@ public class ExecutableQuery<T> implements Serializable{
 		
 		// retrieving copy root, not originally
 		SqlRoot copyRoot = copyRootPrepared();
-		addOrderByIdIfAnyNotExisted(copyRoot);
+//		addOrderByIdIfAnyNotExisted(copyRoot);
 		
 		//String selectSql = copyRoot.findSql(Select.class);
 		String fromSql = copyRoot.findSql(From.class);
@@ -177,6 +181,46 @@ public class ExecutableQuery<T> implements Serializable{
 		return results;
 	}
 
+	@Transactional
+	public <F>F executeScrollableQuery(BiFunction<ScrollableResults, SessionFactoryWrapper, F> executeLogic){
+		Session s = sfw.getCurrentSession();
+		
+		String alias = findFirstSqlTargetAlias();
+		String id = getIdFieldName();
+		String identifier = alias + "." + id;
+		
+		// retrieving copy root, not originally
+		SqlRoot copyRoot = copyRootPrepared();
+		
+		//String selectSql = copyRoot.findSql(Select.class);
+		String fromSql = copyRoot.findSql(From.class);
+		String joinSql = copyRoot.findSql(Join.class);
+		String whereSql = copyRoot.findSql(Where.class);
+		String orderSql = copyRoot.findSql(OrderBy.class);
+		
+		if(joinSql.toLowerCase().contains("join fetch")){
+			throw new UnsupportedOperationException("ExecutableQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
+		}
+		
+		String defaultDirection = " DESC";
+		if(StringUtils.isBlank(orderSql)){
+			orderSql = "ORDER BY " + identifier + defaultDirection;
+		}
+		if(!orderSql.contains(identifier + " ")){
+			orderSql += ", " + identifier + defaultDirection;
+		}
+		
+		String selectAlias = "SELECT DISTINCT " + alias;
+		String selectAliasHql = addLineBreakIfNotBlank(selectAlias, fromSql, joinSql, whereSql);
+		
+		Map<String, Object> params = copyRoot.getCondIdValuePairs();
+		
+		ScrollableResults rs = s.createQuery(selectAliasHql).setProperties(params).scroll(ScrollMode.FORWARD_ONLY);
+		F target = executeLogic.apply(rs, sfw);
+		
+		return target;
+	}	
+	
 	private static String addLineBreakIfNotBlank(String... statements){
 		List<String> ori = Arrays.asList(statements);
 		List<String> filtered = ori.stream().filter(s->StringUtils.isNotBlank(s)).collect(Collectors.toList());
