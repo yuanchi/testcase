@@ -30,7 +30,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
-import com.jerrylin.erp.model.SalesDetail;
 import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
@@ -211,7 +210,7 @@ public class KendoUiService<T, R> implements Serializable{
 		
 		return saved;
 	}
-	
+		
 	private void adjustConditionByKendoUIGridFilter(Object filterObj){		
 		SqlRoot root = getSqlRootImpl();
 		Where where = root.find(Where.class);
