@@ -1,6 +1,7 @@
 (function(host){"use strict"
-	var angrycat = host.angrycat || {}; 
-	host.angrycat = angrycat;
+	host.angrycat = host.angrycat || {};
+	var angrycat = host.angrycat; 
+
 	function once(func){
 		function empty(){}
 		return function(){
@@ -24,7 +25,20 @@
 			milliSecs = d.getMilliseconds();
 		d.setHours(hours, mins+d.getTimezoneOffset(), secs, milliSecs);
 		return d;				
-	}	
+	}
+	function assert(value, desc){
+		var li = document.createElement("li"),
+			passColor = "green",
+			failColor = "red";
+		li.style.color = value ? passColor : failColor;
+		li.appendChild(document.createTexeNode(desc));
+		var results = document.getElementById("results");
+		if(!results){
+			results = document.createElement("ul");
+			results.id = "results";
+		}
+		results.appendChild(li);
+	}
 	angrycat.core = {
 		once: once,
 		minusTimezoneOffset: minusTimezoneOffset,
