@@ -13,7 +13,9 @@
 <c:set value="${kendouiRoot}/js" var="kendouiJs"/>
 <c:set value="${rootPath}/angrycat" var="angrycatRoot"/>
 <c:set value="${angrycatRoot}/js" var="angrycatJs"/>
-<c:set value="${angrycatRoot}/styles" var="angrycatStyle"/> 
+<c:set value="${angrycatRoot}/styles" var="angrycatStyle"/>
+<c:set value="${rootPath}/bootstrap/3.3.5" var="bootstrapRoot"/>
+<c:set value="${bootstrapRoot}/css" var="bootstrapCss"/>
    
 <!DOCTYPE html>
 <html>
@@ -26,6 +28,9 @@
 	<link rel="stylesheet" href="${kendouiStyle}/kendo.default.min.css">
 	<link rel="stylesheet" href="${angrycatStyle}/kendo.grid.css">
 	
+	<link rel="stylesheet" href="${bootstrapCss}/bootstrap.css">
+	<link rel="stylesheet" href="${bootstrapCss}/bootstrap-theme.css">	
+	
 	<script type="text/javascript" src="${kendouiJs}/jquery.min.js"></script>
 	<script type="text/javascript" src="${kendouiJs}/jquery.cookie.js"></script>
 	<script type="text/javascript" src="${kendouiJs}/kendo.web.min.js"></script>
@@ -34,10 +39,37 @@
 
 </head>
 <body>
+
+<div>
+	<nav role="navigation" class="navbar navbar-default navbar-fixed-top">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" data-target="#navbarCollapse" data-toggle="collapse" class="navbar-toggle">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a href="#" class="navbar-brand">Angrycat</a>
+			</div>
+			<div id="navbarCollapse" class="collapse navbar-collapse">
+				<ul class="nav navbar-nav">
+					<li>
+						<a href="${rootPath}/parameterGridTest.jsp">參數測試</a>
+					</li>										
+				</ul>
+			</div>		
+		</div>
+	</nav>
+</div>
+
+<div class="container">
+<div class="well">
+</div>
 	<span id="updateInfoWindow" style="display:none;"></span>
 	<div id="mainGrid"></div>
 	<div id="updateNoti"></div>
-	
+</div>	
 	
 	
 	<script type="text/javascript" src="${angrycatJs}/angrycat.js"></script>
