@@ -26,6 +26,7 @@
 			DEFAULT_EDIT_MODE = opts.editMode || "incell",
 			pk = opts.pk || "id",
 			lastKendoData = opts.lastKendoData || null;
+		var selectedVal = null;
 			
 		function minusFilterDateTimezoneOffset(filter, modelFields){
 			if(!filter){
@@ -162,12 +163,10 @@
 							// ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
 							// 這裡要自行綁定model值，因為如果grid該欄位有設定檢核，而且有檢核未過的記錄，第二次以後在autocomplete選到的值都無法正常加到model上
 							// model.set(field, dataItem);
+							selectedVal = dataItem;
 							if(selectAction && (typeof selectAction === "function")){// 如果有更動其他欄位，會用原來的檢核
 								selectAction(model, dataItem);
 							}
-						},
-						filtering: function(e){
-							model.set(field, null);
 						}
 					});
 			};
@@ -286,11 +285,17 @@
 					val = dataItem.get(fieldName);
 				console.log("validate...dataItem val: " + val + ", input val: " + input.val());
 				td.find("div").remove();
-					
-				if(!input.val()){
+				
+				var inputVal = input.val(),
+					textField = input.attr("data-text-field");
+				if(!inputVal){
 					return true;
 				}
-					
+				
+				if(selectedVal && selectedVal[textField] === inputVal){
+					return true;
+				}
+				
 				if(validate({val: val})){
 					input.attr("data-"+ method +"-msg", msg);
 					var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
