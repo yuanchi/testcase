@@ -90,7 +90,109 @@
 			result = ("<span>" + result + "</span>");
 			return result;
 		}	
-
+		
+		function getDefaultFieldAutoCompleteValidation(settings){
+			var field = settings.field,
+				method = settings.method,
+				validate = settings.validate,
+				msg = settings.msg,
+				required = settings.required;
+			
+			return function(input){
+				if(input.length == 0// 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
+				|| !input.is("[data-bind='value:"+ field +"']")){ 
+					return true;
+				}
+				var td = input.closest("td"),
+					fieldName = field,
+					row = input.closest("tr"),
+					grid = row.closest("[data-role='grid']").data("kendoGrid"),
+					dataItem = grid.dataItem(row),
+					val = dataItem.get(fieldName);
+				console.log("validate...dataItem val: " + val + ", input val: " + input.val());
+				td.find("div").remove();
+				
+				var inputVal = input.val(),
+					textField = input.attr("data-text-field");
+				if(!inputVal){
+					if(required){
+						input.attr("data-"+ method +"-msg", "該欄位為必填");
+						var requiredTimer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
+							var div = td.find("div");
+							if(div.length > 0){
+								clearInterval(requiredTimer);
+								div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+							}
+						}, 10);						
+						return false;
+					}
+					return true;
+				}
+				
+				if(selectedVal && selectedVal[textField] === inputVal){
+					selectedVal = null;
+					return true;
+				}
+				
+				if(validate({val: val})){
+					input.attr("data-"+ method +"-msg", msg);
+					var selectTimer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
+							var div = td.find("div");
+							if(div.length > 0){
+								clearInterval(selectTimer);
+								div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
+							}
+						}, 10);
+					return false;
+				}
+					
+				return true;
+			};
+		}
+		
+		function getDefaultFieldAutoCompleteDataSource(settings){
+			var readUrl = settings.readUrl,
+				autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
+				ds = {
+				serverPaging: true,
+				serverFiltering: true,
+				pageSize: DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
+				transport: {
+					read:{
+						url: readUrl,
+						type: "POST",
+						dataType: "json",
+						contentType: "application/json;charset=utf-8",
+						cache: false	
+					},
+					parameterMap: function(data, type){
+						if(type === "read"){
+							//console.log("data: " + JSON.stringify(data));
+							var r = {
+								conds: {
+									kendoData: {
+										page: 1,
+										pageSize: data.pageSize? data.pageSize : DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
+										filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter), // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
+										sort: addSortsAsc(autocompleteFieldsToFilter)
+									}
+								}
+							};
+							return JSON.stringify(r);
+						}
+					}
+				},
+				schema:{
+					type: "json",
+					data: function(response){
+						var results = response.results; // read
+						return results;
+					}
+				}
+			}
+			return ds;
+		}
+		
 		function getAutoCompleteEditor(settings){
 			var textField = settings.textField,
 				readUrl = settings.readUrl,
@@ -119,43 +221,7 @@
 								return options.value;
 							}
 						},*/
-						dataSource: {
-							serverPaging: true,
-							serverFiltering: true,
-							pageSize: DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
-							transport: {
-								read:{
-									url: readUrl,
-									type: "POST",
-									dataType: "json",
-									contentType: "application/json;charset=utf-8",
-									cache: false	
-								},
-								parameterMap: function(data, type){
-									if(type === "read"){
-										//console.log("data: " + JSON.stringify(data));
-										var r = {
-											conds: {
-												kendoData: {
-													page: 1,
-													pageSize: data.pageSize? data.pageSize : DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
-													filter: changeFilterToMulti(data.filter, autocompleteFieldsToFilter), // autocomplete元件只有支援單一filter條件，這裡可以將他轉為多個filter條件
-													sort: addSortsAsc(autocompleteFieldsToFilter)
-												}
-											}
-										};
-										return JSON.stringify(r);
-									}
-								}
-							},
-							schema:{
-								type: "json",
-								data: function(response){
-									var results = response.results; // read
-									return results;
-								}
-							}
-						},
+						dataSource: getDefaultFieldAutoCompleteDataSource(settings),
 						select: function(e){
 							var item = e.item,
 								text = item.text(), // text is template result
@@ -240,7 +306,7 @@
 					setTimeout(function(){
 						win.close();
 					},
-					3000);
+					60000);
 				}
 			});
 		}		
@@ -264,52 +330,6 @@
 				}
 			}
 			return modelFields;
-		}
-		
-		function getDefaultFieldAutoCompleteValidation(settings){
-			var field = settings.field,
-				method = settings.method,
-				validate = settings.validate,
-				msg = settings.msg;
-			
-			return function(input){
-				if(input.length == 0// 更動某個欄位，如果會一併動到其他欄位，會造成意外的檢核，所以要先判斷是否有抓到正確待檢核的欄位。
-				|| !input.is("[data-bind='value:"+ field +"']")){ 
-					return true;
-				}
-				var td = input.closest("td"),
-					fieldName = field,
-					row = input.closest("tr"),
-					grid = row.closest("[data-role='grid']").data("kendoGrid"),
-					dataItem = grid.dataItem(row),
-					val = dataItem.get(fieldName);
-				console.log("validate...dataItem val: " + val + ", input val: " + input.val());
-				td.find("div").remove();
-				
-				var inputVal = input.val(),
-					textField = input.attr("data-text-field");
-				if(!inputVal){
-					return true;
-				}
-				
-				if(selectedVal && selectedVal[textField] === inputVal){
-					return true;
-				}
-				
-				if(validate({val: val})){
-					input.attr("data-"+ method +"-msg", msg);
-					var timer = setInterval(function(){// 在設定input上的錯誤訊息後，kendo ui不見得會即時產生錯誤訊息元素，這導致後續移動元素的動作有時成功、有時失敗，所以設定setInterval
-							var div = td.find("div");
-							if(div.length > 0){
-								clearInterval(timer);
-								div.detach().appendTo(td).show(); // 解決錯誤訊息被遮蔽的問題 ref. http://stackoverflow.com/questions/1279957/how-to-move-an-element-into-another-element
-							}
-						}, 10);
-					return false;
-				}
-					
-				return true;
-			};
 		}
 		
 		function getDefaultColumns(fields){
@@ -474,23 +494,59 @@
 			};
 		}
 
-		function ready(callback){
+		function fieldsReady(callback){
 			var context = this;
 			$(document).ready(function(){
-				var mainGrid = callback.call(context);
-				/* 在新增的時候，切換編輯模式為...
-				function recoverToDefaultEditMode(){
-					mainGrid.options.editable.mode = DEFAULT_EDIT_MODE;
+				var fields = callback.call(context),
+					modelFields = getDefaultModelFields(fields),
+					columns = getDefaultColumns(fields),
+					dataSource = getDefaultGridDataSource({modelFields: modelFields}),
+					toolbar = [
+					{
+						name: "create",
+					},
+					{
+						text: " 重查",
+						name: "reset",
+						iconClass: "k-font-icon k-i-undo-large"
+					}];
+				
+				if("incell" === DEFAULT_EDIT_MODE){// in relation with batch update
+					toolbar.push({name: "save"});
+					toolbar.push({name: "cancel"});
 				}
-				$(".k-grid-popupAdd", mainGrid.element).on("click", function(e){
-					mainGrid.options.editable.mode = "inline";
-					mainGrid.addRow();
-					var current = mainGrid.current();
-					current.closest(".k-grid-update").one("click", recoverToDefaultEditMode);
-					current.closest(".k-grid-cancel").one("click", recoverToDefaultEditMode);				
-					// mainGrid.options.editable.mode = DEFAULT_EDIT_MODE;
-				});
-				*/
+				
+				var mainGrid = $(gridId).kendoGrid({
+					columns: columns,
+					dataSource: dataSource,
+					autoBind: false,
+					toolbar: toolbar,
+					editable: {
+						create: true, 
+						update: true, 
+						destroy: true,
+						mode: DEFAULT_EDIT_MODE
+					},
+					scrollable: true,
+					pageable: {
+						refresh: true,
+						pageSizes: ["5","10","15","20","25","30","all"],
+						buttonCount: 13
+					},
+					sortable: {
+						mode: "single",
+						allowUnsort: false
+					},
+					resizable: true,
+					navigatable: true,
+					filterable: {
+						mode: "menu, row",
+						extra: true
+					},
+					selectable: "multiple, cell",
+					columnMenu: true
+				}).data("kendoGrid");				
+				
 				$(".k-grid-reset").click(function(e){
 					var ds = mainGrid.dataSource;
 					ds.query(DEFAULT_QUERY_OPTIONS);
@@ -622,7 +678,7 @@
 				}else{
 					mainGrid.dataSource.read();
 				}
-				// initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
+				initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
 				initDefaultNotification({notiId: notiId});				
 					
 			});
@@ -631,6 +687,7 @@
 		return {
 			getAutoCompleteDefaultTemplate: getAutoCompleteDefaultTemplate,
 			getAutoCompleteEditor: getAutoCompleteEditor,
+			getDefaultFieldAutoCompleteDataSource: getDefaultFieldAutoCompleteDataSource,
 			getLocalDropDownEditor: getLocalDropDownEditor,
 			getLocalDropDownEditor: getLocalDropDownEditor,
 			initDefaultInfoWindow: initDefaultInfoWindow,
@@ -638,7 +695,7 @@
 			getDefaultColumns: getDefaultColumns,
 			getDefaultGridDataSource: getDefaultGridDataSource,
 			getDefaultFieldAutoCompleteValidation: getDefaultFieldAutoCompleteValidation,
-			ready: ready
+			fieldsReady: fieldsReady
 		};
 	}
 	angrycat.kendoGridService = {
