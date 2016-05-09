@@ -43,7 +43,7 @@
 	<script type="text/javascript" src="${angrycatJs}/angrycat.js"></script>
 	<script type="text/javascript" src="${angrycatJs}/angrycat.kendo.grid.js"></script>	
 	<script type="text/javascript">
-		(function(){
+		(function($, kendo, angrycat){
 			var lastKendoData = ${sessionScope[kendoDataKey] == null ? "null" : sessionScope[kendoDataKey]},
 			opts = {
 				moduleName: "${moduleName}",
@@ -131,75 +131,15 @@
 						["contactInfo",		"郵寄地址電話",		150,			"string",	"contains",				null,				hidden],
 						["registrant",		"登單者",				150,			"string",	"contains",				null,				hidden],
 						["rowId",			"Excel序號",			150,			"string",	"contains",				uneditable,			hidden]
-					],
-					modelFields = this.getDefaultModelFields(fields),
-					columns = this.getDefaultColumns(fields),
-					dataSource = this.getDefaultGridDataSource({modelFields: modelFields}),
-					toolbar = [
-					{
-						name: "create",
-					},
-					{
-						text: " 重查",
-						name: "reset",
-						iconClass: "k-font-icon k-i-undo-large"
-					}];
-			
-				modelFields["rowId"]["editable"] = false;
-				if("incell" === opts.editMode){// in relation with batch update
-					toolbar.push({name: "save"});
-					toolbar.push({name: "cancel"});
-				}
+					];
 				
-				var mainGrid = $(opts.gridId).kendoGrid({
-					columns: columns,
-					dataSource: dataSource,
-					autoBind: false,
-					toolbar: toolbar,
-					editable: {
-						create: true, 
-						update: true, 
-						destroy: true,
-						mode: opts.editMode
-					},
-					scrollable: true,
-					pageable: {
-						refresh: true,
-						pageSizes: ["5","10","15","20","25","30","all"],
-						buttonCount: 13
-					},
-					sortable: {
-						mode: "single",
-						allowUnsort: false
-					},
-					resizable: true,
-					navigatable: true,
-					filterable: {
-						mode: "menu, row",
-						extra: true
-					},
-					selectable: "multiple, cell",
-					columnMenu: true,
-					dataBinding: function(e){
-						//var cell = this.tbody.find("tr[row='row'] td:first");
-						//this.current(cell);
-						//this.table.focus();
-					}
-					/*edit事件編輯前觸發一次，編輯完、跳出編輯模式後觸發一次
-					edit: function(e){
-						var container = e.container, // if edit mode is incell, the container is table cell
-							sender = e.sender;
-						sender.current().focus();
-					}*/
-				}).data("kendoGrid");
-				
-				return mainGrid;
+				return fields;
 			}
 			
 			angrycat.kendoGridService
 				.init(opts)
-				.ready(readyHandler);
-		})();			
+				.fieldsReady(readyHandler);
+		})(jQuery, kendo, angrycat);			
 	</script>
 </body>
 </html>
