@@ -207,7 +207,7 @@
 		result = ("<span>" + result + "</span>");
 		return result;
 	}
-	function getAutoCompleteEditor(settings){
+	function getAutoCompleteCellEditor(settings){
 		var textField = settings.textField,
 			readUrl = settings.readUrl
 			filter = settings.filter ? settings.filter : "contains",
@@ -581,7 +581,7 @@
 				}
 			},
 			memberColumn = {template: "<span title='#=(member ? member.name : '')#'>#=(member ? member.name : '')#</span>"},
-			memberEditor = getAutoCompleteEditor({
+			memberEditor = getAutoCompleteCellEditor({
 				textField: "name",
 				valueField: "id",
 				readUrl: moduleBaseUrl + "/queryMemberAutocomplete.json", 

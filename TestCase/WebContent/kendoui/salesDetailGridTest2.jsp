@@ -32,7 +32,6 @@
 	<link rel="stylesheet" href="${bootstrapCss}/bootstrap-theme.css">	
 	
 	<script type="text/javascript" src="${kendouiJs}/jquery.min.js"></script>
-	<script type="text/javascript" src="${kendouiJs}/jquery.cookie.js"></script>
 	<script type="text/javascript" src="${kendouiJs}/kendo.web.min.js"></script>
 	<script type="text/javascript" src="${kendouiJs}/messages/kendo.messages.zh-TW.min.js"></script>
 
@@ -94,13 +93,14 @@
 			};
 			
 			function readyHandler(){
-				var hidden = {hidden: true},
+				var context = this,
+					hidden = {hidden: true},
 					uneditable = {editable: false},
 					memberFieldName = "member",
 					memberField = {
 						type: null,
 						validation: {
-							isEffectiveMember: this.getDefaultFieldAutoCompleteValidation({
+							isEffectiveMember: context.getDefaultFieldAutoCompleteValidation({
 								field: memberFieldName,
 								method: "isEffectiveMember",
 								validate: function(opts){
@@ -111,25 +111,40 @@
 							})
 						}
 					},
-					memberColumn = {template: "<span title='#=(member ? member.name : '')#'>#=(member ? member.name : '')#</span>"},
-					memberEditor = this.getAutoCompleteEditor({
+					memberColumn = {
+						template: "<span title='#=(member ? member.name : '')#'>#=(member ? member.name : '')#</span>",
+						filterable: {
+							cell: {
+								inputWidth: "100%",
+								template: function(args){
+									context.getDefaultAutoCompleteFilterEditor({
+										ele: args.element,
+										dataTextField: "name",
+										dataValueField: "name",
+										action: "queryMemberAutocomplete",
+										autocompleteFieldsToFilter: ["name"]
+									});
+								}
+							}
+						}						
+					},
+					memberEditor = context.getAutoCompleteCellEditor({
 						textField: "name",
 						valueField: "id",
-						readUrl: opts.moduleBaseUrl + "/queryMemberAutocomplete.json", 
+						action: "queryMemberAutocomplete",
 						filter: "contains", 
 						//template: "<span>#: name # | #: nameEng #</span>",
 						autocompleteFieldsToFilter: ["name", "nameEng", "idNo"],
 						errorMsgFieldName: memberFieldName,
 						selectAction: function(model, dataItem){
-							model.set(memberFieldName, dataItem);
 							model.set("fbName", dataItem.fbNickname);
 							model.set("idNo", dataItem.idNo);
 						}
 					}),
 					modelIdFieldName = "modelId",
-					modelIdEditor = this.getAutoCompleteEditor({
+					modelIdEditor = context.getAutoCompleteCellEditor({
 						textField: "modelId",
-						readUrl: opts.moduleBaseUrl + "/queryProductAutocomplete.json", 
+						action: "queryProductAutocomplete", 
 						filter: "contains", 
 						autocompleteFieldsToFilter: ["modelId", "nameEng"],
 						selectAction: function(model, dataItem){

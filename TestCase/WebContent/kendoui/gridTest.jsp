@@ -164,7 +164,7 @@
 				}
 				return filterObj;
 			}
-			function getAutoCompleteEditor(settings){
+			function getAutoCompleteCellEditor(settings){
 				var textField = settings.textField,
 					readUrl = settings.readUrl
 					filter = settings.filter ? settings.filter : "contains",
@@ -311,7 +311,7 @@
 						operator: "contains" // default filter operator
 					}
 				},
-				editor: getAutoCompleteEditor({
+				editor: getAutoCompleteCellEditor({
 					textField: "name", 
 					readUrl: moduleBaseUrl + "/queryConditional.json", 
 					filter: "contains", 

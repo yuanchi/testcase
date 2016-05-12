@@ -65,8 +65,7 @@
 
 <div class="container">
 
-<div class="jumbotron">
-<h4>Hello</h4>
+<div class="well">
 </div>
 	<span id="updateInfoWindow" style="display:none;"></span>
 	<div id="mainGrid"></div>
@@ -96,12 +95,13 @@
 			};
 			
 			function fieldsReadyHandler(){
-				var hidden = {hidden: true},
+				var context = this,
+					hidden = {hidden: true},
 					catFieldName = "parameterCategory",
 					catField = {
 						type: null,
 						validation: {
-							isEffectiveCat: this.getDefaultFieldAutoCompleteValidation({
+							isEffectiveCat: context.getDefaultFieldAutoCompleteValidation({
 								field: catFieldName,
 								required: true, // 加上必填檢核
 								method: "isEffectiveCat",
@@ -113,11 +113,26 @@
 							})
 						}
 					},
-					catColumn = {template: "<span title='#=(parameterCategory ? parameterCategory.name : '')#'>#=(parameterCategory ? parameterCategory.name : '')#</span>"},
-					catEditor = this.getAutoCompleteEditor({
+					catColumn = {
+						template: "<span title='#=(parameterCategory ? parameterCategory.name : '')#'>#=(parameterCategory ? parameterCategory.name : '')#</span>",
+						filterable: {
+							cell: {
+								template: function(args){
+									context.getDefaultRemoteDropDownList({
+										ele: args.element,
+										action: "queryParameterCatDropDownList",
+										dataTextField: "name",
+										dataValueField: "id"
+									});
+								},
+								showOperators: false
+							}
+						}
+					},
+					catEditor = context.getAutoCompleteCellEditor({
 						textField: "name",
 						valueField: "id",
-						readUrl: opts.moduleBaseUrl + "/queryParameterCatAutocomplete.json", 
+						action: "queryParameterCatAutocomplete", 
 						filter: "contains",
 						autocompleteFieldsToFilter: ["name"],
 						errorMsgFieldName: catFieldName
