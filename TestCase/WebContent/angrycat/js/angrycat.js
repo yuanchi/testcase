@@ -1,6 +1,5 @@
-(function(host){"use strict"
-	host.angrycat = host.angrycat || {};
-	var angrycat = host.angrycat; 
+(function(window){"use strict"
+	var angrycat = window.angrycat = window.angrycat || {};
 
 	function once(func){
 		function empty(){}
