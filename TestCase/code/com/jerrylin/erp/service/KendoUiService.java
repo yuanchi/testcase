@@ -3,6 +3,8 @@ package com.jerrylin.erp.service;
 import static com.jerrylin.erp.service.TimeService.DF_yyyyMMdd_DASHED;
 
 import java.io.Serializable;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.Map;
 import java.util.UnknownFormatConversionException;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.beanutils.PropertyUtils;
@@ -75,6 +78,19 @@ public class KendoUiService<T, R> implements Serializable{
 	private SqlTarget target;
 	private Map<String, String> filterFieldConverter = Collections.emptyMap(); // 將前端回傳的field，轉成適當或預期的名字，讓hql可以正常執行；譬如member->member.name
 	private Map<String, Class<?>> customDeclaredFieldTypes = Collections.emptyMap(); // 自定義field的型別，一般來說應該不需要
+	
+	@PostConstruct
+	void init(){
+		Type superClz = getClass().getGenericSuperclass();
+		if(superClz != null && superClz instanceof ParameterizedType){
+			Class<T> genericType = (Class<T>)((ParameterizedType)superClz).getActualTypeArguments()[0];
+			q.getSqlRoot()
+				.select()
+					.target("p").getRoot()
+				.from()
+					.target(genericType, "p");
+		}
+	}
 	
 	public ConditionConfig<T> copyToConditionConfig(){
 		ConditionConfig<T> cc = new ConditionConfig<T>();
@@ -383,6 +399,17 @@ public class KendoUiService<T, R> implements Serializable{
 		return null;
 	}
 	
+	public String conditionConfigToJsonStr(Object cc){
+		String json = JsonParseUtil.parseToJson(cc);
+		return json;
+	}
+	
+	public String findTargetPageable(ConditionConfig<T> conditionConfig){
+		ConditionConfig<T> cc = executeQueryPageable(conditionConfig);
+		String result = conditionConfigToJsonStr(cc);
+		return result;
+	}
+	
 	public ConditionConfig<T> executeQueryPageable(ConditionConfig<T> conditionConfig){
 		if(conditionConfig != null){
 			copyFromConditionConfig(conditionConfig);
@@ -396,6 +423,26 @@ public class KendoUiService<T, R> implements Serializable{
 		cc.setResults(results);
 		return cc;
 	}
+	
+	public String findTargetList(ConditionConfig<T> conditionConfig){
+		ConditionConfig<T> cc = executeQueryList(conditionConfig);
+		String result = conditionConfigToJsonStr(cc);
+		return result;
+	}
+	
+	public ConditionConfig<T> executeQueryList(ConditionConfig<T> conditionConfig){
+		if(conditionConfig != null){
+			copyFromConditionConfig(conditionConfig);
+		}
+		return genCondtitionsAfterExecuteQueryList();
+	}
+	
+	public ConditionConfig<T> genCondtitionsAfterExecuteQueryList(){
+		List<T> results = q.executeQueryList();
+		ConditionConfig<T> cc = copyToConditionConfig();
+		cc.setResults(results);
+		return cc;
+	}	
 	
 	public ISqlRoot getSqlRoot(){
 		return q.getSqlRoot();
