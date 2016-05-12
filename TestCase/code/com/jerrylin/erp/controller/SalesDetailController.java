@@ -23,8 +23,9 @@ import com.jerrylin.erp.jackson.mixin.MemberIgnoreDetail;
 import com.jerrylin.erp.model.Member;
 import com.jerrylin.erp.model.Product;
 import com.jerrylin.erp.model.SalesDetail;
-import com.jerrylin.erp.service.KendoUiAutocompleteService;
 import com.jerrylin.erp.service.KendoUiService;
+import com.jerrylin.erp.service.MemberQueryService;
+import com.jerrylin.erp.service.ProductQueryService;
 import com.jerrylin.erp.util.JsonParseUtil;
 
 @Controller
@@ -40,7 +41,9 @@ public class SalesDetailController {
 	@Autowired
 	private KendoUiService<SalesDetail, SalesDetail> kendoUiGridService;
 	@Autowired
-	private KendoUiAutocompleteService kendoUiAutocompleteService;	
+	private MemberQueryService memberQueryService;
+	@Autowired
+	private ProductQueryService productQueryService;
 	@Autowired
 	private SessionFactoryWrapper sfw;
 	
@@ -81,7 +84,7 @@ public class SalesDetailController {
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryMemberAutocomplete(@RequestBody ConditionConfig<Member> conditionConfig){
-		String result = kendoUiAutocompleteService.queryMembers(conditionConfig);
+		String result = memberQueryService.findTargetPageable(conditionConfig);
 		return result;
 	}
 	
@@ -90,7 +93,7 @@ public class SalesDetailController {
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryProductAutocomplete(@RequestBody ConditionConfig<Product> conditionConfig){
-		String result = kendoUiAutocompleteService.queryProducts(conditionConfig);
+		String result = productQueryService.findTargetPageable(conditionConfig);
 		return result;
 	}	
 	
