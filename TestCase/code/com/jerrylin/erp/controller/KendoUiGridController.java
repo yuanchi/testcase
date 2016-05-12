@@ -19,16 +19,18 @@ import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
 import com.jerrylin.erp.model.Product;
-import com.jerrylin.erp.service.KendoUiAutocompleteService;
 import com.jerrylin.erp.service.KendoUiService;
-import com.jerrylin.erp.util.JsonParseUtil;
+import com.jerrylin.erp.service.MemberQueryService;
+import com.jerrylin.erp.service.ProductQueryService;
 
 public abstract class KendoUiGridController<T, R> implements Serializable{
 	private static final long serialVersionUID = 6941560925887626505L;
 	@Autowired
-	private KendoUiService<T, R> kendoUiGridService;
+	KendoUiService<T, R> kendoUiGridService;
 	@Autowired
-	KendoUiAutocompleteService kendoUiAutocompleteService;
+	private MemberQueryService memberQueryService;
+	@Autowired
+	private ProductQueryService productQueryService;	
 	@Autowired
 	private SessionFactoryWrapper sfw;
 	private Class<T> rootType;
@@ -53,7 +55,7 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 	}
 	
 	String conditionConfigToJsonStr(Object cc){
-		String json = JsonParseUtil.parseToJson(cc);
+		String json = kendoUiGridService.conditionConfigToJsonStr(cc);
 		return json;
 	}
 		
@@ -62,7 +64,7 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryMemberAutocomplete(@RequestBody ConditionConfig<Member> conditionConfig){
-		String result = kendoUiAutocompleteService.queryMembers(conditionConfig);
+		String result = memberQueryService.findTargetPageable(conditionConfig);
 		return result;
 	}
 	
@@ -71,7 +73,7 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
 	public @ResponseBody String queryProductAutocomplete(@RequestBody ConditionConfig<Product> conditionConfig){
-		String result = kendoUiAutocompleteService.queryProducts(conditionConfig);
+		String result = productQueryService.findTargetPageable(conditionConfig);
 		return result;
 	}	
 
