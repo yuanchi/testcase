@@ -108,31 +108,16 @@ public class ExecutableQuery<T> implements Serializable{
 	 */
 	@SuppressWarnings("unchecked")
 	public List<T> executeQueryPageable(Session s){
-		String alias = findFirstSqlTargetAlias();
-		String id = getIdFieldName();
-		String identifier = alias + "." + id;
+		SqlGenerator genSql = new SqlGenerator(this);
 		
-		// retrieving copy root, not originally
-		SqlRoot copyRoot = copyRootPrepared();
-//		addOrderByIdIfAnyNotExisted(copyRoot);
-		
-		//String selectSql = copyRoot.findSql(Select.class);
-		String fromSql = copyRoot.findSql(From.class);
-		String joinSql = copyRoot.findSql(Join.class);
-		String whereSql = copyRoot.findSql(Where.class);
-		String orderSql = copyRoot.findSql(OrderBy.class);
-		
-		if(joinSql.toLowerCase().contains("join fetch")){
-			throw new UnsupportedOperationException("ExecutableQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
-		}
-		
-		String defaultDirection = " DESC";
-		if(StringUtils.isBlank(orderSql)){
-			orderSql = "ORDER BY " + identifier + defaultDirection;
-		}
-		if(!orderSql.contains(identifier + " ")){
-			orderSql += ", " + identifier + defaultDirection;
-		}
+		String alias = genSql.alias;
+		String identifier = genSql.identifier;
+
+		String fromSql = genSql.from;
+		String joinSql = genSql.join;
+		String whereSql = genSql.where;
+		String orderSql = genSql.order;
+		Map<String, Object> params = genSql.params;
 		
 		String selectCount = "SELECT COUNT(DISTINCT " + identifier + ")";
 		String selectCountHql = addLineBreakIfNotBlank(selectCount, fromSql, joinSql, whereSql);
@@ -152,7 +137,6 @@ public class ExecutableQuery<T> implements Serializable{
 		
 //		logger.log(Level.INFO, "params:");
 		System.out.println("params:");
-		Map<String, Object> params = copyRoot.getCondIdValuePairs();
 		params.forEach((k,v)->{
 //			logger.log(Level.INFO, k + ":" + v + ":" + v.getClass());
 			System.out.println(k + ":" + v + ":" + v.getClass());
@@ -185,41 +169,59 @@ public class ExecutableQuery<T> implements Serializable{
 	public <F>F executeScrollableQuery(BiFunction<ScrollableResults, SessionFactoryWrapper, F> executeLogic){
 		Session s = sfw.getCurrentSession();
 		
-		String alias = findFirstSqlTargetAlias();
-		String id = getIdFieldName();
-		String identifier = alias + "." + id;
+		SqlGenerator genSql = new SqlGenerator(this);
 		
-		// retrieving copy root, not originally
-		SqlRoot copyRoot = copyRootPrepared();
-		
-		//String selectSql = copyRoot.findSql(Select.class);
-		String fromSql = copyRoot.findSql(From.class);
-		String joinSql = copyRoot.findSql(Join.class);
-		String whereSql = copyRoot.findSql(Where.class);
-		String orderSql = copyRoot.findSql(OrderBy.class);
-		
-		if(joinSql.toLowerCase().contains("join fetch")){
-			throw new UnsupportedOperationException("ExecutableQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
-		}
-		
-		String defaultDirection = " DESC";
-		if(StringUtils.isBlank(orderSql)){
-			orderSql = "ORDER BY " + identifier + defaultDirection;
-		}
-		if(!orderSql.contains(identifier + " ")){
-			orderSql += ", " + identifier + defaultDirection;
-		}
-		
+		String alias = genSql.alias;
+		String fromSql = genSql.from;
+		String joinSql = genSql.join;
+		String whereSql = genSql.where;
+		String orderSql = genSql.order;
+		Map<String, Object> params = genSql.params;
+				
 		String selectAlias = "SELECT DISTINCT " + alias;
-		String selectAliasHql = addLineBreakIfNotBlank(selectAlias, fromSql, joinSql, whereSql);
-		
-		Map<String, Object> params = copyRoot.getCondIdValuePairs();
+		String selectAliasHql = addLineBreakIfNotBlank(selectAlias, fromSql, joinSql, whereSql, orderSql);
 		
 		ScrollableResults rs = s.createQuery(selectAliasHql).setProperties(params).scroll(ScrollMode.FORWARD_ONLY);
 		F target = executeLogic.apply(rs, sfw);
 		
 		return target;
 	}	
+	
+	private static class SqlGenerator{
+		String alias;
+		String id;
+		String identifier;
+		SqlRoot copyRoot;
+		String from;
+		String join;
+		String where;
+		String order;
+		Map<String, Object> params;
+		SqlGenerator(ExecutableQuery<?> q){
+			this.alias = q.findFirstSqlTargetAlias();
+			this.id = q.getIdFieldName();
+			this.identifier = alias + "." + id;
+			this.copyRoot = q.copyRootPrepared();
+			this.from = copyRoot.findSql(From.class);
+			this.join = copyRoot.findSql(Join.class);
+			this.where = copyRoot.findSql(Where.class);
+			this.order = copyRoot.findSql(OrderBy.class);
+			this.params = copyRoot.getCondIdValuePairs();
+			
+			if(join.toLowerCase().contains("join fetch")){
+				throw new UnsupportedOperationException("ExecutableQuery.executeQueryPageable NOT SUPPORT join fetch synctax!!");
+			}
+			
+			String defaultDirection = " DESC";
+			if(StringUtils.isBlank(order)){
+				order = "ORDER BY " + identifier + defaultDirection;
+			}
+			if(!order.contains(identifier + " ")){
+				order += ", " + identifier + defaultDirection;
+			}
+		}
+		
+	}
 	
 	private static String addLineBreakIfNotBlank(String... statements){
 		List<String> ori = Arrays.asList(statements);
@@ -230,9 +232,18 @@ public class ExecutableQuery<T> implements Serializable{
 	
 	@SuppressWarnings("unchecked")
 	public List<T> executeQueryList(Session s){
-		SqlRoot copyRoot = copyRootPrepared();
-		String queryHql = copyRoot.genSql();
-		Map<String, Object> params = copyRoot.getCondIdValuePairs();
+		SqlGenerator genSql = new SqlGenerator(this);
+		
+		String alias = genSql.alias;
+		String fromSql = genSql.from;
+		String joinSql = genSql.join;
+		String whereSql = genSql.where;
+		String orderSql = genSql.order;
+		Map<String, Object> params = genSql.params;
+		
+		String selectAlias = "SELECT DISTINCT " + alias;
+		String queryHql = addLineBreakIfNotBlank(selectAlias, fromSql, joinSql, whereSql, orderSql);
+		
 		List<T> results = s.createQuery(queryHql).setProperties(params).list();
 		return results;
 	}
@@ -285,24 +296,6 @@ public class ExecutableQuery<T> implements Serializable{
 	public String findFirstSqlTargetAlias(){
 		String alias = findFirstSqlTarget().getAlias();
 		return alias;
-	}	
-	
-	private void addOrderByIdIfAnyNotExisted(SqlRoot root){
-		List<ISqlNode> founds = root
-				.find(n-> (n instanceof OrderBy))
-				.getFounds();
-		OrderBy node = null;
-		if(founds.isEmpty()){
-			node = root.orderBy();
-		}else{
-			node = (OrderBy)founds.get(0);
-		}
-		if(node.getChildren().isEmpty()){
-			String alias = findFirstSqlTargetAlias();
-			String id = getIdFieldName();
-			String identifier = alias + "." + id;
-			node.desc(identifier);
-		}
 	}
 	
 	@SuppressWarnings("unchecked")
