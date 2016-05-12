@@ -151,7 +151,7 @@
 		}
 		
 		function getDefaultFieldAutoCompleteDataSource(settings){
-			var readUrl = settings.readUrl,
+			var action = settings.action,
 				autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
 				ds = {
 				serverPaging: true,
@@ -159,7 +159,7 @@
 				pageSize: DEFAULT_AUTOCOMPLETE_PAGESIZE_VALUE,
 				transport: {
 					read:{
-						url: readUrl,
+						url: (moduleBaseUrl + "/" + action + ".json"),
 						type: "POST",
 						dataType: "json",
 						contentType: "application/json;charset=utf-8",
@@ -193,9 +193,8 @@
 			return ds;
 		}
 		
-		function getAutoCompleteEditor(settings){
+		function getAutoCompleteCellEditor(settings){
 			var textField = settings.textField,
-				readUrl = settings.readUrl,
 				filter = settings.filter ? settings.filter : "contains",
 				autocompleteFieldsToFilter = settings.autocompleteFieldsToFilter,
 				template = settings.template ? settings.template : getAutoCompleteDefaultTemplate(autocompleteFieldsToFilter),
@@ -225,7 +224,8 @@
 						select: function(e){
 							var item = e.item,
 								text = item.text(), // text is template result
-								dataItem = this.dataItem(item.index());
+								dataItem = this.dataItem(item.index()),
+								keyCode = e.keyCode;
 							// ref. http://www.telerik.com/forums/autocomplete-update-grid-datasource
 							// 這裡要自行綁定model值，因為如果grid該欄位有設定檢核，而且有檢核未過的記錄，第二次以後在autocomplete選到的值都無法正常加到model上
 							// model.set(field, dataItem);
@@ -237,6 +237,7 @@
 					});
 			};
 		}
+		
 		
 		function getLocalDropDownEditor(settings){
 			var dataTextField = settings.dataTextField,
@@ -253,6 +254,59 @@
 					});
 			};
 		}		
+		
+		function getDefaultAutoCompleteFilterEditor(settings){
+			var ele = settings.ele,
+				action = settings.action,
+				dataTextField = settings.dataTextField,
+				dataValueField = settings.dataValueField,
+				ds = new kendo.data.DataSource(getDefaultFieldAutoCompleteDataSource(settings));			
+			ele.kendoAutoComplete({
+				valuePrimitive: true,
+				dataSource: ds,
+				dataTextField: dataTextField,
+				dataValueField: dataValueField				
+			});
+		}
+		
+		function getDefaultRemoteDropDownList(settings){
+			var ele = settings.ele,
+				action = settings.action,
+				dataTextField = settings.dataTextField,
+				dataValueField = settings.dataValueField,
+				ds = new kendo.data.DataSource({
+					transport: {
+						read: getDefaultRemoteConfig(action),
+						parameterMap: function(data, type){
+							if(type === "read"){
+								//console.log("data: " + JSON.stringify(data));
+								var r = {
+									conds: {
+										kendoData: {
+											filter: data.filter
+										}
+									}
+								};
+								return JSON.stringify(r);
+							}
+						}						
+					},
+					schema:{
+						type: "json",
+						data: function(response){
+							var results = response.results; // read
+							return results;
+						}
+					}					
+				});
+			//ds.pageSize(ds.total());
+			ele.kendoDropDownList({
+				valuePrimitive: true,
+				dataSource: ds,
+				dataTextField: dataTextField,
+				dataValueField: dataValueField
+			});
+		}
 		
 		function initDefaultNotification(options){
 			var centerOnShow = function(e){
@@ -552,60 +606,65 @@
 					ds.query(DEFAULT_QUERY_OPTIONS);
 				});
 				
-				var tdTotal = 0;
-				mainGrid.tbody.on("keydown", "td[data-role='editable'] input", function(e){
-					var $target = $(e.target);
-					if(e.keyCode == 13){
-						/* not work!!
-						$(gridId).data("kendoGrid").one("afterClose", function(e){
-							var $td = e.container,
-								tdIdx = $td.index(),
-								$tr = $td.closest("tr");
+				if(DEFAULT_EDIT_MODE === "incell"){
+					var tdTotal = 0;
+					mainGrid.tbody.on("keydown", "td[data-role='editable'] input", function(e){
+						var $target = $(e.target);
+						if(e.keyCode == 13){
+							/* not work!!
+							$(gridId).data("kendoGrid").one("afterClose", function(e){
+								var $td = e.container,
+									tdIdx = $td.index(),
+									$tr = $td.closest("tr");
 						
-							do{
-								var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
-							}while(nextCell.css("display") === "none");
+								do{
+									var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
+								}while(nextCell.css("display") === "none");
 					
-							if(nextCell.length === 0){
-								return;
-							}
-							setTimeout(function(){
-								var grid = $(gridId).data("kendoGrid");
-								grid.current(nextCell);
-								grid.editCell(nextCell);
-							},0);
-						});
-						*/
-						mainGrid.options["afterClose"] = once(function(e){ // 不得已直接從kendo ui widget的options加入事件處理器
-							var $td = e.container,
-								tdIdx = $td.index(),
-								$tr = $td.closest("tr");
-							if(!tdTotal){
-								tdTotal = $tr.find("td").length;
-							}
-							do{
-								if(tdIdx+1 >= tdTotal){// 如果已經是該行最後一欄，從下一行前面開始
-									$tr = $tr.next("tr");
-									tdIdx = 0;// TODO 第一列可能是或不是可編輯儲存格
+								if(nextCell.length === 0){
+									return;
 								}
-								var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
-							}while(nextCell.css("display") === "none"); // 如果是隱藏欄位就跳下一筆
+								setTimeout(function(){
+									var grid = $(gridId).data("kendoGrid");
+									grid.current(nextCell);
+									grid.editCell(nextCell);
+								},0);
+							});
+							 */
+							mainGrid.options["afterClose"] = once(function(e){ // 不得已直接從kendo ui widget的options加入事件處理器
+								var $td = e.container,
+									tdIdx = $td.index(),
+									$tr = $td.closest("tr");
+								if(!tdTotal){
+									tdTotal = $tr.find("td").length;
+								}
+								do{
+									if(tdIdx+1 >= tdTotal){// 如果已經是該行最後一欄，從下一行前面開始
+										$tr = $tr.next("tr");
+										tdIdx = 0;// TODO 第一列可能是或不是可編輯儲存格
+									}
+									var nextCell = $tr.find("td:eq("+ (++tdIdx) +")");
+								}while(nextCell.css("display") === "none"); // 如果是隱藏欄位就跳下一筆
 						
-							if(nextCell.length === 0){
-								return;
-							}
-							setTimeout(function(){
-								var grid = $(gridId).data("kendoGrid");
-								grid.current(nextCell);
-								grid.editCell(nextCell);
-							},0);
-						});
-					}
-				});
+								if(nextCell.length === 0){
+									return;
+								}
+								setTimeout(function(){
+									var grid = $(gridId).data("kendoGrid");
+									grid.current(nextCell);
+									grid.editCell(nextCell);
+								},0);
+							});
+						}
+					});
+				}
 				
 				$(document.body).keydown(function(e){
 					var altKey = e.altKey,
-						keyCode = e.keyCode;
+						keyCode = e.which,
+						$target = $(e.target),
+						$currentTarget = $(e.currentTarget);
+					
 					// ref. http://demos.telerik.com/kendo-ui/grid/keyboard-navigation
 					if(altKey && keyCode == 87){// Alt + W 就可以跳到grid table；搭配navigatable設定，可用上下左右鍵在grid cell上移動；遇到可編輯cell，可以Enter進去編輯，編輯完畢按下Enter
 						mainGrid.table.focus();
@@ -673,20 +732,21 @@
 						};
 					}
 				});
+				
+				initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
+				initDefaultNotification({notiId: notiId});
+				
 				if(lastKendoData){
 					mainGrid.dataSource.query(lastKendoData);
 				}else{
 					mainGrid.dataSource.read();
 				}
-				initDefaultInfoWindow({windowId: updateInfoWindowId, title: "更新訊息"});
-				initDefaultNotification({notiId: notiId});				
-					
 			});
 		}
 	
 		return {
 			getAutoCompleteDefaultTemplate: getAutoCompleteDefaultTemplate,
-			getAutoCompleteEditor: getAutoCompleteEditor,
+			getAutoCompleteCellEditor: getAutoCompleteCellEditor,
 			getDefaultFieldAutoCompleteDataSource: getDefaultFieldAutoCompleteDataSource,
 			getLocalDropDownEditor: getLocalDropDownEditor,
 			getLocalDropDownEditor: getLocalDropDownEditor,
@@ -695,6 +755,8 @@
 			getDefaultColumns: getDefaultColumns,
 			getDefaultGridDataSource: getDefaultGridDataSource,
 			getDefaultFieldAutoCompleteValidation: getDefaultFieldAutoCompleteValidation,
+			getDefaultRemoteDropDownList: getDefaultRemoteDropDownList,
+			getDefaultAutoCompleteFilterEditor: getDefaultAutoCompleteFilterEditor,
 			fieldsReady: fieldsReady
 		};
 	}
