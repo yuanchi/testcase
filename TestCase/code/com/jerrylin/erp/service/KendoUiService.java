@@ -57,14 +57,9 @@ public class KendoUiService<T, R> implements Serializable{
 	private static final String SIMPLE_CONDITION_PREFIX = "cond_";
 	private static final String CURRENT_PAGE			= "currentPage";
 	private static final String COUNT_PER_PAGE			= "countPerPage";
-	private static final String ORDER_TYPE				= "orderType";
 	private static final String KENDO_UI_GRID_FILTER	= "filter";
-	private static final String KENDO_UI_FILTER_LOGIC_AND	= "and";
-	private static final String KENDO_UI_FILTER_LOGIC_OR	= "or";
 	private static final String KENDO_UI_DATA	= "kendoData";
 	private static final String GROUP_AS_KENDO_UI_FILTER = "GROUP_AS_KENDO_UI_FILTER";
-	
-	private Logger logger = Logger.getLogger(KendoUiService.class.getName());
 	
 	@Autowired
 	private ExecutableQuery<T> q;
