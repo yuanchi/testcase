@@ -62,7 +62,9 @@
 				oriFilter = filters[0];
 			for(var i = 0; i < fields.length; i++){
 				var field = fields[i];
-				filters.push($.extend({}, oriFilter, {field: field}));
+				if(field !== oriFilter.field){
+					filters.push($.extend({}, oriFilter, {field: field}));
+				}
 			}
 			return filterObj;
 		}
@@ -258,12 +260,14 @@
 		function getDefaultAutoCompleteFilterEditor(settings){
 			var ele = settings.ele,
 				action = settings.action,
+				filter = settings.filter,
 				dataTextField = settings.dataTextField,
 				dataValueField = settings.dataValueField,
 				ds = new kendo.data.DataSource(getDefaultFieldAutoCompleteDataSource(settings));			
 			ele.kendoAutoComplete({
 				valuePrimitive: true,
 				dataSource: ds,
+				filter = settings.filter,
 				dataTextField: dataTextField,
 				dataValueField: dataValueField				
 			});
@@ -427,10 +431,17 @@
 					column["editor"] = editor;
 				}
 				if("date" === field[3]){
-					column["format"] = "{0:yyyy-MM-dd}";
-					column["parseFormats"] = "{0:yyyy-MM-dd}";
-					column["filterable"]["ui"] = "datetimepicker";
-					column["template"] = "<span title='#= kendo.toString(" + fieldName +", \"u\")#'>#= kendo.toString("+ fieldName +", \"u\")#</span>";
+					var format = "yyyy-MM-dd";
+					column["format"] = "{0:"+format+"}";
+					column["parseFormats"] = "{0:"+format+"}";
+					column["filterable"]["ui"] = function(element){
+						return element.kendoDatePicker({
+							format: format,
+							parseFormats: [format]
+						});
+					};
+					column["filterable"]["cell"]["template"] = null; // 預設cell.template用途在於防止change事件觸發filter，但在date欄位沒有這個問題，所以使用內建功能即可 
+					column["template"] = "<span>#= kendo.toString("+ fieldName +", \""+format+"\") ? kendo.toString("+ fieldName +", \""+format+"\") : \"\"#</span>"; // 如果有null值，希望他顯示空白
 				}
 				if(field[6]){
 					$.extend(column, field[6]);
@@ -520,6 +531,11 @@
 				},
 				error: function(e){
 					var status = (e && e.xhr && e.xhr.status) ? e.xhr.status : null;
+					if(status == 401){// TODO 401
+						// window.location.href = rootPath + "/login.jsp"
+						alert("已經被登出，應該轉到登入頁");
+						return;
+					}
 					if(status != 200){
 						$(updateInfoWindowId).data("kendoWindow")
 							.content("<h3 style='color:red;'>主機發生錯誤</h3><br><h4><xmp>"+ JSON.stringify(e) +"</xmp></h4>")
