@@ -170,16 +170,8 @@ public class ExecutableQuery<T> implements Serializable{
 		Session s = sfw.getCurrentSession();
 		
 		SqlGenerator genSql = new SqlGenerator(this);
-		
-		String alias = genSql.alias;
-		String fromSql = genSql.from;
-		String joinSql = genSql.join;
-		String whereSql = genSql.where;
-		String orderSql = genSql.order;
 		Map<String, Object> params = genSql.params;
-				
-		String selectAlias = "SELECT DISTINCT " + alias;
-		String selectAliasHql = addLineBreakIfNotBlank(selectAlias, fromSql, joinSql, whereSql, orderSql);
+		String selectAliasHql = genSql.selectDistinctAlias();
 		
 		ScrollableResults rs = s.createQuery(selectAliasHql).setProperties(params).scroll(ScrollMode.FORWARD_ONLY);
 		F target = executeLogic.apply(rs, sfw);
@@ -221,6 +213,12 @@ public class ExecutableQuery<T> implements Serializable{
 			}
 		}
 		
+		String selectDistinctAlias(){
+			String selectAlias = "SELECT DISTINCT " + alias;
+			String selectDistinctAlias = addLineBreakIfNotBlank(selectAlias, from, join, where, order);
+			return selectDistinctAlias;
+		}
+		
 	}
 	
 	private static String addLineBreakIfNotBlank(String... statements){
@@ -233,16 +231,8 @@ public class ExecutableQuery<T> implements Serializable{
 	@SuppressWarnings("unchecked")
 	public List<T> executeQueryList(Session s){
 		SqlGenerator genSql = new SqlGenerator(this);
-		
-		String alias = genSql.alias;
-		String fromSql = genSql.from;
-		String joinSql = genSql.join;
-		String whereSql = genSql.where;
-		String orderSql = genSql.order;
 		Map<String, Object> params = genSql.params;
-		
-		String selectAlias = "SELECT DISTINCT " + alias;
-		String queryHql = addLineBreakIfNotBlank(selectAlias, fromSql, joinSql, whereSql, orderSql);
+		String queryHql = genSql.selectDistinctAlias();
 		
 		List<T> results = s.createQuery(queryHql).setProperties(params).list();
 		return results;
