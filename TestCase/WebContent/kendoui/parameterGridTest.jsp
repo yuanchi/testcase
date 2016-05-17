@@ -5,7 +5,7 @@
 <%@ taglib uri="http://www.springframework.org/tags" prefix="s"%>
 
 <c:set value="${pageContext.request.contextPath}" var="rootPath"/>
-<c:set value="parameter" var="moduleName"/>
+<c:set value="member2" var="moduleName"/>
 <c:set value="${moduleName}KendoData" var="kendoDataKey"/>
 <c:set value="${rootPath}/${moduleName}" var="moduleBaseUrl"/>
 <c:set value="${rootPath}/kendoui/professional.2016.1.226.trial" var="kendouiRoot"/>
