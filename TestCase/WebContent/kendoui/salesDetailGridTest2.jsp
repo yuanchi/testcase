@@ -62,7 +62,7 @@
 	</nav>
 </div>
 
-<div class="container">
+<div class="container-fluid">
 <div class="well">
 </div>
 	<span id="updateInfoWindow" style="display:none;"></span>
@@ -96,6 +96,7 @@
 				var context = this,
 					hidden = {hidden: true},
 					uneditable = {editable: false},
+					memberDefaultAutoCompleteFilter = "contains",
 					memberFieldName = "member",
 					memberField = {
 						type: null,
@@ -121,6 +122,7 @@
 										ele: args.element,
 										dataTextField: "name",
 										dataValueField: "name",
+										filter: memberDefaultAutoCompleteFilter,
 										action: "queryMemberAutocomplete",
 										autocompleteFieldsToFilter: ["name"]
 									});
@@ -132,7 +134,7 @@
 						textField: "name",
 						valueField: "id",
 						action: "queryMemberAutocomplete",
-						filter: "contains", 
+						filter: memberDefaultAutoCompleteFilter, 
 						//template: "<span>#: name # | #: nameEng #</span>",
 						autocompleteFieldsToFilter: ["name", "nameEng", "idNo"],
 						errorMsgFieldName: memberFieldName,
