@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UnknownFormatConversionException;
-import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpSession;
@@ -33,6 +32,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.ModuleConfig;
 import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
@@ -221,7 +221,32 @@ public class KendoUiService<T, R> implements Serializable{
 		
 		return saved;
 	}
-		
+	
+	@Transactional
+	public void saveModuleConfig(ModuleConfig config){
+		Session s = sfw.getCurrentSession();
+		s.save(config);
+		s.flush();
+		s.clear();
+	}
+	
+	@Transactional
+	public void deleteModuleConfigs(List<String> configIds){
+		String deleteHql = "DELETE FROM " + ModuleConfig.class.getName() + " m WHERE m.id IN (:configIds)";
+		Session s = sfw.getCurrentSession();
+		s.createQuery(deleteHql).executeUpdate();
+		s.flush();
+		s.clear();
+	}
+	
+	@Transactional
+	public String listModuleConfigs(String moduleName){
+		String queryHql = "SELECT DISTINCT p FROM " + ModuleConfig.class.getName() + " p WHERE p.moduleName = :moduleName";
+		Session s = sfw.getCurrentSession();
+		List<ModuleConfig> moduleConfigs = s.createQuery(queryHql).setString("moduleName", moduleName).list();
+		return JsonParseUtil.parseToJson(moduleConfigs);
+	}
+	
 	private void adjustConditionByKendoUIGridFilter(Object filterObj){		
 		SqlRoot root = getSqlRootImpl();
 		Where where = root.find(Where.class);
