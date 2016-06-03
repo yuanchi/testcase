@@ -25,7 +25,8 @@
 			},
 			DEFAULT_EDIT_MODE = opts.editMode || "incell",
 			pk = opts.pk || "id",
-			lastKendoData = opts.lastKendoData || null;
+			lastKendoData = opts.lastKendoData || null
+			;
 		var selectedVal = null;
 			
 		function minusFilterDateTimezoneOffset(filter, modelFields){
@@ -267,7 +268,7 @@
 			ele.kendoAutoComplete({
 				valuePrimitive: true,
 				dataSource: ds,
-				filter = settings.filter,
+				filter: settings.filter,
 				dataTextField: dataTextField,
 				dataValueField: dataValueField				
 			});
@@ -579,6 +580,11 @@
 						text: " 重查",
 						name: "reset",
 						iconClass: "k-font-icon k-i-undo-large"
+					},
+					{
+						text: " 存成預設",
+						name: "asDefault",
+						iconClass: "k-font-icon k-i-lock"
 					}];
 				
 				if("incell" === DEFAULT_EDIT_MODE){// in relation with batch update
@@ -620,6 +626,58 @@
 				$(".k-grid-reset").click(function(e){
 					var ds = mainGrid.dataSource;
 					ds.query(DEFAULT_QUERY_OPTIONS);
+				});
+				
+				$(".k-grid-asDefault").click(function(e){
+					var name = prompt("請輸入設定名稱");
+					if(!name){
+						return;
+					}
+					var ds = mainGrid.dataSource,
+						filter = ds.filter(),
+						query = {
+							page: ds.page(),
+							pageSize: ds.pageSize(),
+							sort: ds.sort(),
+							group: ds.group()
+						},
+						baseConfig = getDefaultRemoteConfig("saveAsDefault");
+					
+					if(filter && filter.filters){
+						minusFilterDateTimezoneOffset(filter, modelFields);
+						query["filter"] = filter;
+					}
+					
+					var moduleConfig = {
+						name: name,
+						moduleName: moduleName,
+						json: query
+					};
+					
+					$.ajax(baseConfig.url, $.extend(baseConfig, {
+						data: JSON.stringify(moduleConfig),
+						beforeSend: function(){
+							kendo.ui.progress(mainGrid.wrapper, true);
+						},
+						complete: function(){
+							kendo.ui.progress(mainGrid.wrapper, false);
+						},
+						statusCode: {
+							401: function(){
+								alert("已經被登出，應該轉到登入頁");
+								return;
+							}
+						},
+						success: function(){
+							$(notiId).data("kendoNotification").show("預設值儲存成功");
+						},
+						error: function(jqxhr){
+							$(updateInfoWindowId).data("kendoWindow")
+								.content("<h3 style='color:red;'>主機發生錯誤</h3><br><h4><xmp>"+ JSON.stringify(jqxhr.statusText) +"</xmp></h4>")
+								.center()
+								.open();
+						}
+					}));
 				});
 				
 				if(DEFAULT_EDIT_MODE === "incell"){
