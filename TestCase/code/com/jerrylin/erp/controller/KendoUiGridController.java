@@ -3,6 +3,7 @@ package com.jerrylin.erp.controller;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -18,10 +19,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
 import com.jerrylin.erp.model.Member;
+import com.jerrylin.erp.model.ModuleConfig;
 import com.jerrylin.erp.model.Product;
 import com.jerrylin.erp.service.KendoUiService;
 import com.jerrylin.erp.service.MemberQueryService;
 import com.jerrylin.erp.service.ProductQueryService;
+import com.jerrylin.erp.util.JsonParseUtil;
 
 public abstract class KendoUiGridController<T, R> implements Serializable{
 	private static final long serialVersionUID = 6941560925887626505L;
@@ -34,6 +37,7 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 	@Autowired
 	private SessionFactoryWrapper sfw;
 	private Class<T> rootType;
+	String moduleName;
 	
 	@PostConstruct
 	void init(){
@@ -41,6 +45,9 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 		kendoUiGridService.getSqlRoot()
 			.select().target("p").getRoot()
 			.from().target(rootType, "p");
+		RequestMapping rm = AnnotationUtils.findAnnotation(this.getClass(), RequestMapping.class);
+		String[] modulePaths = rm.value();
+		moduleName = modulePaths[0].substring(1);
 	}
 	
 	public Class<T> getRootType(){
@@ -48,9 +55,7 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 	}
 	
 	public String list(HttpServletRequest request, Model model){
-		RequestMapping rm = AnnotationUtils.findAnnotation(this.getClass(), RequestMapping.class);
-		String[] modulePaths = rm.value();
-		String listPath = modulePaths[0] + "/list";
+		String listPath = moduleName + "/list";
 		return listPath;
 	}
 	
@@ -101,5 +106,18 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 	public @ResponseBody String deleteByIds(@RequestBody List<String> ids){
 		List<?> deletedItems = kendoUiGridService.deleteByIds(ids);
 		return conditionConfigToJsonStr(deletedItems);
+	}
+	
+	@RequestMapping(value="/saveAsDefault",
+			method=RequestMethod.POST,
+			produces={"application/xml", "application/json"},
+			headers="Accept=*/*")
+	public @ResponseBody Map<String, Object> saveAsDefault(@RequestBody Map<String, Object> config){
+		ModuleConfig moduleConfig = new ModuleConfig();
+		moduleConfig.setModuleName(moduleName);
+		moduleConfig.setName((String)config.get("name"));
+		moduleConfig.setJson(JsonParseUtil.parseToJson(config.get("json")));
+		kendoUiGridService.saveModuleConfig(moduleConfig);
+		return config;
 	}
 }
