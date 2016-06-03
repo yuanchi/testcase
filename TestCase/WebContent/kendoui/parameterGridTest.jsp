@@ -5,7 +5,7 @@
 <%@ taglib uri="http://www.springframework.org/tags" prefix="s"%>
 
 <c:set value="${pageContext.request.contextPath}" var="rootPath"/>
-<c:set value="member2" var="moduleName"/>
+<c:set value="parameter" var="moduleName"/>
 <c:set value="${moduleName}KendoData" var="kendoDataKey"/>
 <c:set value="${rootPath}/${moduleName}" var="moduleBaseUrl"/>
 <c:set value="${rootPath}/kendoui/professional.2016.1.226.trial" var="kendouiRoot"/>
@@ -16,6 +16,7 @@
 <c:set value="${angrycatRoot}/styles" var="angrycatStyle"/>
 <c:set value="${rootPath}/bootstrap/3.3.5" var="bootstrapRoot"/>
 <c:set value="${bootstrapRoot}/css" var="bootstrapCss"/>
+<c:set value="${bootstrapRoot}/js" var="bootstrapJs"/>
    
 <!DOCTYPE html>
 <html>
@@ -35,7 +36,7 @@
 	<script type="text/javascript" src="${kendouiJs}/jquery.cookie.js"></script>
 	<script type="text/javascript" src="${kendouiJs}/kendo.web.min.js"></script>
 	<script type="text/javascript" src="${kendouiJs}/messages/kendo.messages.zh-TW.min.js"></script>
-
+	<script type="text/javascript" src="${bootstrapJs}/bootstrap.min.js"></script>
 
 </head>
 <body>
@@ -54,8 +55,19 @@
 			</div>
 			<div id="navbarCollapse" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
-					<li>
-						<a href="${rootPath}/parameterGridTest.jsp">參數測試</a>
+					<li class="dropdown">
+						<a href="#" 
+							class="dropdown-toggle" 
+							data-toggle="dropdown" 
+							role="button" 
+							aria-haspopup="true" 
+							aria-expanded="false">
+							參數測試
+							<span class="caret"></span>
+						</a>
+						<ul class="dropdown-menu">
+							<li><a href="#">第一層</a></li>
+						</ul>
 					</li>										
 				</ul>
 			</div>		
