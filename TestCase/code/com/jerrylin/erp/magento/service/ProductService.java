@@ -16,12 +16,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jerrylin.erp.jackson.JsonNodeWrapper;
 
 @Service
 public class ProductService {
@@ -102,10 +104,34 @@ public class ProductService {
 		}catch(Throwable e){
 			throw new RuntimeException(e);
 		}
-		System.out.println("Response is Ok: " + isResOk);
-		System.out.println("response result: " + result);
+		System.out.println("Response is" + (isResOk ? " " : " NOT ") + "OK");
 		return result;
 	}
+	
+	private JsonNode toJsonNode(String source){
+		ObjectMapper om = new ObjectMapper();
+		JsonNode node = null;
+		try{
+			node = om.readTree(source);
+		}catch(Throwable e){
+			throw new RuntimeException(e);
+		}
+		return node;
+	}
+	
+	private void processEachNode(String source, Consumer<JsonNode> consumer){
+		JsonNode node = toJsonNode(source);
+		if(node != null && !node.isNull()){
+			node.forEach(n->{
+				Iterator<String> fieldNames = n.fieldNames();
+				fieldNames.forEachRemaining(fieldName->{
+					System.out.println(fieldName + "=>" + n.get(fieldName).asText());
+				});
+				System.out.println("==============");
+			});
+		}
+	}
+	
 	
 	public void listAllProducts(){
 		String result = connectToProductApi("listAllProductsResponse");
@@ -174,6 +200,46 @@ public class ProductService {
 	
 	public void listAllInventory(){
 		String result = connectToProductApi("listAllInventory", Collections.emptyList());
+		toJsonNode(result);
+		System.out.println(result);
+	}
+	
+	public List<String> listOutOfStockAndQtyMoreThanZero(){
+		String result = connectToProductApi("listAllInventory", Collections.emptyList());
+		JsonNodeWrapper jnw = new JsonNodeWrapper(result);
+		System.out.println("out of stock product ids: ");
+		List<String> productIds = 
+		jnw.filter(n-> {
+			if(n.isContainerNode() && n.isObject()){
+				Iterator<String> fieldNames = n.fieldNames();
+				
+				boolean isOutOfStock = false;
+				boolean isQtyMoreThanZero = false;
+				while(fieldNames.hasNext()){
+					String fieldName = fieldNames.next();
+					JsonNode valueNode = n.get(fieldName);
+					String value = valueNode.asText();
+					
+					if("is_in_stock".equals(fieldName) && "0".equals(value)){
+						isOutOfStock = true;
+					}
+					
+					if("qty".equals(fieldName) && !"0".equals(value)){
+						isQtyMoreThanZero = true;
+					}
+				}
+				if(isOutOfStock && isQtyMoreThanZero){
+					return true;
+				}
+			}
+			return false;
+		}).transformTo(n->{
+			String sku = n.get("sku").asText();
+			String id = n.get("product_id").asText();
+			System.out.println("sku:" + sku + "[product_id:"+ id + "]");
+			return id;
+		});
+		return productIds;
 	}
 	
 	public void updateInventoryByProductId(Map<String, String> params){
@@ -210,6 +276,24 @@ public class ProductService {
 			
 			args.add(update);
 		}		
+		String result = connectToProductApi("updateInventoryByProductId", args);
+	}
+	
+	public void updateOutOfStockToInStockIfQtyMoreThanZero(){
+		
+		List<String> productIds = listOutOfStockAndQtyMoreThanZero();
+		
+		List<Object> args = new LinkedList<>();
+		Map<String, Object> updateData = new LinkedHashMap<>();
+		updateData.put("is_in_stock", "1");
+		
+		productIds.stream().forEach(productId->{
+			Map<String, Object> update = new LinkedHashMap<>();
+			update.put("productId", productId);
+			update.put("updateData", updateData);
+			args.add(update);
+		});
+	
 		String result = connectToProductApi("updateInventoryByProductId", args);
 	}
 	
@@ -294,17 +378,32 @@ public class ProductService {
 	}
 	private static void testListAllProducts(){
 		ProductService s = new ProductService();
+		s.changeToIntranetUrl();
 		s.listAllProducts();
 	}
 	private static void testListAllInventory(){
 		ProductService s = new ProductService();
+		//s.changeToIntranetUrl();
 		s.listAllInventory();
 	}
+	private static void testListOutOfStockAndQtyMoreThanZero(){
+		ProductService s = new ProductService();
+		s.listOutOfStockAndQtyMoreThanZero();
+	}
+	private static void testUpdateOutOfStockToInStockIfQtyMoreThanZero(){
+		ProductService s = new ProductService();
+		s.updateOutOfStockToInStockIfQtyMoreThanZero();
+		List<String> ids = s.listOutOfStockAndQtyMoreThanZero();
+	}
+	
+	
 	public static void main(String[]args){
-		testUpdateInventoryByProductId();
+		//testUpdateInventoryByProductId();
 //		testListInventoryByProductIds();
 //		testChangeToIntranetUrl();
 //		testListAllProducts();
 //		testListAllInventory();
+//		testListOutOfStockAndQtyMoreThanZero();
+		testUpdateOutOfStockToInStockIfQtyMoreThanZero();
 	}
 }
