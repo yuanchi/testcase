@@ -224,11 +224,49 @@ public class ProductService {
 						isOutOfStock = true;
 					}
 					
-					if("qty".equals(fieldName) && !"0".equals(value)){
+					if("qty".equals(fieldName) && Double.valueOf(value) > 0){
 						isQtyMoreThanZero = true;
 					}
 				}
 				if(isOutOfStock && isQtyMoreThanZero){
+					return true;
+				}
+			}
+			return false;
+		}).transformTo(n->{
+			String sku = n.get("sku").asText();
+			String id = n.get("product_id").asText();
+			System.out.println("sku:" + sku + "[product_id:"+ id + "]");
+			return id;
+		});
+		return productIds;
+	}
+	
+	public List<String> listInStockAndQtyLessThanOrEqualsToZero(){
+		String result = connectToProductApi("listAllInventory", Collections.emptyList());
+		JsonNodeWrapper jnw = new JsonNodeWrapper(result);
+		System.out.println("in stock product ids: ");
+		List<String> productIds = 
+		jnw.filter(n-> {
+			if(n.isContainerNode() && n.isObject()){
+				Iterator<String> fieldNames = n.fieldNames();
+				
+				boolean isInStock = false;
+				boolean isQtyLessThanOrEqualsToZero = false;
+				while(fieldNames.hasNext()){
+					String fieldName = fieldNames.next();
+					JsonNode valueNode = n.get(fieldName);
+					String value = valueNode.asText();
+					
+					if("is_in_stock".equals(fieldName) && "1".equals(value)){
+						isInStock = true;
+					}
+					
+					if("qty".equals(fieldName) && Double.valueOf(value) <= 0){
+						isQtyLessThanOrEqualsToZero = true;
+					}
+				}
+				if(isInStock && isQtyLessThanOrEqualsToZero){
 					return true;
 				}
 			}
@@ -388,7 +426,13 @@ public class ProductService {
 	}
 	private static void testListOutOfStockAndQtyMoreThanZero(){
 		ProductService s = new ProductService();
+		s.changeToIntranetUrl();
 		s.listOutOfStockAndQtyMoreThanZero();
+	}
+	private static void testListInStockAndQtyLessThanOrEqualsToZero(){
+		ProductService s = new ProductService();
+		s.changeToIntranetUrl();
+		s.listInStockAndQtyLessThanOrEqualsToZero();
 	}
 	private static void testUpdateOutOfStockToInStockIfQtyMoreThanZero(){
 		ProductService s = new ProductService();
@@ -404,6 +448,7 @@ public class ProductService {
 //		testListAllProducts();
 //		testListAllInventory();
 //		testListOutOfStockAndQtyMoreThanZero();
-		testUpdateOutOfStockToInStockIfQtyMoreThanZero();
+//		testUpdateOutOfStockToInStockIfQtyMoreThanZero();
+		testListInStockAndQtyLessThanOrEqualsToZero();
 	}
 }
