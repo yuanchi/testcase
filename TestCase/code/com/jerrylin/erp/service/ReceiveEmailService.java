@@ -20,7 +20,7 @@ public class ReceiveEmailService {
 	public Message[] receive(SearchTerm st){
 		Properties props = System.getProperties();
 		String protocol = "pop3";
-		String host = "mail.ohmbeads.com.tw";
+		String host = "";
 		String user = "";
 		String password = "";
 		props.setProperty("mail.store.protocol", protocol);
