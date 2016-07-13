@@ -17,7 +17,7 @@ import com.jerrylin.erp.sql.SqlRoot;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 @Configuration
-@ComponentScan(basePackages={"com.jerrylin.erp.service", "com.jerrylin.erp.component", "com.jerrylin.erp.query", "com.jerrylin.erp.ds"})
+@ComponentScan(basePackages={"com.jerrylin.erp.service", "com.jerrylin.erp.component", "com.jerrylin.erp.query", "com.jerrylin.erp.ds", "com.jerrylin.erp.product"})
 @EnableTransactionManagement(proxyTargetClass=true)
 public class RootConfig {
 	public static final String DEFAULT_BATCH_SIZE = "100";
@@ -30,9 +30,9 @@ public class RootConfig {
 		}catch(Throwable e){
 			throw new RuntimeException(e);
 		}
-		ds.setJdbcUrl("jdbc:mariadb://localhost:3306/angrycat");
-		ds.setUser("root");
-		ds.setPassword("root");
+		ds.setJdbcUrl("");
+		ds.setUser("");
+		ds.setPassword("");
 		ds.setInitialPoolSize(5);
 		ds.setMinPoolSize(5);
 		ds.setMaxPoolSize(20);
