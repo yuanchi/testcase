@@ -1,6 +1,7 @@
 package com.jerrylin.erp.service.test;
 
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -28,20 +29,21 @@ public class ReceiveEmailServiceTests {
 	@Test
 	public void receiveProducts(){
 		ReceiveEmailService serv = new ReceiveEmailService();
-		Message[] messages = serv.receive(new SubjectTerm("ohm-products"));
+		
+		Message[] messages = serv.receive(new SubjectTerm("ohm-products-"+LocalDate.now().toString()));
 		System.out.println("message count:" + messages.length);
 		if(messages.length == 0){return;}
 		
 		try{
 			Message message = messages[messages.length-1]; // 取得最後一筆
-			Date d = message.getReceivedDate();
-			System.out.println("received: " + d);
+			Date d = message.getSentDate();
+			System.out.println("sent date: " + d);
 			Object contentObj = message.getContent();
 			String content = null;
 			
-			// 如果在gmail上，長的信件內容不會自己加上斷行和空白；但Synology MailServer收下來的卻會
+			// 如果在gmail上，長的信件內容不會自己加上斷行和空白；但Synology MailServer收下來的卻會。這就代表在信件內容的文字格式，在各個平台是不一致的
 			// 如果把文字檔案寫在附檔寄出，則不會有這種情況
-			// 信件內容會有容量上限，在gmail來講是20K
+			// 信件內容會有容量上限，在gmail來講是20K，所以以附檔的形式比較不容易受限於檔案大小
 			if(contentObj instanceof String){// 如果只有body沒有附檔，或者沒有body但有一個文字附檔(是否為文字檔以檔案的MimeType=text/plain判斷)
 				content = (String)contentObj;
 				System.out.println("content type is String");
