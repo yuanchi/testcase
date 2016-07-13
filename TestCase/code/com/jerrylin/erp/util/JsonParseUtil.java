@@ -90,19 +90,22 @@ public class JsonParseUtil {
 	 */
 	public static void iterateField(JsonNode node, BiConsumer<String, JsonNode> consumer){
 		iterate(node, n->{
-			if(n.isContainerNode() && n.isObject()){
-				Iterator<String> fieldNames = n.fieldNames();
-				while(fieldNames.hasNext()){
-					String fieldName = fieldNames.next();
-					JsonNode fieldNode = n.get(fieldName);
-					if(fieldNode != null){
-						consumer.accept(fieldName, fieldNode);
-					}else{
-						System.out.println("fieldNode is null: " + fieldName);
-					}
-					
-				};
-			}
+			processSingleNode(n, consumer);
 		});
+	}
+	public static void processSingleNode(JsonNode n, BiConsumer<String, JsonNode> consumer){
+		if(n.isContainerNode() && n.isObject()){
+			Iterator<String> fieldNames = n.fieldNames();
+			while(fieldNames.hasNext()){
+				String fieldName = fieldNames.next();
+				JsonNode fieldNode = n.get(fieldName);
+				if(fieldNode != null){
+					consumer.accept(fieldName, fieldNode);
+				}else{
+					System.out.println("fieldNode is null: " + fieldName);
+				}
+				
+			};
+		}
 	}
 }
