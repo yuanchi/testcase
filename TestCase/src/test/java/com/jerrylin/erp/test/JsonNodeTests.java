@@ -25,7 +25,7 @@ public class JsonNodeTests {
 	
 	@Test
 	public void testIterate(){
-		iterate(root, n->{
+		iterate("root", root, (f,n)->{
 			System.out.println(n);
 			printStatus(n);
 		});
@@ -33,7 +33,7 @@ public class JsonNodeTests {
 	
 	@Test
 	public void testIterateField(){
-		iterateField(root, (fieldName, n)->{
+		iterateField("root", root, (fieldName, n)->{
 			System.out.println(fieldName + ":" + n);
 			printStatus(n);
 		});
