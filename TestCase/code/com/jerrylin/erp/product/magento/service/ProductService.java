@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,17 +28,35 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerrylin.erp.jackson.JsonNodeWrapper;
 
 @Service
+@Scope("prototype")
 public class ProductService {
 	private static final String LOCAL_HOST_URL = "http://localhost/magento/index.php/";
 	private static final String INTRANET_HOST_URL = "http://192.168.1.15/magento/index.php/";
 	
+	public static final String PRODUCT_Id = "product_id";
+	public static final String PRODUCT_SKU = "sku";
+	public static final String PRODUCT_NAME = "name";
+	public static final String PRODUCT_SET = "set";
+	public static final String PRODUCT_TYPE = "type";
+	public static final String PRODUCT_CATEGORY_IDS = "category_ids";
+	public static final String PRODUCT_WEBSITE_IDS = "website_ids";
+	public static final List<String> PRODUCT_FIELD_NAMES = 
+			Arrays.asList(
+				PRODUCT_Id,
+				PRODUCT_SKU,
+				PRODUCT_NAME,
+				PRODUCT_SET,
+				PRODUCT_TYPE,
+				PRODUCT_CATEGORY_IDS,
+				PRODUCT_WEBSITE_IDS);
+	
 	private String baseUrl = LOCAL_HOST_URL;
 	
-	private void changeToLocalUrl(){
+	public void changeToLocalUrl(){
 		this.baseUrl = LOCAL_HOST_URL;
 	}
 	
-	private void changeToIntranetUrl(){
+	public void changeToIntranetUrl(){
 		this.baseUrl = INTRANET_HOST_URL;
 	}
 	
@@ -156,10 +176,10 @@ public class ProductService {
 		}
 	}
 	
-	public void listProductsByFilters(){
+	public String listProductsByIds(List<String> ids){
 		Map<String, String> cond1Operators = new LinkedHashMap<>();
 		cond1Operators.put("key", "in");
-		cond1Operators.put("value", "TT033,TT057");
+		cond1Operators.put("value", StringUtils.join(ids.toArray(), ","));
 		
 		Map<String, Object> cond1 = new LinkedHashMap<>();
 		cond1.put("key", "sku");
@@ -172,6 +192,7 @@ public class ProductService {
 		filters.put("complex_filter", conds);
 		
 		String results = connectToProductApi("listProductsByFilters", Arrays.asList(filters));
+		return results;
 	}
 	
 	public void listInventoryByProductIds(List<Object> ids){
@@ -394,61 +415,5 @@ public class ProductService {
 	}
 	public void deleteProduct(){
 		String result = connectToProductApi("deleteProduct", Arrays.asList("6"));
-	}
-	private static void testChangeToIntranetUrl(){
-		ProductService service = new ProductService();
-		service.changeToIntranetUrl();
-		service.listInventoryByProductIds(Arrays.asList("AAA003"));
-		
-	}
-	private static void testUpdateInventoryByProductId(){
-		Map<String, String> params = new LinkedHashMap<>();
-//		params.put("asus001", "88");
-		params.put("TT033", "23");
-//		params.put("apple001", "270");
-		
-		ProductService service = new ProductService();
-		service.updateInventoryByProductId(params);
-	}
-	private static void testListInventoryByProductIds(){
-		ProductService s = new ProductService();
-		s.listInventoryByProductIds(Arrays.asList("SSERR033"));
-	}
-	private static void testListAllProducts(){
-		ProductService s = new ProductService();
-		s.changeToIntranetUrl();
-		s.listAllProducts();
-	}
-	private static void testListAllInventory(){
-		ProductService s = new ProductService();
-		//s.changeToIntranetUrl();
-		s.listAllInventory();
-	}
-	private static void testListOutOfStockAndQtyMoreThanZero(){
-		ProductService s = new ProductService();
-		s.changeToIntranetUrl();
-		s.listOutOfStockAndQtyMoreThanZero();
-	}
-	private static void testListInStockAndQtyLessThanOrEqualsToZero(){
-		ProductService s = new ProductService();
-		s.changeToIntranetUrl();
-		s.listInStockAndQtyLessThanOrEqualsToZero();
-	}
-	private static void testUpdateOutOfStockToInStockIfQtyMoreThanZero(){
-		ProductService s = new ProductService();
-		s.updateOutOfStockToInStockIfQtyMoreThanZero();
-		List<String> ids = s.listOutOfStockAndQtyMoreThanZero();
-	}
-	
-	
-	public static void main(String[]args){
-		//testUpdateInventoryByProductId();
-//		testListInventoryByProductIds();
-//		testChangeToIntranetUrl();
-//		testListAllProducts();
-//		testListAllInventory();
-//		testListOutOfStockAndQtyMoreThanZero();
-//		testUpdateOutOfStockToInStockIfQtyMoreThanZero();
-		testListInStockAndQtyLessThanOrEqualsToZero();
 	}
 }
