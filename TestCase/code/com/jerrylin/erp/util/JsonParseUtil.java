@@ -6,8 +6,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
@@ -74,12 +74,21 @@ public class JsonParseUtil {
 		});
 	}
 	
-	public static void iterate(JsonNode node, Consumer<JsonNode> consumer){
-		consumer.accept(node);
-		if(node.isArray()){
-			node.forEach(n->{
-				iterate(n, consumer);
-			});
+	public static void iterate(String fieldName, JsonNode node, BiConsumer<String, JsonNode> consumer){
+		consumer.accept(fieldName, node);
+		if(node.fieldNames().hasNext()){
+			Iterator<Entry<String, JsonNode>> fields = node.fields();
+			while(fields.hasNext()){
+				Entry<String, JsonNode> field = fields.next();
+				iterate(field.getKey(), field.getValue(), consumer);
+			}
+		}else{
+			int idx = 0;
+			while(node.has(idx)){
+				String field = "" + idx;
+				iterate(field, node.get(idx), consumer);
+				++idx;
+			}
 		}
 	}
 	
@@ -88,8 +97,8 @@ public class JsonParseUtil {
 	 * @param node
 	 * @param consumer key是fielName, value是屬性值節點
 	 */
-	public static void iterateField(JsonNode node, BiConsumer<String, JsonNode> consumer){
-		iterate(node, n->{
+	public static void iterateField(String fieldName, JsonNode node, BiConsumer<String, JsonNode> consumer){
+		iterate(fieldName, node, (f, n)->{
 			processSingleNode(n, consumer);
 		});
 	}
@@ -104,7 +113,6 @@ public class JsonParseUtil {
 				}else{
 					System.out.println("fieldNode is null: " + fieldName);
 				}
-				
 			};
 		}
 	}
