@@ -8,6 +8,10 @@ import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.search.SearchTerm;
 
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
+@Service
+@Scope("prototype")
 public class ReceiveEmailService {
 	/**
 	 * ref. http://stackoverflow.com/questions/5285378/how-to-read-email-of-outlook-with-javamail
