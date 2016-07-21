@@ -36,6 +36,7 @@ import com.jerrylin.erp.model.ModuleConfig;
 import com.jerrylin.erp.query.ExecutableQuery;
 import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.ISqlRoot;
+import com.jerrylin.erp.sql.Join;
 import com.jerrylin.erp.sql.OrderBy;
 import com.jerrylin.erp.sql.SqlRoot;
 import com.jerrylin.erp.sql.SqlTarget;
@@ -154,16 +155,15 @@ public class KendoUiService<T, R> implements Serializable{
 			}
 			orderBy.getChildren().clear();
 			if(null != orderTypes){
-				String alias = getAlias();
 				for(int i = 0; i < orderTypes.size(); i++){
 					Map<String, String> orderType = orderTypes.get(i); // Kendo UI Grid排序回傳的資料結構 
 					String field = orderType.get("field");
-					field = convertFilterField(field);
 					String dir = orderType.get("dir");
+					String aliasField = convertFilterFieldStartsWithAlias(field);
 					if("asc".equals(dir)){
-						orderBy.asc(alias + "." + field);
+						orderBy.asc(aliasField);
 					}else if("desc".equals(dir)){
-						orderBy.desc(alias + "." + field);
+						orderBy.desc(aliasField);
 					}
 				}
 			}
@@ -293,14 +293,13 @@ public class KendoUiService<T, R> implements Serializable{
 	
 	private void addFilterCondition(Map<String, Object> f, CollectConds conds, String logic){
 		String operator = (String)f.get("operator");
-		String field = (String)f.get("field");
-		field = convertFilterField(field);
+		String field = convertFilterField((String)f.get("field"));
 		Object value = f.get("value");
 		
 		filterCount++;
 		
 		String alias = getAlias();
-		String expression = alias + "." + field + " ";
+		String expression = convertFilterFieldStartsWithAlias(field) + " ";
 		String nameParam = " :" + alias + firstLetterToUpperCase(field) + "_FILTER_" + filterCount;
 		MatchMode matchMode = null;
 		Object convertedVal = convertValueByType(field, value);
@@ -405,7 +404,23 @@ public class KendoUiService<T, R> implements Serializable{
 		}
 		return fieldName;
 	}
-	
+	/**
+	 * 如果需要加上alias就加，如果本身已經含alias(譬如屬於join的條件)，就略過
+	 * @param fieldName
+	 * @return
+	 */
+	private String convertFilterFieldStartsWithAlias(String fieldName){
+		String field = convertFilterField(fieldName);
+		
+		SqlRoot root = getSqlRootImpl();
+		List<Join> joins = root.findMultiple(Join.class);
+		boolean isStartsWithJoin = joins.stream().anyMatch(j->field.startsWith(j.getAlias()+"."));
+		
+		String alias = getAlias();
+		String expression = isStartsWithJoin ? field : (alias + "." + field);
+		
+		return expression;
+	}
 	private Integer getInteger(Object val){
 		if(val == null){
 			return null;
@@ -544,7 +559,7 @@ public class KendoUiService<T, R> implements Serializable{
 		return target;
 	}
 	
-	private String getAlias(){
+	public String getAlias(){
 		if(StringUtils.isBlank(alias)){
 			alias = q.findFirstSqlTargetAlias();
 		}
