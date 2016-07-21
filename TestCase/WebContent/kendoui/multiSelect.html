@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
+</head>
+<body>
+<button type="button" id="showValues">Show Values</button>
+<select id="select"></select>
+
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/jquery.min.js"></script>
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/kendo.web.min.js"></script>
+<script type="text/javascript">
+	// ref. https://onabai.wordpress.com/2013/07/17/kendoui-multiselect-in-a-grid-yes-we-can/
+	(function($, kendo){"use strict"
+		$("#select").kendoMultiSelect({
+			dataTextField: "text",
+			dataValueField: "id",
+			dataSource: [
+				{text: "Africa", id: 1},
+				{text: "Europe", id: 2},
+				{text: "Asia", id: 3},
+				{text: "North America", id: 4},
+				{text: "South America", id: 5},
+				{text: "Antarctica", id: 6},
+				{text: "Australia", id: 7}
+			]
+		});
+		$("#showValues").click(function(){
+			alert($("#select").data("kendoMultiSelect").value());
+		});
+	})(jQuery, kendo)
+</script>
+</body>
+</html>
