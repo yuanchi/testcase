@@ -13,6 +13,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jerrylin.erp.jackson.HibernateAwareObjectMapper;
 
 public class JsonParseUtil {
 	public static String parseToJson(Object object){
@@ -43,7 +44,21 @@ public class JsonParseUtil {
 		
 		return json;
 	}
-	
+	/**
+	 * ref. http://stackoverflow.com/questions/21708339/avoid-jackson-serialization-on-non-fetched-lazy-objects/21760361#21760361
+	 * @param obj
+	 * @return
+	 */
+	public static String parseHibernateModelToJson(Object obj){
+		String json = "";
+		try{
+			ObjectMapper om = new HibernateAwareObjectMapper();
+			json = om.writeValueAsString(obj);
+		}catch(Throwable e){
+			throw new RuntimeException(e);
+		}
+		return json;
+	}
 	
 	/**
 	 * 顯示節點狀態
