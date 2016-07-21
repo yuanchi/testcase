@@ -47,7 +47,7 @@ public class RootConfig {
 	public LocalSessionFactoryBean sessionFactory(DataSource dataSource){
 		LocalSessionFactoryBean sfb = new LocalSessionFactoryBean();
 		sfb.setDataSource(dataSource);
-		sfb.setPackagesToScan("com.jerrylin.erp.model");
+		sfb.setPackagesToScan("com.jerrylin.erp.model", "com.jerrylin.erp.security");
 		Properties props = new Properties();
 		props.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
 		props.setProperty("hibernate.show_sql", "false");
