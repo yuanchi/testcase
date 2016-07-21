@@ -160,6 +160,12 @@
 			<version>${jackson.version}</version>
 		</dependency>
 		
+		<dependency>
+    		<groupId>com.fasterxml.jackson.datatype</groupId>
+    		<artifactId>jackson-datatype-hibernate4</artifactId>
+    		<version>${jackson.version}</version>
+		</dependency>
+		
 		<!-- 7z c++ library Java wrapper across platform -->
 		<dependency>
 			<groupId>net.sf.sevenzipjbinding</groupId>
