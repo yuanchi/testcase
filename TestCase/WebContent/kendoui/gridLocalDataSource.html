@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
+</head>
+<body>
+
+<div id="mainGrid"></div>
+
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/jquery.min.js"></script>
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/kendo.web.min.js"></script>
+<script type="text/javascript">
+	(function($, kendo){"use strict"
+		$("#mainGrid").kendoGrid({
+			dataSource: {
+				data: [{
+					firstName:"Bob", lastName: "Lin", id: 1
+				},{
+					firstName:"John", lastName: "Hung", id: 2
+				},{
+					firstName:"Mary", lastName: "Wu", id: 3
+				}],
+				schema: {
+					model: {
+						fields: {
+							firstName: {type: "string"},
+							lastName: {type: "string"},
+							id: {type: "string"}
+						}
+					}
+				},
+				pageSize: 10
+			},
+			height: 550,
+			scrollable: true,
+			sortable: true,
+			filterable: true,
+			pageable: {
+				input :true,
+				numeric: false
+			},
+			columns: [
+			{field: "firstName", title: "First Name", width: "150px"},
+			{field: "lastName", title: "Last Name", width: "150px"},
+			{field: "id", title: "ID", width: "150px"}]
+		});
+	})(jQuery, kendo)
+</script>
+</body>
+</html>
