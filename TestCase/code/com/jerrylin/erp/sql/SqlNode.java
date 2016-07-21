@@ -90,7 +90,7 @@ public abstract class SqlNode implements ISqlNode {
 	}
 	@Override
 	public <T extends ISqlNode>List<T> findMultiple(Class<T> clz){
-		find(n->(n.getClass().isInstance(clz)));
+		find(n->(clz.isInstance(n)));
 		if(!founds.isEmpty()){
 			return (List<T>)founds;
 		}
