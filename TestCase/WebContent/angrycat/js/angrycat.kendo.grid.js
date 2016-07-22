@@ -414,6 +414,7 @@
 			for(var i = 0; i < fields.length; i++){
 				var field = fields[i],
 					fieldName = field[0],
+					type = field[3],
 					width = field[2],
 					editor = field[7];
 				var column = {
@@ -423,7 +424,7 @@
 						filterable: {
 							cell: {
 								operator: field[4],
-								template: defaultFilterTemplate
+								template: type === "string" ? defaultFilterTemplate : null
 							}
 						},
 						template: defaultTemplate.replace(/{field}/g, fieldName)
@@ -431,7 +432,7 @@
 				if(editor){
 					column["editor"] = editor;
 				}
-				if("date" === field[3]){
+				if("date" === type){
 					var format = "yyyy-MM-dd";
 					column["format"] = "{0:"+format+"}";
 					column["parseFormats"] = "{0:"+format+"}";
