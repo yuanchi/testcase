@@ -519,6 +519,9 @@ public class KendoUiService<T, R> implements Serializable{
 		if(null == obj || obj.getClass() == type){
 			return obj;
 		}
+		if(Integer.class.isInstance(obj)){
+			obj = Integer.class.cast(obj).toString();
+		}
 		Object casted = null;
 		try{
 			if(obj instanceof String){
@@ -529,13 +532,13 @@ public class KendoUiService<T, R> implements Serializable{
 				val = val.trim();
 				if(type == String.class){
 					casted = val;
-				}else if(type == Boolean.class){
+				}else if(type == Boolean.class || type == boolean.class){
 					casted = Boolean.parseBoolean(val);
-				}else if(type == Integer.class){
+				}else if(type == Integer.class || type == int.class){
 					casted = Integer.parseInt(val);
-				}else if(type == Double.class){
+				}else if(type == Double.class || type == double.class){
 					casted = Double.parseDouble(val);
-				}else if(type == Float.class){
+				}else if(type == Float.class || type == float.class){
 					casted = Float.parseFloat(val);
 				}else if(type == Date.class){
 					casted = new Date(DF_yyyyMMdd_DASHED.parse(val).getTime());
