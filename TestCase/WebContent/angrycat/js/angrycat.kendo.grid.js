@@ -401,6 +401,17 @@
 						.addClass("k-input") // 讓kendo ui元件認出這是輸入欄位
 						.attr("type", "text") // 讓版型更為一致
 						.wrap(parent); // 跟原來預設的版型一樣，有圓角，而且與相鄰元件(按鈕)對齊
+				},
+				numberFilterTemplate = function(args){// 預設數字篩選會格式會多0，透過這個函式，去掉多餘的0
+					args.element.kendoNumericTextBox({
+						format: "n0",
+						decimal: 0
+					});
+				},
+				dateFilterTemplate = function(args){
+					args.element.kendoDatePicker({
+						format: "yyyy-MM-dd"
+					});
 				};
 			columns.push({
 				command: ["destroy"], // 刪除欄位最後決定放在最前方，因為如果cloumn太多，更新完後會跳回到最前面欄位位置；
@@ -424,7 +435,7 @@
 						filterable: {
 							cell: {
 								operator: field[4],
-								template: type === "string" ? defaultFilterTemplate : null
+								template: type === "string" ? defaultFilterTemplate : (type === "number" ? numberFilterTemplate : (type == "date" ? dateFilterTemplate : null))
 							}
 						},
 						template: defaultTemplate.replace(/{field}/g, fieldName)
