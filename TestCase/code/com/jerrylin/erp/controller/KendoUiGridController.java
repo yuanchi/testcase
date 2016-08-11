@@ -18,9 +18,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.component.SessionFactoryWrapper;
-import com.jerrylin.erp.model.Member;
 import com.jerrylin.erp.model.ModuleConfig;
-import com.jerrylin.erp.model.Product;
 import com.jerrylin.erp.service.KendoUiService;
 import com.jerrylin.erp.service.MemberQueryService;
 import com.jerrylin.erp.service.ProductQueryService;
@@ -53,43 +51,23 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 	public Class<T> getRootType(){
 		return rootType;
 	}
-	
+	@RequestMapping(value="/list", method={RequestMethod.POST, RequestMethod.GET})
 	public String list(HttpServletRequest request, Model model){
 		String listPath = moduleName + "/list";
+		model.addAttribute("moduleName", moduleName);
 		return listPath;
 	}
-	
 	String conditionConfigToJsonStr(Object cc){
 		String json = kendoUiGridService.conditionConfigToJsonStr(cc);
 		return json;
 	}
-		
-	@RequestMapping(value="/queryMemberAutocomplete",
-			method=RequestMethod.POST,
-			produces={"application/xml", "application/json"},
-			headers="Accept=*/*")
-	public @ResponseBody String queryMemberAutocomplete(@RequestBody ConditionConfig<Member> conditionConfig){
-		String result = memberQueryService.findTargetPageable(conditionConfig);
-		return result;
-	}
-	
-	@RequestMapping(value="/queryProductAutocomplete",
-			method=RequestMethod.POST,
-			produces={"application/xml", "application/json"},
-			headers="Accept=*/*")
-	public @ResponseBody String queryProductAutocomplete(@RequestBody ConditionConfig<Product> conditionConfig){
-		String result = productQueryService.findTargetPageable(conditionConfig);
-		return result;
-	}	
-
 	@RequestMapping(value="/queryConditional",
 			method=RequestMethod.POST,
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
-	public @ResponseBody String queryConditional(@RequestBody ConditionConfig<T> conditionConfig){
+	public @ResponseBody ConditionConfig<T> queryConditional(@RequestBody ConditionConfig<T> conditionConfig){
 		ConditionConfig<T> cc = kendoUiGridService.executeQueryPageable(conditionConfig);
-		String result = conditionConfigToJsonStr(cc);
-		return result;
+		return cc;
 	}	
 	@RequestMapping(value="/batchSaveOrMerge",
 			method=RequestMethod.POST,
@@ -103,9 +81,9 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 			method=RequestMethod.POST,
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
-	public @ResponseBody String deleteByIds(@RequestBody List<String> ids){
+	public @ResponseBody List<?> deleteByIds(@RequestBody List<String> ids){
 		List<?> deletedItems = kendoUiGridService.deleteByIds(ids);
-		return conditionConfigToJsonStr(deletedItems);
+		return deletedItems;
 	}
 	
 	@RequestMapping(value="/saveAsDefault",
