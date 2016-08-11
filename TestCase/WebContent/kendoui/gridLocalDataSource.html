@@ -22,13 +22,33 @@
 					firstName:"John", lastName: "Hung", id: 2
 				},{
 					firstName:"Mary", lastName: "Wu", id: 3
+				},{
+					firstName:"Bary", lastName: "Yu", id: 4
+				},{
+					firstName:"Jary", lastName: "Ku", id: 5
+				},{
+					firstName:"Wary", lastName: "Pu", id: 6
+				},{
+					firstName:"Pary", lastName: "Ou", id: 7
+				},{
+					firstName:"Kary", lastName: "Iu", id: 8
+				},{
+					firstName:"Hary", lastName: "Wu", id: 9
+				},{
+					firstName:"Eary", lastName: "Wu", id: 10
+				},{
+					firstName:"Qary", lastName: "Wu", id: 11
+				},{
+					firstName:"Lary", lastName: "Wu", id: 12
+				},{
+					firstName:"Dary", lastName: "Wu", id: 13
 				}],
 				schema: {
 					model: {
 						fields: {
 							firstName: {type: "string"},
 							lastName: {type: "string"},
-							id: {type: "string"}
+							id: {type: "number"}
 						}
 					}
 				},
@@ -36,17 +56,29 @@
 			},
 			height: 550,
 			scrollable: true,
+			navigatable: true,
 			sortable: true,
-			filterable: true,
+			selectable: "multiple, cell",
+			filterable: {mode: "row"},
 			pageable: {
 				input :true,
 				numeric: false
 			},
+			editable: {
+				mode: "incell"
+			},
+			filterable: {
+				mode: "menu, row",
+				extra: true
+			},
 			columns: [
-			{field: "firstName", title: "First Name", width: "150px"},
-			{field: "lastName", title: "Last Name", width: "150px"},
-			{field: "id", title: "ID", width: "150px"}]
+			{field: "firstName", title: "First Name", width: "50px"},
+			{field: "lastName", title: "Last Name", width: "50px"},
+			{field: "id", title: "ID", width: "50px"}]
 		});
+		var mainGrid = $("#mainGrid").data("kendoGrid");
+		var arrows = [37,38,39,40];
+		
 	})(jQuery, kendo)
 </script>
 </body>
