@@ -1,5 +1,9 @@
 package com.jerrylin.erp.model;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -7,6 +11,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -23,6 +29,7 @@ public class Product {
 	private String nameEng;
 	private String seriesName;
 	private String barcode;
+	private List<ProductInventory> productInventories = new LinkedList<>();
 	
 	@Id
 	@Column(name="id")
@@ -83,6 +90,14 @@ public class Product {
 	}
 	public void setBarcode(String barcode) {
 		this.barcode = barcode;
+	}
+	@OneToMany(targetEntity=ProductInventory.class, fetch=FetchType.EAGER, cascade=CascadeType.ALL, orphanRemoval=true, mappedBy="productId")
+	@OrderColumn(name="idx")
+	public List<ProductInventory> getProductInventories() {
+		return productInventories;
+	}
+	public void setProductInventories(List<ProductInventory> productInventories) {
+		this.productInventories = productInventories;
 	}
 	/**
 	 * 取得調整過後的型號，因為Towntalk的型號似乎是自編，所以會有一些不常見的編碼情況。
