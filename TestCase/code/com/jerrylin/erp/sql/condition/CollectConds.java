@@ -1,5 +1,10 @@
 package com.jerrylin.erp.sql.condition;
 
+import static com.jerrylin.erp.sql.Instruction.CONTAIN_LIKE;
+import static com.jerrylin.erp.sql.Instruction.END_LIKE;
+import static com.jerrylin.erp.sql.Instruction.START_LIKE;
+import static com.jerrylin.erp.sql.Instruction.UPPERCASE;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -12,8 +17,6 @@ import com.jerrylin.erp.sql.ISqlNode;
 import com.jerrylin.erp.sql.Where;
 import com.jerrylin.erp.sql.condition.StrCondition.MatchMode;
 
-import static com.jerrylin.erp.sql.Instruction.*;
-
 /**
  * representing a set conditions
  * @author JerryLin
@@ -22,10 +25,10 @@ import static com.jerrylin.erp.sql.Instruction.*;
 public class CollectConds extends SqlCondition{
 	private static final long serialVersionUID = 3839880394325350005L;
 	// Pattern is immutable and thread-safe
-	private static final Pattern FIND_PROPERTY_NAME = Pattern.compile("[a-zA-Z0-9\\.\\(]+\\.[a-zA-Z0-9\\.\\)]+");
+	private static final Pattern FIND_PROPERTY_NAME = Pattern.compile("[a-zA-Z0-9\\.\\(]+\\.[a-zA-Z0-9\\[\\]\\.\\)]+");
 	private static final Pattern FIND_OPERATOR = Pattern.compile("(\\s+(IN|in|LIKE|like|NOT\\s+LIKE)\\s+)|\\s*(\\>\\=|\\<\\=|\\!\\=|\\=|\\<\\>|\\>|\\<)\\s*");
-	private static final Pattern FIND_NAMED_PARAM_STEP1 = Pattern.compile("(\\:|\\(\\:){1}\\w+\\)?");
-	private static final Pattern FIND_NAMED_PARAM_STEP2 = Pattern.compile("([^\\:]|[^(\\(\\:)]){1}\\w+[^\\)]?");
+	private static final Pattern FIND_NAMED_PARAM_STEP1 = Pattern.compile("(\\:|\\(\\:){1}[\\w\\[\\]]+\\)?");
+	private static final Pattern FIND_NAMED_PARAM_STEP2 = Pattern.compile("([^\\:]|[^(\\(\\:)]){1}[\\w\\[\\]]+[^\\)]?");
 	
 	private String makeGroupMark;
 	/**
@@ -76,7 +79,7 @@ public class CollectConds extends SqlCondition{
 		String propertyName = findPropertyName(expression);
 		String operator = findOperator(expression);
 		String namedParam = findNamedParam(expression);
-		
+//		System.out.println("propertyName:"+propertyName + ", operator: " + operator + ", namedParam: " + namedParam);
 		SimpleCondition s = cond.propertyName(propertyName)
 								.operator(operator)
 								.type(type)
