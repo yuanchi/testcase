@@ -51,8 +51,8 @@ public class ParameterController extends
 			method=RequestMethod.POST,
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
-	public @ResponseBody String queryParameterCatDropDownList(@RequestBody ConditionConfig<ParameterCategory> conditionConfig){
-		String result = parameterCategoryQueryService.findTargetList(conditionConfig);
-		return result;
+	public @ResponseBody ConditionConfig<ParameterCategory> queryParameterCatDropDownList(@RequestBody ConditionConfig<ParameterCategory> conditionConfig){
+		ConditionConfig<ParameterCategory> cc = parameterCategoryQueryService.findTargetList(conditionConfig);
+		return cc;
 	}
 }
