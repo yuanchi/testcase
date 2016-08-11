@@ -83,18 +83,18 @@ public class SalesDetailController {
 			method=RequestMethod.POST,
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
-	public @ResponseBody String queryMemberAutocomplete(@RequestBody ConditionConfig<Member> conditionConfig){
-		String result = memberQueryService.findTargetPageable(conditionConfig);
-		return result;
+	public @ResponseBody ConditionConfig<Member> queryMemberAutocomplete(@RequestBody ConditionConfig<Member> conditionConfig){
+		ConditionConfig<Member> cc = memberQueryService.findTargetPageable(conditionConfig);
+		return cc;
 	}
 	
 	@RequestMapping(value="/queryProductAutocomplete",
 			method=RequestMethod.POST,
 			produces={"application/xml", "application/json"},
 			headers="Accept=*/*")
-	public @ResponseBody String queryProductAutocomplete(@RequestBody ConditionConfig<Product> conditionConfig){
-		String result = productQueryService.findTargetPageable(conditionConfig);
-		return result;
+	public @ResponseBody ConditionConfig<Product> queryProductAutocomplete(@RequestBody ConditionConfig<Product> conditionConfig){
+		ConditionConfig<Product> cc = productQueryService.findTargetPageable(conditionConfig);
+		return cc;
 	}	
 	
 	@RequestMapping(value="/batchSaveOrMerge",
