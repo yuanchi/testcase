@@ -99,8 +99,7 @@
 						total: function(response){
 							return response.pageNavigator.totalCount;
 						}
-					},
-					pageSize: 10
+					}
 				}, // dataSource end
 				toolbar: [
 				   "create", "save", "cancel"       
