@@ -301,6 +301,7 @@ public class KendoUiService<T, R> implements Serializable{
 		String alias = getAlias();
 		String expression = convertFilterFieldStartsWithAlias(field) + " ";
 		String nameParam = " :" + alias + firstLetterToUpperCase(field) + "_FILTER_" + filterCount;
+		
 		MatchMode matchMode = null;
 		Object convertedVal = convertValueByType(field, value);
 		switch(operator){
@@ -439,10 +440,10 @@ public class KendoUiService<T, R> implements Serializable{
 		return json;
 	}
 	
-	public String findTargetPageable(ConditionConfig<T> conditionConfig){
+	public ConditionConfig<T> findTargetPageable(ConditionConfig<T> conditionConfig){
 		ConditionConfig<T> cc = executeQueryPageable(conditionConfig);
-		String result = conditionConfigToJsonStr(cc);
-		return result;
+//		String result = conditionConfigToJsonStr(cc);
+		return cc;
 	}
 	
 	public ConditionConfig<T> executeQueryPageable(ConditionConfig<T> conditionConfig){
@@ -459,10 +460,10 @@ public class KendoUiService<T, R> implements Serializable{
 		return cc;
 	}
 	
-	public String findTargetList(ConditionConfig<T> conditionConfig){
+	public ConditionConfig<T> findTargetList(ConditionConfig<T> conditionConfig){
 		ConditionConfig<T> cc = executeQueryList(conditionConfig);
-		String result = conditionConfigToJsonStr(cc);
-		return result;
+//		String result = conditionConfigToJsonStr(cc);
+		return cc;
 	}
 	
 	public ConditionConfig<T> executeQueryList(ConditionConfig<T> conditionConfig){
@@ -594,7 +595,8 @@ public class KendoUiService<T, R> implements Serializable{
 			String firstToUpper = first.toUpperCase();
 			String firstRemoved = StringUtils.removeStart(split, first);
 			result += (firstToUpper + firstRemoved);
-		}		
+		}
+		result = result.replace("[", "_").replace("]", "_");
 		return result;
 	}
 	
