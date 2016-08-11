@@ -5,14 +5,9 @@ import java.util.Map;
 
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.jerrylin.erp.component.ConditionConfig;
 import com.jerrylin.erp.security.User;
-import com.jerrylin.erp.util.JsonParseUtil;
 
 @Controller
 @RequestMapping(value="/user")
@@ -45,15 +40,5 @@ public class UserController extends
 		kendoUiGridService.getSqlRoot()
 			.joinAlias("LEFT JOIN " + alias+".roles", "roles")
 			.joinAlias("LEFT JOIN " + alias+".groups", "groups");
-	}
-	@Override
-	@RequestMapping(value="/queryConditional",
-		method=RequestMethod.POST,
-		produces={"application/xml", "application/json"},
-		headers="Accept=*/*")
-	public @ResponseBody String queryConditional(@RequestBody ConditionConfig<User> conditionConfig){
-		ConditionConfig<User> cc = kendoUiGridService.executeQueryPageable(conditionConfig);
-		String result = JsonParseUtil.parseHibernateModelToJson(cc);
-		return result;
 	}
 }
