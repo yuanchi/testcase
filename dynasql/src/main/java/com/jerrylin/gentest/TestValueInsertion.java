@@ -1,8 +1,11 @@
 package com.jerrylin.gentest;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 
 import org.junit.Test;
@@ -52,33 +55,48 @@ public class TestValueInsertion {
 	public void setBatchSize(int batchSize) {
 		this.batchSize = batchSize;
 	}
+	/**
+	 * create table customer if not existed<br>
+	 * then insert test values
+	 */
 	// ref. http://viralpatel.net/blogs/batch-insert-in-java-jdbc/
 	// ref. http://www.java-tips.org/other-api-tips-100035/69-jdbc/274-how-to-exceute-a-batch-process-from-preparedstatement.html
 	// ref. http://stackoverflow.com/questions/4355046/java-insert-multiple-rows-into-mysql-with-preparedstatement
 	public void execute(){
-		String sql = "INSERT INTO customer (name, email, birth) VALUES(?,?,?)";
+		String createTable = "CREATE TABLE customer (id INTEGER NOT NULL AUTO_INCREMENT, name VARCHAR(255), email VARCHAR(255), birth DATETIME, PRIMARY KEY (id))";
+		String insert = "INSERT INTO customer (name, email, birth) VALUES(?,?,?)";
 		List<Customer> customers = Customer.mockCustomers(total);
 		long start = System.currentTimeMillis();
 		try{
 			Class.forName(driver);
-			try(Connection con = DriverManager.getConnection(url, user, pwd);
-				PreparedStatement ps = con.prepareStatement(sql);){
-				con.setAutoCommit(false);
-				int current=0;
-				for(int i=0; i < total; i++){
-					Customer c = customers.get(i);
-					
-					ps.setString(1, c.getName());
-					ps.setString(2, c.getEmail());
-					ps.setDate(3, c.getBirth());
-					
-					ps.addBatch();
-					if(++current % batchSize == 0){ // avoid memory leak
-						ps.executeBatch();
+			try(Connection con = DriverManager.getConnection(url, user, pwd);){
+				DatabaseMetaData dm = con.getMetaData();
+				ResultSet tables = dm.getTables(null, null, "customer", null);
+				if(!tables.next()){
+					try(Statement stmt = con.createStatement();){
+						stmt.executeUpdate(createTable);
+						System.out.println("table customer created");
 					}
+				}else{
+					System.out.println("table customer existed");
 				}
-				ps.executeBatch();
-				
+				con.setAutoCommit(false);
+				try(PreparedStatement ps = con.prepareStatement(insert);){
+					int current=0;
+					for(int i=0; i < total; i++){
+						Customer c = customers.get(i);
+						
+						ps.setString(1, c.getName());
+						ps.setString(2, c.getEmail());
+						ps.setDate(3, c.getBirth());
+						
+						ps.addBatch();
+						if(++current % batchSize == 0){ // avoid memory leak
+							ps.executeBatch();
+						}
+					}
+					ps.executeBatch();
+				}
 				con.commit();
 				con.setAutoCommit(true);
 			}
