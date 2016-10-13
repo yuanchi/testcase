@@ -49,7 +49,7 @@ public class TestValuUtils {
 		return randomDate;
 	}
 	public static Date randomSqlDate(LocalDate start, LocalDate end){
-		return new Date(randomLocalDate(start, end).toEpochDay());
+		return Date.valueOf(randomLocalDate(start, end));
 	}
 	@Test
 	public void testRandomEmail(){
@@ -71,5 +71,13 @@ public class TestValuUtils {
 			System.out.println(randomLocalDate(start, end).toString());
 		}
 	}
+	@Test
+	public void randomSqlDate(){
+		LocalDate start = LocalDate.of(1979, 1, 1);
+		LocalDate end = LocalDate.of(2000, 12, 31);
+		for(int i=0; i<10; i++){
+			System.out.println(randomSqlDate(start, end));
+		}
 	
+	}
 }
