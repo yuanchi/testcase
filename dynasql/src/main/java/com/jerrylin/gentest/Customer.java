@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 public class Customer {
-	private static final LocalDate START = LocalDate.of(1969, 1, 1);
+	private static final LocalDate START = LocalDate.of(1900, 1, 1);
 	private static final LocalDate END = LocalDate.of(2000, 12, 31);
 	private int id;
 	private String name;
