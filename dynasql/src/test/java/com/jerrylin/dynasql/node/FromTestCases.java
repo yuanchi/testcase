@@ -614,4 +614,19 @@ public class FromTestCases {
 		assertEquals(expectedSql, sql);
 		System.out.println(sql);
 	}
+	@Test
+	public void hqlJoinFetch(){
+		SelectExpression root = SelectExpression.initAsRoot()
+			.from()
+				.t("Cat").as("cat")
+				.addJoin("INNER JOIN FETCH").t("cat.mate")
+				.addJoin("LEFT JOIN FETCH").t("cat.kittens")
+			.getRoot();
+		String sql = root.genSql();
+		String expectedSql = 
+			"FROM Cat cat INNER JOIN FETCH cat.mate"
+			+ "\n  LEFT JOIN FETCH cat.kittens";
+		assertEquals(expectedSql, sql);
+		System.out.println(sql);
+	}
 }
