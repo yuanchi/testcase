@@ -147,13 +147,10 @@ public class Delimiter<T extends Delimiter<?>> extends SqlNode<T> implements Dep
 		dependencyEnd();
 		return t;
 	}
-	private boolean addOperatorIfPreviousConditionExisted(String symbol){
-		LinkedList<SqlNode<?>> children = getChildren();
-		if(!children.isEmpty()){
+	private void addOperatorIfPreviousConditionExisted(String symbol){
+		if(!getChildren().isEmpty()){
 			oper(symbol);
-			return true;
 		}
-		return false;
 	}
 	/**
 	 * add id to last condition node
