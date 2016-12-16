@@ -151,6 +151,7 @@ public class ExecutableQuery<T> implements Serializable{
 		
 		PageNavigator pn = new PageNavigator(totalCount, countPerPage);
 		pn.setCurrentPage(currentPage);
+		System.out.println("currentPage:"+currentPage);
 		pageNavigator = pn;
 		
 		List<String> ids = s.createQuery(selectIdHql)
@@ -369,12 +370,17 @@ public class ExecutableQuery<T> implements Serializable{
 					.target("p", "member").getRoot()
 				.from()
 					.target(Member.class.getName(), "p").getRoot()
-				.where()
-					.andConds()
-						.andStatement("p.name IS NOT NULL").getRoot()
+//				.where()
+//					.andConds()
+//						.andStatement("p.name IS NOT NULL").getRoot()
 						;
 			System.out.println(root.genSql());
-			c.executeQueryPageable();
+			c.setCurrentPage(2);
+			List<Object> ms = c.executeQueryPageable();
+			ms.stream().forEach(m->{
+				Member member = (Member)m;
+				System.out.println(member.getId() + member.getName());
+			});
 		});
 	}
 	
@@ -448,6 +454,6 @@ public class ExecutableQuery<T> implements Serializable{
 	}
 	
 	public static void main(String[]args){
-		testClassFieldsInfo(Member.class);
+		testConditionStatement();
 	}
 }
