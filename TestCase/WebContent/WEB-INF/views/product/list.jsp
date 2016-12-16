@@ -44,7 +44,7 @@
 				stockFieldNames = [];
 			for(var p in stockOpts){
 				if(stockOpts.hasOwnProperty(p)){
-					stockModelFields[p] = {type: "number"};
+					stockModelFields[p] = {type: "number"};// 為了讓庫存在編輯及篩選的時候，可以使用數值欄位，這裡要針對個別項目設定；這種設定的負面影響是，修改送出請求的時候，會多了這些定義的欄位名稱，造成後端無法處理
 					stockColumns.push({
 						field: p, 
 						title: stockOpts[p], 
@@ -53,7 +53,6 @@
 					stockFieldNames.push(p);
 				}
 			}
-			console.log(kendo.ui.FilterCell.fn.options.operators.number);
 			var fields = {
 				productCategory: {},
 				modelId: {type: "string"},
@@ -65,7 +64,8 @@
 				productInventories: {},
 			}
 			$.extend(fields, stockModelFields);
-			var columns = [
+			var cutIdx = 3,
+				columns = [
 				{field: "productCategory.code", title: "產品類別", width: "100px"},
 				{field: "modelId", title: "型號", width: "100px;"},
 				{field: "suggestedRetailPrice", title: "零售價", width: "100px"},
@@ -73,7 +73,9 @@
 				{field: "seriesName", title: "系列名", width: "100px"},
 				{field: "barcode", title: "條碼", width: "100px"}
 			];
-			columns = columns.concat(stockColumns);
+			if(stockColumns.length>0){
+				columns = columns.slice(0, cutIdx).concat(stockColumns).concat(columns.slice(cutIdx));
+			}
 			$(gridSelector).kendoGrid({
 				dataSource: {
 					batch: true, // one http request with multi operation
