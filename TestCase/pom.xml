@@ -237,7 +237,12 @@
 			<artifactId>javax.mail</artifactId>
 			<version>1.5.5</version>
 		</dependency>
-		
+		<!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
+<dependency>
+    <groupId>org.apache.calcite</groupId>
+    <artifactId>calcite-core</artifactId>
+    <version>1.11.0</version>
+</dependency>
   </dependencies>
   <build>
     <finalName>TestCase</finalName>
