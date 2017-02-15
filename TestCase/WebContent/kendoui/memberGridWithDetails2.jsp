@@ -122,16 +122,35 @@
 				editable: "incell",
 				navigatable: true, // navigatable設為true，可透過鍵盤在cell上移動，附帶作用是當啟用incell編輯模式時，Enter鍵即為確認完成編輯、ESC即為取消修改並退出編輯模式
 				saveChanges: function(e){
-					var details = mainGrid.find('.k-detail-row').find('.k-grid'),
-						len=details.length;
-					for(var i=0; i<len; i++){
-						var $detail = $(details[i]),
-							detailGrid = $detail.data('kendoGrid');
-						if(detailGrid.dataSource.hasChanges()){
-							detailGrid.dataSource.sync();// 直接呼叫dataSouce的sync，就不用在event loop內競爭，但sync回應時間較久，導致頁面會先render一遍；render之後，detail row會被收起來；但太早開啟detail row，則容易查到舊資料
-							// detailGrid.saveChanges(); // saveChanges會觸發其他事件，導致不一定在event queue優先執行
+					var $mainGrid = $("#mainGrid"),
+						kendoGrid = $mainGrid.data("kendoGrid"),
+						$masterRows = $mainGrid.find('.k-master-row');
+					$masterRows.each(function(i, masterRow){
+						var $sibling = $(masterRow).next();
+						if($sibling.is('.k-detail-row')){
+							var dataItems = $sibling.find('.k-grid').data('kendoGrid').dataSource.data();
+							console.log('dataItems: ' + JSON.stringify(dataItems));
+							var masterData = kendoGrid.dataItem(masterRow)
+							masterData.vipDiscountDetails = dataItems;
+							console.log('masterData: ' + JSON.stringify(masterData));
 						}
-					}
+					});
+					kendoGrid.dataSource.sync();
+					e.preventDefault();
+					/*
+					$("#mainGrid").data("kendoGrid").dataSource.sync()
+						.then(function(){
+							var details = mainGrid.find('.k-detail-row').find('.k-grid'),
+								len=details.length;
+							for(var i=0; i<len; i++){
+								var $detail = $(details[i]),
+									detailGrid = $detail.data('kendoGrid');
+								if(detailGrid.dataSource.hasChanges()){
+									detailGrid.dataSource.sync();// 直接呼叫dataSouce的sync，就不用在event loop內競爭，但sync回應時間較久，導致頁面會先render一遍；render之後，detail row會被收起來；但太早開啟detail row，則容易查到舊資料
+									// detailGrid.saveChanges(); // saveChanges會觸發其他事件，導致不一定在event queue優先執行
+								}
+							}
+						});*/
 				},
 				//selectable: "multiple, cell",
 				sortable: true,
