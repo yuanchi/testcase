@@ -47,7 +47,6 @@ public abstract class KendoUiGridController<T, R> implements Serializable{
 		String[] modulePaths = rm.value();
 		moduleName = modulePaths[0].substring(1);
 	}
-	
 	public Class<T> getRootType(){
 		return rootType;
 	}
