@@ -78,13 +78,10 @@
 		});
 		var mainGrid = $("#mainGrid").data("kendoGrid")
 		mainGrid.tbody.on("keydown", function(e){
-			var altKey = e.altKey,
-				keyCode = e.keyCode,
-				locked = 'div.k-grid-content-locked',
-				unlocked = 'div.k-grid-content';
+			var keyCode = e.keyCode;
 			if(keyCode == kendo.keys.ENTER){
 				var curCell = mainGrid.element.find(".k-edit-cell"),
-					next = curCell.next();
+					next = e.shiftKey ? curCell.prev() : curCell.next();
 				if(curCell.length > 0 && next.length > 0){
 					setTimeout(function(){ // 此處必須使用setTimeout才不會影響原來的ENTER的功能，否則原來的異動會消失
 						mainGrid.clearSelection();
