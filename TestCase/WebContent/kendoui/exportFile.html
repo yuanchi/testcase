@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>匯出檔案(Excel需要jszip2.x, PDF需要pako)</title>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
+</head>
+<body>
+
+<button type="button" id="displayFirstRowCountries">顯示第一列國家</button>
+<div id="mainGrid"></div>
+
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/jquery.min.js"></script>
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/kendo.web.min.js"></script>
+<!-- required for Excel-->
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jszip/2.4.0/jszip.js"></script>
+<!-- required for PDF -->
+<script src="http://kendo.cdn.telerik.com/2017.2.504/js/pako_deflate.min.js"></script>
+<script type="text/javascript">
+	// kendoMultiSelect主要參考: https://onabai.wordpress.com/2013/07/17/kendoui-multiselect-in-a-grid-yes-we-can/
+	(function($, kendo){"use strict"
+		$("#mainGrid").kendoGrid({
+			toolbar: ["excel", "pdf"],
+			dataSource: {
+				data: [{
+					firstName:"Bob", lastName: "Lin", id: 1, countries: [{id: 1, text: "Taiwan"},{id: 2, text: "Japan"}]
+				},{
+					firstName:"John", lastName: "Hung", id: 2, countries: [{id: 3, text: "America"},{id: 4, text: "Australia"}]
+				},{
+					firstName:"Mary", lastName: "Wu", id: 3, countries: [{id: 1, text: "Taiwan"},{id: 3, text: "America"}]
+				}],
+				schema: {
+					model: {
+						id: "id",
+						fields: {
+							firstName: {type: "string"},
+							lastName: {type: "string"},
+							id: {type: "string"},
+							countries: {} // 沒有對應array的類型，所以留空
+						}
+					}
+				},
+				pageSize: 10
+			},
+			height: 550,
+			scrollable: true,
+			sortable: true,
+			filterable: true,
+			editable: true,
+			pageable: {
+				input :true,
+				numeric: false
+			},
+			columns: [
+				{field: "firstName", title: "First Name", width: "150px"},
+				{field: "lastName", title: "Last Name", width: "150px"},
+				{field: "id", title: "ID", width: "150px"},
+				{	
+					field: "countries", 
+					title: "國家", 
+					width: "300px", 
+					template: "#=countries.map(function(e){return e.text;}).join(', ')#", // 原本陣列物件只會直接顯示[object Object]，透過template可以正常顯示如預期
+					editor: function(container, options){
+						$("<select multiple='multiple' data-bind='value: countries'>")
+							.appendTo(container)
+							.kendoMultiSelect({
+								dataTextField: "text",
+								dataValueField: "id",
+								dataSource: [
+									{text: "Taiwan", id: 1},
+									{text: "Japan", id: 2},
+									{text: "America", id: 3},
+									{text: "Australia", id: 4},
+									{text: "South America", id: 5},
+									{text: "Antarctica", id: 6},
+									{text: "Australia", id: 7}             
+								]
+							});
+					}					
+				}
+			]
+		});
+		$("#displayFirstRowCountries").click(function(){
+			var grid = $("#mainGrid").data("kendoGrid");
+			var dataItem = grid.dataItem(grid.items()[0]);
+			alert(JSON.stringify(dataItem.countries));
+		});
+	})(jQuery, kendo)
+</script>
+</body>
+</html>
