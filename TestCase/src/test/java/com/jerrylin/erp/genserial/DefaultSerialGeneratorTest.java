@@ -36,7 +36,7 @@ public class DefaultSerialGeneratorTest {
 		ComboPooledDataSource.class.cast(dataSource).close();
 	}
 	@Test
-	public void getNext()throws Throwable{
+	public void getNext(){
 		DefaultSerialGenerator generator = new DefaultSerialGenerator("t1", sessionFactory.getObject());
 		String nextNo = generator.getNext();
 		logger.info("nextNo is " + nextNo);
