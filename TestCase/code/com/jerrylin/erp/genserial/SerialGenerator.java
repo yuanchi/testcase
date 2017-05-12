@@ -2,9 +2,10 @@ package com.jerrylin.erp.genserial;
 
 import java.text.NumberFormat;
 
-public abstract class SerialGenerator {
+public abstract class SerialGenerator<S> {
 	protected abstract String getId();
-	protected abstract String getNext() throws Throwable;
+	protected abstract String getNext();
+	protected abstract String getNext(S s);
 	/**
 	 * 將傳入數字加1，左補0
 	 * @param no

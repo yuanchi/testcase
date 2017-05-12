@@ -7,8 +7,9 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
-public class DefaultSerialGenerator extends SerialGenerator {
+public class DefaultSerialGenerator extends SerialGenerator<Session> {
 	private String id;
 	private SessionFactory sessionFactory;
 	public DefaultSerialGenerator(String id){
@@ -29,16 +30,20 @@ public class DefaultSerialGenerator extends SerialGenerator {
 		this.sessionFactory = sessionFactory;
 	}
 	@Override
-	protected String getNext() throws Throwable {
+	protected String getNext(){
 		Session s = null;
+		Transaction tx = null;
 		try{
 			s  = sessionFactory.openSession();
+			tx = s.beginTransaction();
 			String nextNo = getNext(s);
+			tx.commit();
 			return nextNo;
+		}catch(Throwable e){
+			tx.rollback();
+			throw new RuntimeException(e);
 		}finally{
-			if(s != null){
-				s.close();
-			}
+			s.close();
 		}
 	}
 	/**
@@ -47,13 +52,13 @@ public class DefaultSerialGenerator extends SerialGenerator {
 	 * @return
 	 * @throws Throwable
 	 */
-	protected String getNext(Session s)throws Throwable{
+	protected String getNext(Session s){
 		DefaultSerial ds = (DefaultSerial)s.load(DefaultSerial.class, this.id);
 		String nextNo = getNext(ds);
 		s.flush();
 		return nextNo;
 	}
-	protected String getNext(DefaultSerial ds) throws Throwable{
+	protected String getNext(DefaultSerial ds){
 		StringBuffer sb = new StringBuffer();
 		Calendar c = Calendar.getInstance();
 		if(StringUtils.isNotBlank(ds.getSep0())){
@@ -79,13 +84,17 @@ public class DefaultSerialGenerator extends SerialGenerator {
 		}
 		String resetNoField = ds.getResetNoField();
 		if(StringUtils.isNotBlank(resetNoField)){
-			String v = (String)PropertyUtils.getProperty(ds, resetNoField);
-			String dateString = formatDate(v, c);
-			if(StringUtils.isNotBlank(ds.getResetNoFieldLastValue())
-			&& !dateString.equals(ds.getResetNoFieldLastValue())){
-				ds.setNo(formatNo(ds.getResetNoTo(), ds.getNo().length()));
+			try{
+				String v = (String)PropertyUtils.getProperty(ds, resetNoField);
+				String dateString = formatDate(v, c);
+				if(StringUtils.isNotBlank(ds.getResetNoFieldLastValue())
+				&& !dateString.equals(ds.getResetNoFieldLastValue())){
+					ds.setNo(formatNo(ds.getResetNoTo(), ds.getNo().length()));
+				}
+				ds.setResetNoFieldLastValue(dateString);
+			}catch(Throwable e){
+				throw new RuntimeException(e);
 			}
-			ds.setResetNoFieldLastValue(dateString);
 		}
 		if(StringUtils.isNotBlank(ds.getNo())){
 			sb.append(ds.getNo());
