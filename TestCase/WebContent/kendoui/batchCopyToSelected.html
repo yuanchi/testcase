@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
+</head>
+<body>
+
+<div id="mainGrid"></div>
+
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/jquery.min.js"></script>
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/kendo.web.min.js"></script>
+<script type="text/javascript">
+function dirtyField(data, fieldName){
+    var hasClass = $("[data-uid=" + data.uid + "]").find(".k-dirty-cell").length < 1;
+    if(data.dirty && data.dirtyFields[fieldName] && hasClass){
+        return "<span class='k-dirty'></span>"
+    }
+    else{
+        return "";
+    }
+}
+
+	(function($, kendo){"use strict"
+
+
+		
+		$("#mainGrid").kendoGrid({
+			dataSource: {
+				data: [{
+					firstName:"Bob", lastName: "Lin", id: 1
+				},{
+					firstName:"John", lastName: "Hung", id: 2
+				},{
+					firstName:"Mary", lastName: "Wu", id: 3
+				},{
+					firstName:"Bary", lastName: "Yu", id: 4
+				},{
+					firstName:"Jary", lastName: "Ku", id: 5
+				},{
+					firstName:"Wary", lastName: "Pu", id: 6
+				},{
+					firstName:"Pary", lastName: "Ou", id: 7
+				},{
+					firstName:"Kary", lastName: "Iu", id: 8
+				},{
+					firstName:"Hary", lastName: "Wu", id: 9
+				},{
+					firstName:"Eary", lastName: "Wu", id: 10
+				},{
+					firstName:"Qary", lastName: "Wu", id: 11
+				},{
+					firstName:"Lary", lastName: "Wu", id: 12
+				},{
+					firstName:"Dary", lastName: "Wu", id: 13
+				}],
+				schema: {
+					model: {
+						fields: {
+							firstName: {type: "string"},
+							lastName: {type: "string"},
+							id: {type: "number"}
+						}
+					}
+				},
+				pageSize: 10
+			},
+			height: 550,
+			scrollable: true,
+			navigatable: true,
+			sortable: true,
+			selectable: "multiple, cell",
+			filterable: {mode: "row"},
+			pageable: {
+				input :true,
+				numeric: false
+			},
+			editable: {
+				mode: "incell"
+			},
+			filterable: {
+				mode: "menu, row",
+				extra: true
+			},
+			columns: [
+			{field: "firstName", title: "First Name", width: "200px"},
+			{field: "lastName", title: "Last Name", width: "200px"},
+			{field: "id", title: "ID", width: "200px", locked: true, editable: false}]
+		});
+		var mainGrid = $("#mainGrid").data("kendoGrid");
+		
+		mainGrid.element.on("keydown", function(e){
+			if(e.ctrlKey && e.altKey && e.keyCode == 65){// 65 is A
+				var selected = mainGrid.select();
+				console.log("selected count: " + selected.length);
+				if(selected.length == 0){
+					return true;
+				}
+				
+				var unloked = "div.k-grid-content",
+					locked = "div.k-grid-content-locked",
+					lockedTds = locked + " > table > tbody > tr:nth-child(1) > td";
+				
+				function isLocked(input){
+					return $(input).closest(locked).length > 0;
+				}
+				// 從上而下找field，就不會受到lock table改變順序的影響
+				function getFieldViaIdx(idx){ // 如果有lock table，這邊傳入的idx要合併計算
+					var field = mainGrid.element.find("th[data-index="+idx+"]").attr("data-field");
+					return field;
+				}
+				function getLockCount(){
+					var lockCount = $(lockedTds).length;
+					return lockCount;
+				}
+				function getCellIdx(cell){
+					var $cell = $(cell),
+						eleIdx = $cell.index(),
+						tdIdx = eleIdx;
+					if(!isLocked(cell)){
+						var lockCount = getLockCount();
+						tdIdx += lockCount;
+					}
+					return tdIdx;
+				}
+				function getFieldViaCell(cell){
+					var tdIdx = getCellIdx(cell);
+					var field = getFieldViaIdx(tdIdx);
+					return field;
+				}
+				var columns = mainGrid.options.columns,
+					firstDataItem = mainGrid.dataItem(selected.first().closest("tr")),
+					firstTdInfo = null;
+				
+				selected.each(function(idx, ele){
+					var $ele = $(ele),
+						field = getFieldViaCell(ele),
+						dataItem = mainGrid.dataItem($ele.closest("tr"));
+					
+					if(idx == 0 && dataItem === firstDataItem){
+						var content = isLocked(ele) ? locked : unloked;
+						firstTdInfo = {
+							"content": content,
+							"uid": dataItem.get("uid"),
+							"idx": $ele.index()
+						};
+					}
+					
+					if(dataItem !== firstDataItem){
+						var newVal = firstDataItem.get(field);
+						for(var i = 0; i < columns.length; i++){
+							var column = columns[i];
+							if(column.field === field
+							&& column.editable !== false
+							&& JSON.stringify(newVal) != JSON.stringify(dataItem.get(field))){
+								mainGrid.editCell($ele); // 以這種方式編輯，才會觸發dirty flag ref. http://www.telerik.com/forums/kendo-mvc-grid-batch-mode-dataitem-set-clears-the-dirty-flags
+								dataItem.set(field, newVal);
+							}
+						}
+					}
+				});
+				
+				mainGrid.closeCell();
+				mainGrid.clearSelection();
+				// 目前尚無法將焦點移到第一個選擇項目
+				var firstTd = mainGrid.element.find(firstTdInfo.content).find("[data-uid="+firstTdInfo.uid+"]").find("td:eq("+firstTdInfo.idx+")");
+				//console.log(JSON.stringify(firstTdInfo));
+				firstTd.focus(); // not work
+			}
+		});
+		
+	})(jQuery, kendo)
+</script>
+</body>
+</html>
