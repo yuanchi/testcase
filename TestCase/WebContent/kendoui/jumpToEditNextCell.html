@@ -48,7 +48,8 @@
 						fields: {
 							firstName: {type: "string"},
 							lastName: {type: "string"},
-							id: {type: "number"}
+							id: {type: "number"},
+							tel: {type: "string"}
 						}
 					}
 				},
@@ -71,27 +72,56 @@
 				mode: "menu, row",
 				extra: true
 			},
+			columnMenu: true,
 			columns: [
-			{field: "firstName", title: "First Name", width: "50px"},
-			{field: "lastName", title: "Last Name", width: "50px"},
-			{field: "id", title: "ID", width: "50px"}]
+			{field: "firstName", title: "First Name", width: "200px"},
+			{field: "id", title: "ID", width: "200px", locked: true}, // 至少有設定一個locked為true，其他欄位設定lockable才有意義/作用
+			{field: "tel", title: "tel", width: "200px"},
+			{field: "lastName", title: "Last Name", width: "200px"}
+			]
 		});
-		var mainGrid = $("#mainGrid").data("kendoGrid")
-		mainGrid.tbody.on("keydown", function(e){
+		var mainGrid = $("#mainGrid").data("kendoGrid");
+		
+		// 現在如果出現橫跨lock table，也可以順利跳到下一個cell
+		function jumpToEditNextCell(e){
 			var keyCode = e.keyCode;
 			if(keyCode == kendo.keys.ENTER){
 				var curCell = mainGrid.element.find(".k-edit-cell"),
-					next = e.shiftKey ? curCell.prev() : curCell.next();
+					next = e.shiftKey ? curCell.prev() : curCell.next(),
+					tr = curCell.closest("tr"),
+					uid = tr.attr("data-uid"),
+					lockExists = mainGrid.element.find("tr[data-uid="+uid+"]").length == 2,
+					curCellIsLocked = curCell.closest("div.k-grid-content-locked").length > 0;
+				if(curCellIsLocked && next.length == 0){
+					next = mainGrid.element.find("div.k-grid-content tr[data-uid="+uid+"] td").eq(0);
+				}
 				if(curCell.length > 0 && next.length > 0){
 					setTimeout(function(){ // 此處必須使用setTimeout才不會影響原來的ENTER的功能，否則原來的異動會消失
-						mainGrid.clearSelection();
-						mainGrid.editCell(next);
-						mainGrid.select(next); // 選取範圍(紅色背景)
 						mainGrid.current(next); // focus位置
+						mainGrid.editCell(next);
+						mainGrid.clearSelection();
+						mainGrid.select(next); // 選取範圍(紅色背景)
+						if(lockExists){// (應為bug)在有lock table的情況下，會在lock table最後一列出現額外被選擇的標記，在此手動移除
+							mainGrid.element.find("tr.k-state-selected").removeClass("k-state-selected");
+						}
 					});
 					//e.preventDefault(); // 要觸發後面的save事件，不能使用preventDefault	
 				}
 			}
+		}
+				
+		// 這一定要綁在table或tbody上面才會生效??
+		mainGrid.tbody.on("keydown", "td", jumpToEditNextCell);
+		
+		function bindJumpToEditNextCellOnLockedTable(){
+			if(mainGrid.lockedTable){// 這一定要綁在lockedTable上才會生效
+				mainGrid.lockedTable.on("keydown", "td", jumpToEditNextCell);
+			}
+		}
+		bindJumpToEditNextCellOnLockedTable();
+		mainGrid.bind("columnUnlock", function(e){
+			mainGrid.lockedTable.off("keydown", "td", jumpToEditNextCell);
+			bindJumpToEditNextCellOnLockedTable();	
 		});
 	})(jQuery, kendo)
 </script>
