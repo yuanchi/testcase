@@ -99,7 +99,7 @@ function dirtyField(data, fieldName){
 					return true;
 				}
 				
-				var unloked = "div.k-grid-content",
+				var unlocked = "div.k-grid-content",
 					locked = "div.k-grid-content-locked",
 					lockedTds = locked + " > table > tbody > tr:nth-child(1) > td";
 				
@@ -140,7 +140,7 @@ function dirtyField(data, fieldName){
 						dataItem = mainGrid.dataItem($ele.closest("tr"));
 					
 					if(idx == 0 && dataItem === firstDataItem){
-						var content = isLocked(ele) ? locked : unloked;
+						var content = isLocked(ele) ? locked : unlocked;
 						firstTdInfo = {
 							"content": content,
 							"uid": dataItem.get("uid"),
