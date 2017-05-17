@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Insert title here</title>
+<title>頁面批次複製效果(被選取的第一列作為資料源)</title>
 <link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
 <link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
 </head>
@@ -13,20 +13,8 @@
 <script type="text/javascript" src="./professional.2016.1.226.trial/js/jquery.min.js"></script>
 <script type="text/javascript" src="./professional.2016.1.226.trial/js/kendo.web.min.js"></script>
 <script type="text/javascript">
-function dirtyField(data, fieldName){
-    var hasClass = $("[data-uid=" + data.uid + "]").find(".k-dirty-cell").length < 1;
-    if(data.dirty && data.dirtyFields[fieldName] && hasClass){
-        return "<span class='k-dirty'></span>"
-    }
-    else{
-        return "";
-    }
-}
 
-	(function($, kendo){"use strict"
-
-
-		
+	(function($, kendo){"use strict"		
 		$("#mainGrid").kendoGrid({
 			dataSource: {
 				data: [{
@@ -94,7 +82,7 @@ function dirtyField(data, fieldName){
 		mainGrid.element.on("keydown", function(e){
 			if(e.ctrlKey && e.altKey && e.keyCode == 65){// 65 is A
 				var selected = mainGrid.select();
-				console.log("selected count: " + selected.length);
+				//console.log("selected count: " + selected.length);
 				if(selected.length == 0){
 					return true;
 				}
@@ -164,10 +152,10 @@ function dirtyField(data, fieldName){
 				
 				mainGrid.closeCell();
 				mainGrid.clearSelection();
-				// 目前尚無法將焦點移到第一個選擇項目
+				
 				var firstTd = mainGrid.element.find(firstTdInfo.content).find("[data-uid="+firstTdInfo.uid+"]").find("td:eq("+firstTdInfo.idx+")");
 				//console.log(JSON.stringify(firstTdInfo));
-				firstTd.focus(); // not work
+				firstTd.closest("table").focus(); // 將焦點移到第一個選擇項目
 			}
 		});
 		
