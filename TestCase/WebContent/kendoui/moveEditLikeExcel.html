@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>模擬Excel的鍵盤移動編輯效果</title>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
+<link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
+</head>
+<body>
+
+<div id="mainGrid"></div>
+
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/jquery.min.js"></script>
+<script type="text/javascript" src="./professional.2016.1.226.trial/js/kendo.web.min.js"></script>
+<script type="text/javascript">
+	(function($, kendo){"use strict"
+		$("#mainGrid").kendoGrid({
+			dataSource: {
+				data: [{
+					firstName:"Bob", lastName: "Lin", id: 1
+				},{
+					firstName:"John", lastName: "Hung", id: 2
+				},{
+					firstName:"Mary", lastName: "Wu", id: 3
+				},{
+					firstName:"Bary", lastName: "Yu", id: 4
+				},{
+					firstName:"Jary", lastName: "Ku", id: 5
+				},{
+					firstName:"Wary", lastName: "Pu", id: 6
+				},{
+					firstName:"Pary", lastName: "Ou", id: 7
+				},{
+					firstName:"Kary", lastName: "Iu", id: 8
+				},{
+					firstName:"Hary", lastName: "Wu", id: 9
+				},{
+					firstName:"Eary", lastName: "Wu", id: 10
+				},{
+					firstName:"Qary", lastName: "Wu", id: 11
+				},{
+					firstName:"Lary", lastName: "Wu", id: 12
+				},{
+					firstName:"Dary", lastName: "Wu", id: 13
+				}],
+				schema: {
+					model: {
+						fields: {
+							firstName: {type: "string"},
+							lastName: {type: "string"},
+							id: {type: "number"},
+							tel: {type: "string"}
+						}
+					}
+				},
+				pageSize: 10
+			},
+			height: 550,
+			scrollable: true,
+			navigatable: true,
+			sortable: true,
+			selectable: "multiple, cell",
+			filterable: {mode: "row"},
+			pageable: {
+				input :true,
+				numeric: false
+			},
+			editable: {
+				mode: "incell"
+			},
+			filterable: {
+				mode: "menu, row",
+				extra: true
+			},
+			columnMenu: true,
+			columns: [
+				{field: "firstName", title: "First Name", width: "200px"},
+				{field: "id", title: "ID", width: "200px", locked: true}, // 至少有設定一個locked為true，其他欄位設定lockable才有意義/作用
+				{field: "tel", title: "tel", width: "200px"},
+				{field: "lastName", title: "Last Name", width: "200px"}
+			]
+		});
+		var mainGrid = $("#mainGrid").data("kendoGrid");
+		
+		// 現在如果出現橫跨lock table，也可以順利跳到下一個cell
+		function moveEditNextCell(e){
+			var keys = kendo.keys,
+				arrowKeys = [keys.LEFT, keys.UP, keys.RIGHT, keys.DOWN],
+				keyCode = e.keyCode,
+				grid = mainGrid.element,
+				input = $(e.target),
+				curCell = input.closest("td.k-edit-cell");
+			
+			if(!e.ctrlKey
+			|| arrowKeys.indexOf(keyCode) < 0
+			|| !input.is("input")
+			|| curCell.length == 0){
+				return true;
+			}
+			var tbody = "div.k-grid-content",
+				lockTbody = tbody + "-locked",
+				curCellIsLocked = curCell.closest(lockTbody).length > 0,
+				curTbody = curCellIsLocked ? lockTbody : tbody, 
+				tr = curCell.closest("tr"),
+				uid = tr.attr("data-uid"),
+				lockExists = grid.find("tr[data-uid="+uid+"]").length == 2,
+				next = null;
+			
+			if(keyCode == keys.UP){
+				next = tr.prev().children().eq(curCell.index());
+			}
+			if(keyCode == keys.DOWN){
+				next = tr.next().children().eq(curCell.index());
+			}
+			if(keyCode == keys.RIGHT){
+				next = curCell.next();
+				if(next.length == 0 && curCellIsLocked){
+					next = grid.find(tbody + " tr[data-uid="+uid+"]").children().first();
+				}
+			}
+			if(keyCode == keys.LEFT){
+				next = curCell.prev();
+				if(next.length == 0 && lockExists && !curCellIsLocked){
+					next = grid.find(lockTbody + " tr[data-uid="+uid+"]").children().last();
+				}
+			}		
+			if(next.closest(tbody).length == 0 && next.closest(lockTbody).length == 0){
+				return true;
+			}
+			
+			var thead = "div.k-grid-header-wrap th",
+				lockThead = "div.k-grid-header-locked th",
+				curThead = curCellIsLocked ? lockThead : thead,
+				curField = grid.find(curThead).eq(curCell.index()).attr("data-field"),
+				dataItem = mainGrid.dataItem(tr),
+				val = dataItem.get(curField),
+				inputVal = input.val();
+			// 上下方向鍵會在數字輸入元件上加減整數值，所以要重算回來
+			if(input.is("input[data-type=number]") && (keyCode == keys.UP || keyCode == keys.DOWN)){
+				if(keyCode == keys.UP){
+					inputVal = (parseInt(inputVal)-1).toString();
+				}else{
+					inputVal = (parseInt(inputVal)+1).toString();
+				}
+				dataItem.set(curField, inputVal);
+			}else{// 其他的交由手動觸發Enter鍵執行預設行為
+				var event = $.Event("keydown");
+				event.which = keys.ENTER;
+				event.keyCode = keys.ENTER; // 這段一定要指定才會生效
+				input.trigger(event);
+			}
+			
+			mainGrid.current(next); // focus位置
+			mainGrid.editCell(next);
+			mainGrid.clearSelection();
+			mainGrid.select(next);
+			
+			setTimeout(function(){// 一定要透過setTimeout()才會生效
+				next.find("input").select();
+			});
+			/* 這段等同於上段效果
+			mainGrid.one('edit', function(event){
+				console.log("input found: " + event.container.find("input").val());
+				setTimeout(function(){
+					event.container.find("input").select();	
+				});
+			});*/
+			
+			if(lockExists){// (應為bug)在有lock table的情況下，會在lock table最後一列出現額外被選擇的標記，在此手動移除
+				mainGrid.element.find("tr.k-state-selected")
+					.removeClass("k-state-selected")
+					.removeAttr("aria-selected");
+			}
+		}
+				
+		mainGrid.element.on("keydown", "td", moveEditNextCell);
+	})(jQuery, kendo)
+</script>
+</body>
+</html>
