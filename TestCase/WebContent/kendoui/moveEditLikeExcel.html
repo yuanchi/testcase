@@ -100,7 +100,6 @@
 			var tbody = "div.k-grid-content",
 				lockTbody = tbody + "-locked",
 				curCellIsLocked = curCell.closest(lockTbody).length > 0,
-				curTbody = curCellIsLocked ? lockTbody : tbody, 
 				tr = curCell.closest("tr"),
 				uid = tr.attr("data-uid"),
 				lockExists = grid.find("tr[data-uid="+uid+"]").length == 2,
@@ -155,7 +154,7 @@
 			mainGrid.clearSelection();
 			mainGrid.select(next);
 			
-			setTimeout(function(){// 一定要透過setTimeout()才會生效
+			setTimeout(function(){// 一定要透過setTimeout()才會生效 ref. http://stackoverflow.com/questions/1269722/selecting-text-on-focus-using-jquery-not-working-in-safari-and-chrome
 				next.find("input").select();
 			});
 			/* 這段等同於上段效果
