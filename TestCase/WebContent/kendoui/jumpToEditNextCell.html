@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Insert title here</title>
+<title>按下Enter開啟下一個儲存格編輯(shit可反向移動)</title>
 <link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.common.min.css"/>
 <link rel="stylesheet" href="./professional.2016.1.226.trial/styles/kendo.default.min.css"/>
 </head>
@@ -92,8 +92,11 @@
 					uid = tr.attr("data-uid"),
 					lockExists = mainGrid.element.find("tr[data-uid="+uid+"]").length == 2,
 					curCellIsLocked = curCell.closest("div.k-grid-content-locked").length > 0;
-				if(curCellIsLocked && next.length == 0){
-					next = mainGrid.element.find("div.k-grid-content tr[data-uid="+uid+"] td").eq(0);
+				if(!e.shiftKey && curCellIsLocked && next.length == 0){
+					next = mainGrid.element.find("div.k-grid-content tr[data-uid="+uid+"] td").first();
+				}
+				if(e.shiftKey && lockExists && !curCellIsLocked && next.length == 0){
+					next = mainGrid.element.find("div.k-grid-content-locked tr[data-uid="+uid+"] td").last();
 				}
 				if(curCell.length > 0 && next.length > 0){
 					setTimeout(function(){ // 此處必須使用setTimeout才不會影響原來的ENTER的功能，否則原來的異動會消失
@@ -102,7 +105,9 @@
 						mainGrid.clearSelection();
 						mainGrid.select(next); // 選取範圍(紅色背景)
 						if(lockExists){// (應為bug)在有lock table的情況下，會在lock table最後一列出現額外被選擇的標記，在此手動移除
-							mainGrid.element.find("tr.k-state-selected").removeClass("k-state-selected");
+							mainGrid.element.find("tr.k-state-selected")
+								.removeClass("k-state-selected")
+								.removeAttr("aria-selected");
 						}
 					});
 					//e.preventDefault(); // 要觸發後面的save事件，不能使用preventDefault	
@@ -110,7 +115,7 @@
 			}
 		}
 				
-		// 這一定要綁在table或tbody上面才會生效??
+		// 這一定要綁在table或tbody上面才會生效
 		mainGrid.tbody.on("keydown", "td", jumpToEditNextCell);
 		
 		function bindJumpToEditNextCellOnLockedTable(){
