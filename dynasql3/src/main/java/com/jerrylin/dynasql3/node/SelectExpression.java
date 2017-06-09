@@ -2,6 +2,7 @@ package com.jerrylin.dynasql3.node;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -175,7 +176,19 @@ public class SelectExpression<S extends SelectExpression<?>> extends SqlNode<S> 
 		});
 		return thisType();
 	}
-	
+	/**
+	 * return alias or expression.
+	 * @return
+	 */
+	public String getRootTargetSymbol(){
+		LinkedList<SqlNode<?>> children = from().getChildren();
+		if(children.isEmpty()){
+			throw new RuntimeException("child SqlNode as target NOT FOUND");
+		}
+		SimpleExpression se = ((SimpleExpression)children.getFirst());
+		String symbol = se.getTargetSymbol();
+		return symbol;
+	}
 	@Override
 	public S copy(){
 		S copy = super.copy();
