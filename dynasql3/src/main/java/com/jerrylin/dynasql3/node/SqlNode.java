@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.jerrylin.dynasql3.Identifiable;
+import com.jerrylin.dynasql3.Replaceable;
 import com.jerrylin.dynasql3.SqlNodeFactory;
 import com.jerrylin.dynasql3.util.SqlNodeSearchable;
 /**
@@ -16,7 +17,8 @@ import com.jerrylin.dynasql3.util.SqlNodeSearchable;
  *
  * @param <T>
  */
-public class SqlNode<T extends SqlNode<?>> implements Serializable, Identifiable<String, T>{
+public class SqlNode<T extends SqlNode<?>> 
+	implements Serializable, Identifiable<String, T>, Replaceable{
 	private static final long serialVersionUID = 9074894360149912315L;
 	
 	private SqlNode<?> parent;
