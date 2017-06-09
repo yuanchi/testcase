@@ -17,7 +17,7 @@ public interface Joinable<Me extends SqlNode<?>> extends ChildAddible<Me>{
 	public static final String TYPE_CROSS_JOIN = "CROSS JOIN";
 	
 	public String getJoinType();
-	public void setJoinType(String joinType);
+	public Me setJoinType(String joinType);
 	public LinkedList<SqlNode<?>> getChildren();
 	
 	default On on(){
