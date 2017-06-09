@@ -1,13 +1,16 @@
 package com.jerrylin.dynasql3.node;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.LinkedList;
+import java.util.function.Consumer;
 
 import com.jerrylin.dynasql3.ExpressionAliasible;
 import com.jerrylin.dynasql3.Joinable;
 import com.jerrylin.dynasql3.util.SqlNodeUtil;
 
-public class JoinExpression extends SqlNode<JoinExpression> implements ExpressionAliasible<JoinExpression>, Joinable<JoinExpression>{
+public class JoinExpression extends SqlNode<JoinExpression> 
+	implements 
+		ExpressionAliasible<JoinExpression>, 
+		Joinable<JoinExpression>{
 	private static final long serialVersionUID = 6285947476788777271L;
 	
 	private String expression;
@@ -33,8 +36,9 @@ public class JoinExpression extends SqlNode<JoinExpression> implements Expressio
 	public String getJoinType() {
 		return joinType;
 	}
-	public void setJoinType(String joinType) {
+	public JoinExpression setJoinType(String joinType) {
 		this.joinType = joinType;
+		return this;
 	}
 
 	@Override
@@ -63,5 +67,16 @@ public class JoinExpression extends SqlNode<JoinExpression> implements Expressio
 			sql = sql + "\n" + r;
 		}
 		return sql;
+	}
+	public JoinSubquery changedWith(Consumer<SelectExpression<?>> consumer){
+		JoinSubquery js = createBy(JoinSubquery.class);
+		js.setJoinType(joinType);
+		js.subquery(consumer).as(alias);
+		LinkedList<SqlNode<?>> children = getChildren();
+		for(SqlNode<?> c : children){
+			js.add(c);
+		}
+		replaceWith(js);
+		return js;
 	}
 }
