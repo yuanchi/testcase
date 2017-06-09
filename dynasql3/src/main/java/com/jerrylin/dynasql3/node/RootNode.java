@@ -30,6 +30,13 @@ public class RootNode extends SelectExpression<RootNode> {
 	public RootNode add(SqlNode<?> child){
 		return (RootNode)super.add(child);
 	}
+	public boolean withAnyParamName(){
+		SqlNode<?> f = findFirst(
+			c -> 
+				ExpressionParameterizable.class.isInstance(c) 
+				&& ExpressionParameterizable.class.cast(c).getParamNameCount() > 0);
+		return f != null;
+	}
 	public RootNode removeIfParamValNotExisted(){
 		findAll(c->{
 			if(!ExpressionParameterizable.class.isInstance(c)){
@@ -59,7 +66,12 @@ public class RootNode extends SelectExpression<RootNode> {
 		.forEach(c->c.getParent().getChildren().remove(c));
 		return this;
 	}
-	public <T extends SqlNode<?> & ExpressionParameterizable<T>> List<T> getParameterizableNodes(){
+	// TODO
+	public RootNode removeFromTargetIfNotReferenced(){
+		
+		return this;
+	}
+	<T extends SqlNode<?> & ExpressionParameterizable<T>> List<T> getParameterizableNodes(){
 		List<T> collect = findAll(n -> ExpressionParameterizable.class.isInstance(n) && ExpressionParameterizable.class.cast(n).getParams() != null);
 		return collect;
 	}
