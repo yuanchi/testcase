@@ -15,4 +15,15 @@ public interface ExpressionAliasible<Me extends SqlNode<?>> extends Aliasible<Me
 		}
 		return expression + " AS " + alias;
 	}
+	default String getTargetSymbol(){
+		String alias = getAlias();
+		if(SqlNodeUtil.isNotBlank(alias)){
+			return alias;
+		}
+		String expression = getExpression();
+		if(SqlNodeUtil.isNotBlank(expression)){
+			return expression;
+		}
+		throw new RuntimeException("target symbol: [alias or expression] NOT FOUND");
+	}
 }
