@@ -14,8 +14,9 @@ public class JoinSubquery extends SqlNode<JoinSubquery> implements
 		return joinType;
 	}
 	@Override
-	public void setJoinType(String joinType) {
+	public JoinSubquery setJoinType(String joinType) {
 		this.joinType = joinType;
+		return this;
 	}
 	@Override
 	public String toSql(){
