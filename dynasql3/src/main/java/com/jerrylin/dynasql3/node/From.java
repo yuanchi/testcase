@@ -22,7 +22,7 @@ public class From extends SqlNode<From> implements ChildExpressible<From>,
 ChildSubquerible<From> {
 	private static final long serialVersionUID = 8967310701432397090L;
 	
-	private From addJoinExpression(String joinType, String target){
+	public From addJoinExpression(String joinType, String target){
 		JoinExpression je = createBy(JoinExpression.class);
 		je.setJoinType(joinType);
 		je.setExpression(target);
