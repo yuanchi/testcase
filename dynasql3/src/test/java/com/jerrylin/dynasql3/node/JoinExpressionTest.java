@@ -1,10 +1,11 @@
 package com.jerrylin.dynasql3.node;
 
-import java.util.Arrays;
+import static com.jerrylin.dynasql3.util.SearchCondition.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 import com.jerrylin.dynasql3.SqlNodeFactory;
 
@@ -50,5 +51,38 @@ public class JoinExpressionTest {
 		assertEquals("EMPLOYEE AS emp ON xxx.emp_id = emp.id", sql);
 		String sqlf = je.toSqlf();
 		assertEquals(sql, sqlf);
+	}
+	@Test
+	public void replaceWith(){
+		RootNode root = RootNode.create()
+			.from(f->
+				f.t("EMPLOYEE").as("e")
+				.leftOuterJoin("SALARY").as("s")
+				.on("e.id = s.emp_id"))
+			.where("s.min > :salary_min");
+		String sqlf = root.toSqlf();
+		String expected = 
+			"FROM EMPLOYEE AS e\n"
+			+ " LEFT OUTER JOIN SALARY AS s\n"
+			+ "  ON e.id = s.emp_id\n"
+			+ "WHERE s.min > :salary_min";
+		assertEquals(expected, sqlf);
+		
+		JoinExpression je = root.findWith(alias("s"));
+		je.changedWith(s->
+			s.select("*")
+			.from(je.getExpression()));
+		
+		sqlf = root.toSqlf();
+		expected = 
+			"FROM EMPLOYEE AS e\n"
+			+ " LEFT OUTER JOIN (SELECT *\n"
+			+ "   FROM SALARY) AS s\n"
+			+ "  ON e.id = s.emp_id\n"
+			+ "WHERE s.min > :salary_min";
+		assertEquals(expected, sqlf);
+		
+		SqlNode<?> found = root.findWith(alias("s"));
+		assertFalse(found == je);
 	}
 }
