@@ -3,10 +3,12 @@ package com.jerrylin.dynasql3.node;
 import java.util.stream.Collectors;
 
 import com.jerrylin.dynasql3.ChildSubquerible;
+import com.jerrylin.dynasql3.Filterable;
 import com.jerrylin.dynasql3.Junctible;
+import com.jerrylin.dynasql3.SingleChildSubquerible;
 
 public class SubqueryCondition extends SqlNode<SubqueryCondition> implements
-		ChildSubquerible<SubqueryCondition>, Junctible{
+		ChildSubquerible<SubqueryCondition>, Junctible, SingleChildSubquerible, Filterable{
 	private static final long serialVersionUID = 2616409484368209956L;
 	
 	private String prefix;
@@ -47,5 +49,13 @@ public class SubqueryCondition extends SqlNode<SubqueryCondition> implements
 		String result = getChildren().stream().map(c->c.toSqlWith(newIndent)).collect(Collectors.joining());
 		result = indent + prefix + " " + result;
 		return result;
+	}
+	@Override
+	public String getExprPart() {
+		return getPrefix();
+	}
+	@Override
+	public void setExprPart(String exprPart) {
+		setPrefix(exprPart);
 	}
 }
