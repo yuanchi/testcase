@@ -3,10 +3,12 @@ package com.jerrylin.dynasql3.node;
 import java.util.LinkedList;
 
 import com.jerrylin.dynasql3.ExpressionParameterizable;
+import com.jerrylin.dynasql3.Filterable;
 import com.jerrylin.dynasql3.Junctible;
 import com.jerrylin.dynasql3.SqlParameter;
 
-public class SimpleCondition extends SqlNode<SimpleCondition> implements ExpressionParameterizable<SimpleCondition>, Junctible{
+public class SimpleCondition extends SqlNode<SimpleCondition>
+	implements ExpressionParameterizable<SimpleCondition>, Junctible, Filterable{
 	private static final long serialVersionUID = -2660719106155213049L;
 	
 	private String junction = Junctible.AND;
@@ -63,5 +65,13 @@ public class SimpleCondition extends SqlNode<SimpleCondition> implements Express
 	public SimpleCondition setCurrent(SqlParameter current) {
 		this.current = current;
 		return thisType();
+	}
+	@Override
+	public String getExprPart() {
+		return getExpression();
+	}
+	@Override
+	public void setExprPart(String exprPart) {
+		setExpression(exprPart);
 	}
 }
