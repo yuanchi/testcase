@@ -1,9 +1,11 @@
 package com.jerrylin.dynasql3.node;
 
+import static com.jerrylin.dynasql3.util.SearchCondition.expr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import org.junit.Before;
+import java.util.List;
+
 import org.junit.Test;
 
 import com.jerrylin.dynasql3.SqlNodeFactory;
@@ -34,5 +36,14 @@ public class SimpleExpressionTest {
 		se.setExpression("EMPLOYEE");
 		String sql = se.toSql();
 		assertEquals("EMPLOYEE AS emp", sql);
+	}
+	@Test
+	public void getTableReferences(){
+		RootNode root = RootNode.create()
+			.select("i.*")
+			.fromAs("INFO", "i");
+		SimpleExpression se1 = root.findWith(expr("i.*"));
+		List<String> refs = se1.getTableReferences();
+		assertEquals("i", refs.get(0));
 	}
 }

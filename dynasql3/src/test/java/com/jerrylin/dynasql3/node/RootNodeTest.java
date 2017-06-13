@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import com.jerrylin.dynasql3.ExpressionAliasible;
+
 public class RootNodeTest {
 	/**
 	 * the purpose of this test case is to observe returning type
@@ -265,5 +267,128 @@ public class RootNodeTest {
 		  + "   WHERE rownum <= 20)\n"
 		  + "WHERE rn > 10";
 		assertEquals(expected, sqlf);
-	}	
+	}
+	@Test
+	public void removeJoinTargetIfNotReferenced1(){
+		RootNode root = RootNode.create()
+			.select("e.name", "e.firstname")
+			.fromAs("EMPLOYEE", "e")
+			.from(f->f.leftOuterJoin("SALARY").as("s")
+					.on("e.id = s.emp_id")
+				.leftOuterJoin(se->
+					se.select("i.age", "i.start")
+					.fromAs("INFO", "i")
+					.where("i.start > :start_date")).as("info")
+					.on("info.emp_id = e.id")
+				.leftOuterJoin("PERFORMANCE").as("per")
+					.on("per.id = info.per_id"));
+		String sqlf = root.toSqlf();
+		String expected = 
+			"SELECT e.name,\n"
+			+ " e.firstname\n"
+			+ "FROM EMPLOYEE AS e\n"
+			+ " LEFT OUTER JOIN SALARY AS s\n"
+			+ "  ON e.id = s.emp_id\n"
+			+ " LEFT OUTER JOIN (SELECT i.age,\n"
+			+ "    i.start\n"
+			+ "   FROM INFO AS i\n"
+			+ "   WHERE i.start > :start_date) AS info\n"
+			+ "  ON info.emp_id = e.id\n"
+			+ " LEFT OUTER JOIN PERFORMANCE AS per\n"
+			+ "  ON per.id = info.per_id";
+		assertEquals(expected, sqlf);
+		
+		RootNode copy = root.copy();
+		copy.removeJoinTargetIfNotReferenced();
+		sqlf = copy.toSqlf();
+		expected = 
+			"SELECT e.name,\n"
+			+ " e.firstname\n"
+			+ "FROM EMPLOYEE AS e";
+		assertEquals(expected, sqlf);
+		
+		root.select("per.point");
+		sqlf = root.toSqlf();
+		expected = 
+			"SELECT e.name,\n"
+			+ " e.firstname,\n"
+			+ " per.point\n"
+			+ "FROM EMPLOYEE AS e\n"
+			+ " LEFT OUTER JOIN SALARY AS s\n"
+			+ "  ON e.id = s.emp_id\n"
+			+ " LEFT OUTER JOIN (SELECT i.age,\n"
+			+ "    i.start\n"
+			+ "   FROM INFO AS i\n"
+			+ "   WHERE i.start > :start_date) AS info\n"
+			+ "  ON info.emp_id = e.id\n"
+			+ " LEFT OUTER JOIN PERFORMANCE AS per\n"
+			+ "  ON per.id = info.per_id";		
+		assertEquals(expected, sqlf);
+		
+		root.removeJoinTargetIfNotReferenced();
+		sqlf = root.toSqlf();
+		expected = 
+			"SELECT e.name,\n"
+			+ " e.firstname,\n"
+			+ " per.point\n"
+			+ "FROM EMPLOYEE AS e\n"
+			+ " LEFT OUTER JOIN (SELECT i.age,\n"
+			+ "    i.start\n"
+			+ "   FROM INFO AS i\n"
+			+ "   WHERE i.start > :start_date) AS info\n"
+			+ "  ON info.emp_id = e.id\n"
+			+ " LEFT OUTER JOIN PERFORMANCE AS per\n"
+			+ "  ON per.id = info.per_id";		
+		assertEquals(expected, sqlf);
+	}
+	@Test
+	public void moveFiltersToJoin1(){
+		RootNode root = RootNode.create()
+			.select("p.name")
+			.fromAs("PERSON", "p")
+			.where("p.age > :age", "p.male = :male");
+		String sqlf = root.toSqlf();
+		String expected = 
+			"SELECT p.name\n"
+			+ "FROM PERSON AS p\n"
+			+ "WHERE p.age > :age\n"
+			+ " AND p.male = :male";
+		assertEquals(expected, sqlf);
+		root.moveFiltersToJoin(); // not effected
+		assertEquals(expected, root.toSqlf());
+	}
+	@Test
+	public void moveFiltersToJoin2(){
+		RootNode root = RootNode.create()
+			.select("p.name")
+			.from(f->
+				f.t("PERSON").as("p")
+				.leftOuterJoin("INFO").as("i")
+					.on("i.p_id = p.id"))
+			.where("p.age > :age", "p.male = :male", "i.point > :point");
+		String sqlf = root.toSqlf();
+		String expected = 
+			"SELECT p.name\n"
+			+ "FROM PERSON AS p\n"
+			+ " LEFT OUTER JOIN INFO AS i\n"
+			+ "  ON i.p_id = p.id\n"
+			+ "WHERE p.age > :age\n"
+			+ " AND p.male = :male\n"
+			+ " AND i.point > :point";
+		assertEquals(expected, sqlf);
+		root.moveFiltersToJoin(); // not effected
+		expected = 
+			"SELECT p.name\n"
+			+ "FROM (SELECT *\n"
+			+ "  FROM PERSON AS within_p\n"
+			+ "  WHERE within_p.age > :age\n"
+			+ "   AND within_p.male = :male) AS p\n"
+			+ " LEFT OUTER JOIN INFO AS i\n" // bypass left outer join
+			+ "  ON i.p_id = p.id\n"
+			+ "WHERE i.point > :point";
+		assertEquals(expected, root.toSqlf());
+		// repeated, not work this time because not required
+		assertEquals(expected, root.moveFiltersToJoin().toSqlf());
+		System.out.println(root.toSqlf());
+	}
 }

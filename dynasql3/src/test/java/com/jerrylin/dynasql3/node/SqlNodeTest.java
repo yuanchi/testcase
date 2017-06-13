@@ -152,38 +152,6 @@ public class SqlNodeTest {
 		SqlNode<?> f3 = root.findWith(SearchCondition.id("c2_1_2"));
 		assertTrue(c2_1_2 == f3);
 	}
-	@Test
-	public void findWithSequence(){
-		SqlNode<?> root = new SqlNode<>();
-		
-		SqlNode<?> c1 = new SqlNode<>().setId("c1");
-		SqlNode<?> c2 = new SqlNode3().setId("c2");
-		SqlNode<?> c3 = new SqlNode<>().setId("c3");
-		
-		SqlNode<?> c1_1 = new SqlNode<>().setId("c1_1");
-		SqlNode<?> c1_2 = new SqlNode2().setId("c1_2");
-		SqlNode<?> c2_1 = new SqlNode2().setId("c2_1");
-		SqlNode<?> c3_1 = new SqlNode2().setId("c3_1");
-		
-		SqlNode<?> c1_1_1 = new SqlNode1().setId("c1_1_1");
-		SqlNode<?> c1_1_2 = new SqlNode3().setId("c1_1_2");
-		SqlNode<?> c2_1_1 = new SqlNode<>().setId("c2_1_1");
-		SqlNode<?> c2_1_2 = new SqlNode3().setId("c2_1_2");
-		
-		root.add(c1).add(c2).add(c3);
-		c1.add(c1_1).add(c1_2);
-		c2.add(c2_1);
-		c3.add(c3_1);
-		c1_1.add(c1_1_1).add(c1_1_2);
-		c2_1.add(c2_1_1).add(c2_1_2);
-		
-		SqlNode<?> f1 = root.find(c->SqlNode2.class.isInstance(c), 3);System.out.println(f1.getId());
-//		assertTrue(c3_1 == f1);
-//		SqlNode<?> f2 = root.find(c->SqlNode3.class.isInstance(c), 2);
-//		assertTrue(c1_1_2 == f2);
-//		SqlNode<?> f3 = root.find(c->SqlNode.class.isInstance(c), 5);
-//		assertTrue(c1_2 == f3);
-	}
 	private static class SqlNode4 extends SqlNode<SqlNode4> implements Expressible{
 		private String expression;
 		@Override
