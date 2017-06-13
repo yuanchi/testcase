@@ -8,12 +8,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.jerrylin.dynasql3.Aliasible;
+import com.jerrylin.dynasql3.Expressible;
 import com.jerrylin.dynasql3.util.SqlNodeUtil;
 // TODO Set operation??
 public class SelectExpression<S extends SelectExpression<?>> extends SqlNode<S> implements Aliasible<S> {
 	private static final long serialVersionUID = -707634325499457067L;
 	private static final List<Class<? extends SqlNode<?>>> ORDERS = 
-		Arrays.asList(Select.class, From.class, Where.class, OrderBy.class, GroupBy.class, Having.class);
+		Arrays.asList(Select.class, From.class, Where.class, GroupBy.class, Having.class, OrderBy.class);
 	private String alias;
 	@Override
 	public String getAlias() {
@@ -234,5 +235,24 @@ public class SelectExpression<S extends SelectExpression<?>> extends SqlNode<S> 
 			result = result + " AS " + alias;
 		}
 		return result;
+	}
+	/**
+	 * check if specified table reference is in projections<br>
+	 * if projections contain '*', always return true
+	 * @param tableRef
+	 * @return
+	 */
+	public boolean projectionContains(String tableRef){
+		for(SqlNode<?> c : getChildren()){
+			if(Expressible.class.isInstance(c)){
+				Expressible e = Expressible.class.cast(c);
+				if("*".equals(e.getExpression())
+				|| tableRef.equals(e.getExpression()) // suitable for ORM representation
+				|| e.getTableReferences().contains(tableRef)){
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
