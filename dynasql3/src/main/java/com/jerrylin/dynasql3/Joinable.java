@@ -1,13 +1,15 @@
 package com.jerrylin.dynasql3;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.jerrylin.dynasql3.node.On;
 import com.jerrylin.dynasql3.node.SqlNode;
-import com.jerrylin.dynasql3.util.SqlNodeUtil;
 
 public interface Joinable<Me extends SqlNode<?>> extends ChildAddible<Me>{
 	public static final String TYPE_JOIN = "JOIN";
@@ -49,5 +51,25 @@ public interface Joinable<Me extends SqlNode<?>> extends ChildAddible<Me>{
 	default String toSqlWith(String indent){
 		String sql = getChildren().stream().map(c->c.toSqlWith(indent)).collect(Collectors.joining("\n"));
 		return sql;
+	}
+	default Set<String> getOnReferences(){
+		Set<String> refs = Collections.emptySet();
+		On on = null;
+		for(SqlNode<?> c : getChildren()){
+			if(On.class.isInstance(c)){
+				on = On.class.cast(c);
+				break;
+			}
+		}
+		if(on == null){
+			return refs;
+		}
+		refs = new LinkedHashSet<>();
+		for(SqlNode<?> c : on.getChildren()){
+			if(Expressible.class.isInstance(c)){
+				refs.addAll(Expressible.class.cast(c).getTableReferences());
+			}
+		}
+		return refs;
 	}
 }
