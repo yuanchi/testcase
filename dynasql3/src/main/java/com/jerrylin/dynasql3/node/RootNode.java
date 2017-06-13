@@ -5,11 +5,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jerrylin.dynasql3.Aliasible;
+import com.jerrylin.dynasql3.Expressible;
+import com.jerrylin.dynasql3.ExpressionAliasible;
 import com.jerrylin.dynasql3.ExpressionParameterizable;
+import com.jerrylin.dynasql3.Filterable;
+import com.jerrylin.dynasql3.Joinable;
+import com.jerrylin.dynasql3.SingleChildSubquerible;
 import com.jerrylin.dynasql3.SqlNodeFactory;
 import com.jerrylin.dynasql3.SqlParameter;
 import com.jerrylin.dynasql3.util.SqlNodeUtil;
@@ -66,9 +74,149 @@ public class RootNode extends SelectExpression<RootNode> {
 		.forEach(c->c.getParent().getChildren().remove(c));
 		return this;
 	}
-	// TODO
-	public RootNode removeFromTargetIfNotReferenced(){
+	String getTargetExpressionSymbol(SqlNode<?> c){
+		String alias = null;
+		if(ExpressionAliasible.class.isInstance(c)){
+			alias = ExpressionAliasible.class.cast(c).getTargetSymbol();
+		}else if(SingleChildSubquerible.class.isInstance(c)){
+			alias = SingleChildSubquerible.class.cast(c).getSubqueryAlias();
+		}
+		return alias;
+	}
+	public <T extends SqlNode<?> & Joinable<?>>RootNode removeJoinTargetIfNotReferenced(){
+		List<Expressible> found = // find all expressions except for those belonging to From or On
+			findAll(c->{
+				if(!Expressible.class.isInstance(c)
+				|| From.class.isInstance(c.getParent())
+				|| On.class.isInstance(c.getParent())){
+					return false;
+				}
+				return true;
+			}).stream()
+			.map(c->Expressible.class.cast(c))
+			.collect(Collectors.toList());
 		
+		Set<String> refs = found.stream() // find all used table references
+			.flatMap(c->c.getTableReferences().stream())
+			.collect(Collectors.toSet());
+		
+		List<T> removed = findAll(c->Joinable.class.isInstance(c)) // find all joinable table not referenced, prepared for removal
+			.stream()
+			.map(c->((T)c))
+			.filter(c->{
+				String alias = getTargetExpressionSymbol(c);
+				if(SqlNodeUtil.isBlank(alias)){
+					return false;
+				}
+				if(c.toStart().projectionContains(alias)){
+					return false;
+				}
+				for(String ref : refs){
+					if(ref.equals(alias)){
+						return false;
+					}
+				}
+				return true;
+			})
+			.collect(Collectors.toList());
+		
+		Collections.reverse(removed); // from back to front, from right to left
+		
+		removed.stream().forEach(c->{
+			LinkedList<SqlNode<?>> children = c.getParent().getChildren();
+			if(children.getLast() == c){ // if the join position is at last, remove it
+				c.remove();
+				return;
+			}
+			boolean referenced = false;
+			int i = children.indexOf(c);
+			for(int j = (i+1); j < children.size(); j++){
+				SqlNode<?> f = children.get(j);
+				if(Joinable.class.isInstance(f)
+				&& Joinable.class.cast(f).getOnReferences().contains(getTargetExpressionSymbol(c))){
+					referenced = true;
+					return;
+				}
+			}
+			if(!referenced){ // if the join target is not referenced by the right table, remove it 
+				c.remove();
+			}
+		});
+		return this;
+	}
+	public <T extends SqlNode<?> & Aliasible<?>, S extends SqlNode<?> & Filterable>RootNode moveFiltersToJoin(){
+		List<S> conds = findAll(c->Filterable.class.isInstance(c))
+			.stream()
+			.map(c->(S)c)
+			.collect(Collectors.toList());
+		
+		Map<String, T> targets = new LinkedHashMap<>();
+		Map<String, SqlNode<?>> targetParents = new LinkedHashMap<>();
+		List<T> founds = findAll(c->Aliasible.class.isInstance(c));
+		for(T t : founds){
+			if(Joinable.class.isInstance(t) // bypass left outer join
+			&& Joinable.TYPE_LEFT_OUTER_JOIN.equals(Joinable.class.cast(t).getJoinType())){
+				continue;
+			}
+			String symbol = null;
+			if(ExpressionAliasible.class.isInstance(t)){
+				symbol = ExpressionAliasible.class.cast(t).getTargetSymbol();
+			}else{
+				symbol = t.getAlias();
+			}
+			if(SqlNodeUtil.isNotBlank(symbol)){
+				targets.put(symbol, t);
+				targetParents.put(symbol, t.getParent());
+			}
+		}
+		
+		Map<String, SelectExpression<?>> newSubs = new LinkedHashMap<>();
+		SelectExpression<?> topMost = topMost();
+		for(S c : conds){
+			String expr = c.getExprPart();
+			List<String> refs = Expressible.findTableReferences(expr);
+			if(refs.isEmpty()
+			|| Collections.frequency(refs, refs.get(0)) != refs.size()){ // TODO
+				continue;
+			}
+			SelectExpression<?> start = c.toStart();
+			String ref = refs.get(0);
+			for(Map.Entry<String, T> target : targets.entrySet()){
+				String symbol = target.getKey();
+				T t = target.getValue();
+				SqlNode<?> parent = targetParents.get(symbol);
+				int size = parent.getChildren().size();
+				SelectExpression<?> targetStart = parent.toStart();
+				
+				if(ref.equals(symbol)
+				&& ((start == topMost && size >= 2)
+				|| start != targetStart)
+				){
+					SelectExpression<?> subquery = newSubs.get(symbol);
+					if(SimpleExpression.class.isInstance(t) && subquery == null){
+						String experssion = SimpleExpression.class.cast(t).getExpression();
+						subquery = createBy(SelectExpression.class)
+							.select("*")
+							.fromAs(experssion, "within_" + symbol);
+						subquery.as(symbol);
+						t.replaceWith(subquery);
+					}else if(JoinExpression.class.isInstance(t) && subquery == null){
+						JoinExpression je = JoinExpression.class.cast(t);
+						JoinSubquery js = je.changedWith(se->
+							se.select("*")
+							.fromAs(je.getExpression(), "within_" + symbol));
+						subquery = js.getSubquery();
+					}else if(SelectExpression.class.isInstance(t) && subquery == null){
+						subquery = SelectExpression.class.cast(t);
+					}
+					newSubs.put(symbol, subquery);
+					c.setExprPart(Expressible.getNewExprFrom(expr, subquery.getRootTargetSymbol()));
+					c.remove();
+					subquery.where().add(c);
+					break;
+				}
+			}
+		}
 		return this;
 	}
 	<T extends SqlNode<?> & ExpressionParameterizable<T>> List<T> getParameterizableNodes(){
@@ -150,7 +298,6 @@ public class RootNode extends SelectExpression<RootNode> {
 		setParamValues(vals);
 		return this;
 	}
-	
 	/**
 	 * create root node with a singleton factory.<br>
 	 * if a mutable factory is needed, reassign a mutable instance with SqlNodeFactory.createInstance() 
