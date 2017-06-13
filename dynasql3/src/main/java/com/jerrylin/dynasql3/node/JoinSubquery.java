@@ -2,9 +2,10 @@ package com.jerrylin.dynasql3.node;
 
 import com.jerrylin.dynasql3.ChildSubquerible;
 import com.jerrylin.dynasql3.Joinable;
+import com.jerrylin.dynasql3.SingleChildSubquerible;
 
 public class JoinSubquery extends SqlNode<JoinSubquery> implements
-		ChildSubquerible<JoinSubquery>, Joinable<JoinSubquery> {
+		ChildSubquerible<JoinSubquery>, Joinable<JoinSubquery>, SingleChildSubquerible {
 	private static final long serialVersionUID = -5006841663470928295L;
 	
 	private String joinType;
