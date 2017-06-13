@@ -133,28 +133,6 @@ public class SqlNode<T extends SqlNode<?>>
 		}
 		return collect;
 	}
-	public <S extends SqlNode<?>>S find(Predicate<SqlNode<?>> predicate, int seq){
-		List<SqlNode<?>> collect = new ArrayList<>();
-		SqlNode<?> f = null;
-		for(SqlNode<?> c : getChildren()){
-			if(predicate.test(c)){
-				collect.add(c);
-			}
-			if(collect.size() >= seq){
-				f = collect.get(seq-1);
-				break;
-			}
-			List<SqlNode<?>> found = c.findAll(predicate);
-			if(!found.isEmpty()){
-				collect.addAll(found);
-				if(collect.size() >= seq){
-					f = collect.get(seq-1);
-					break;
-				}
-			}
-		}
-		return (S)f;
-	}
 	public <S extends SqlNode<?>> S findWith(SqlNodeSearchable strategy){
 		strategy.from(this);
 		return strategy.find();
@@ -209,6 +187,13 @@ public class SqlNode<T extends SqlNode<?>>
 	}
 	public void setChildren(LinkedList<SqlNode<?>> children) {
 		this.children = children;
+	}
+	/**
+	 * remove self from parent
+	 */
+	public void remove(){
+		getParent().getChildren().remove(this);
+		setParent(null);
 	}
 	
 	/**
