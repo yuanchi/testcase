@@ -90,7 +90,15 @@ ChildSubquerible<From> {
 		joinable.on(consumer);
 		return thisType();
 	}
-	
+	public From as(String alias){
+		SqlNode<?> last = getChildren().getLast();
+		if(JoinSubquery.class.isInstance(last)){
+			JoinSubquery.class.cast(last).as(alias);
+		}else{
+			ChildSubquerible.super.as(alias);
+		}
+		return thisType();
+	}
 	@Override
 	public String toSql(){
 		List<SqlNode<?>> children = getChildren();
