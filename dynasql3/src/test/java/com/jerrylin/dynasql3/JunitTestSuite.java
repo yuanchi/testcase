@@ -14,6 +14,7 @@ import com.jerrylin.dynasql3.node.SimpleConditionTest;
 import com.jerrylin.dynasql3.node.SimpleExpressionTest;
 import com.jerrylin.dynasql3.node.SqlNodeTest;
 import com.jerrylin.dynasql3.node.SubqueryConditionTest;
+import com.jerrylin.dynasql3.util.SqlNodeUtilTest;
 
 @RunWith(Suite.class)
 
@@ -30,6 +31,7 @@ import com.jerrylin.dynasql3.node.SubqueryConditionTest;
 	FromTest.class,
 	SimpleConditionTest.class,
 	SubqueryConditionTest.class,
-	CustomExpressionTest.class
+	CustomExpressionTest.class,
+	SqlNodeUtilTest.class
 })
 public class JunitTestSuite {}
