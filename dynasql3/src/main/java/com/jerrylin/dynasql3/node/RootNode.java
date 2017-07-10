@@ -27,11 +27,11 @@ import com.jerrylin.dynasql3.util.SqlNodeUtil;
 public class RootNode extends SelectExpression<RootNode> {
 	private static final long serialVersionUID = 8222624988662647761L;
 	
-	private Map<String, Object> paramValues;
-	public void setParamValues(Map<String, Object> paramValues) {
+	private LinkedHashMap<String, Object> paramValues;
+	public void setParamValues(LinkedHashMap<String, Object> paramValues) {
 		this.paramValues = paramValues;
 	}
-	public Map<String, Object> getParamValues(){
+	public LinkedHashMap<String, Object> getParamValues(){
 		return paramValues;
 	}
 	@Override
@@ -55,6 +55,9 @@ public class RootNode extends SelectExpression<RootNode> {
 			int paramMarkCount = ep.getParamNameCount();
 			if(paramMarkCount == 0){
 				paramMarkCount = ep.getQuestionMarkCount();
+			}
+			if(paramMarkCount == 0){
+				return false;
 			}
 			if(params == null || params.isEmpty() || params.size() != paramMarkCount){
 				return true;
@@ -130,12 +133,14 @@ public class RootNode extends SelectExpression<RootNode> {
 			}
 			boolean referenced = false;
 			int i = children.indexOf(c);
+			String targetSymbol = getTargetExpressionSymbol(c);
 			for(int j = (i+1); j < children.size(); j++){
 				SqlNode<?> f = children.get(j);
-				if(Joinable.class.isInstance(f)
-				&& Joinable.class.cast(f).getOnReferences().contains(getTargetExpressionSymbol(c))){
+				if(Joinable.class.isInstance(f) && Joinable.class.cast(f).getOnReferences().contains(targetSymbol)
+				|| (Expressible.class.isInstance(f) && Expressible.class.cast(f).getTableReferences().contains(targetSymbol))) // for ORM e.g. HQL
+				{
 					referenced = true;
-					return;
+					break;
 				}
 			}
 			if(!referenced){ // if the join target is not referenced by the right table, remove it 
@@ -219,6 +224,26 @@ public class RootNode extends SelectExpression<RootNode> {
 		}
 		return this;
 	}
+	/**
+	 * replacing target symbol with extra prefix.<br>
+	 * this method is just suitable for those have their own aliases as table references,<br>
+	 * or it may generate not correct output.
+	 * @param prefix
+	 * @return
+	 */
+	public <T extends SqlNode<?> & Aliasible<T>>RootNode prependTargetSymbol(String prefix){
+		List<T> aliases = findAll(c->Aliasible.class.isInstance(c) && SqlNodeUtil.isNotBlank(Aliasible.class.cast(c).getAlias()))
+			.stream()
+			.map(c->(T)c)
+			.collect(Collectors.toList());
+		aliases.forEach(a->a.setAlias(prefix + a.getAlias()));
+		
+		findAll(c->Expressible.class.isInstance(c) && !aliases.contains(c) && !From.class.isInstance(c.getParent()))
+			.stream()
+			.map(c->Expressible.class.cast(c))
+			.forEach(c->c.prependTableReferences(prefix));
+		return this;
+	}
 	<T extends SqlNode<?> & ExpressionParameterizable<T>> List<T> getParameterizableNodes(){
 		List<T> collect = findAll(n -> ExpressionParameterizable.class.isInstance(n) && ExpressionParameterizable.class.cast(n).getParams() != null);
 		return collect;
@@ -230,12 +255,14 @@ public class RootNode extends SelectExpression<RootNode> {
 	}
 	public RootNode withParamValues(){
 		List<SqlParameter> params = getParameters();
+		
+		LinkedHashMap<String, Object> vals = new LinkedHashMap<>();
+		setParamValues(vals);
+		
 		int size = params.size();
 		if(size == 0){
-			setParamValues(Collections.emptyMap());
 			return this;
-		}		
-		Map<String, Object> vals = new LinkedHashMap<>();
+		}
 		for(int i = 0; i < size; i++){
 			SqlParameter p = params.get(i);
 			String name = p.getName();
@@ -245,7 +272,6 @@ public class RootNode extends SelectExpression<RootNode> {
 			}
 			vals.put(name, val);
 		}
-		setParamValues(vals);
 		return this;
 	}
 	/**
@@ -256,16 +282,17 @@ public class RootNode extends SelectExpression<RootNode> {
 	 */
 	public <T extends SqlNode<?> & ExpressionParameterizable<T>> RootNode withParamValuesAfterCompiling(){
 		List<T> nodes = getParameterizableNodes();
+		LinkedHashMap<String, Object> vals = new LinkedHashMap<>();
+		setParamValues(vals);
+		
 		int size = nodes.size();
 		if(size == 0){
-			setParamValues(Collections.emptyMap());
 			return this;
-		}
-		Map<String, Object> vals = new LinkedHashMap<>();
+		}	
 		int idx = 0;
 		for(int i = 0; i < size; i++){
 			T node = nodes.get(i);
-			node.compileToQuestionMark();
+			node.transferParamNameToQuestionMark();
 			List<SqlParameter> params = node.getParams();
 			for(int j = 0; j < params.size(); j++){
 				SqlParameter sp = params.get(j);
@@ -292,10 +319,6 @@ public class RootNode extends SelectExpression<RootNode> {
 				}
 			}
 		}
-		if(vals.isEmpty()){
-			vals = Collections.emptyMap();
-		}
-		setParamValues(vals);
 		return this;
 	}
 	/**
