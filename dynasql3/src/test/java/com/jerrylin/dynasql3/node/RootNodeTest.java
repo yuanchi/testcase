@@ -391,4 +391,67 @@ public class RootNodeTest {
 		assertEquals(expected, root.moveFiltersToJoin().toSqlf());
 		System.out.println(root.toSqlf());
 	}
+	@Test
+	public void prependTargetSymbol(){
+		RootNode root = RootNode.create()
+			.select("e.id", "e.name", "e.manager")
+			.from(f->
+				f.t("EMPLOYEE").as("e")
+				.leftOuterJoin("EMPLOYEE").as("man")
+				.on("e.manager = man.id")
+				.leftOuterJoin(se->
+					se.select("i.point")
+					.fromAs("INFOMATION", "i")
+					.where("i.start > :start")).as("info")
+				.on("e.id = info.emp_id"))
+			.where("e.age > :age", "man.male = :male");
+		
+		String sqlf = root.toSqlf();
+		String expected = 
+			"SELECT e.id,\n"
+			+ " e.name,\n"
+			+ " e.manager\n"
+			+ "FROM EMPLOYEE AS e\n"
+			+ " LEFT OUTER JOIN EMPLOYEE AS man\n"
+			+ "  ON e.manager = man.id\n"
+			+ " LEFT OUTER JOIN (SELECT i.point\n"
+			+ "   FROM INFOMATION AS i\n"
+			+ "   WHERE i.start > :start) AS info\n"
+			+ "  ON e.id = info.emp_id\n"
+			+ "WHERE e.age > :age\n"
+			+ " AND man.male = :male";
+		assertEquals(expected, sqlf);
+		root.prependTargetSymbol("ano_");
+		expected = 
+			"SELECT ano_e.id,\n"
+			+ " ano_e.name,\n"
+			+ " ano_e.manager\n"
+			+ "FROM EMPLOYEE AS ano_e\n"
+			+ " LEFT OUTER JOIN EMPLOYEE AS ano_man\n"
+			+ "  ON ano_e.manager = ano_man.id\n"
+			+ " LEFT OUTER JOIN (SELECT ano_i.point\n"
+			+ "   FROM INFOMATION AS ano_i\n"
+			+ "   WHERE ano_i.start > :start) AS ano_info\n"
+			+ "  ON e.id = info.emp_id\n"
+			+ "WHERE e.age > :age\n"
+			+ " AND man.male = :male\n";		
+		sqlf = root.toSqlf();
+		System.out.println("==============");
+		System.out.println(sqlf);
+	}
+	@Test
+	public void removeJoinTargetIfNotReferenced2(){
+		RootNode root = RootNode.create()
+			.select("m.id", "m.name", "m.postalCode")
+			.from(f->
+				f.t("member").as("m")
+				.leftOuterJoin("vipdiscountdetail").as("v")
+				.on("m.id = v.memberId"))
+			.where("v.discountUseDate > :use_date");
+		String sqlf = root.toSqlf();
+		System.out.println(sqlf);
+		System.out.println("==============");
+		root.removeJoinTargetIfNotReferenced();
+		System.out.println(root.from().toSqlf());
+	}
 }

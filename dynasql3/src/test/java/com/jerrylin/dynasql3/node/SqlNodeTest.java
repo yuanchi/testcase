@@ -124,19 +124,19 @@ public class SqlNodeTest {
 	public void findWithId(){
 		SqlNode<?> root = new SqlNode<>();
 		
-		SqlNode<?> c1 = new SqlNode<>().setId("c1");
-		SqlNode<?> c2 = new SqlNode<>().setId("c2");
-		SqlNode<?> c3 = new SqlNode<>().setId("c3");
+		SqlNode<?> c1 = new SqlNode<>().id("c1");
+		SqlNode<?> c2 = new SqlNode<>().id("c2");
+		SqlNode<?> c3 = new SqlNode<>().id("c3");
 		
-		SqlNode<?> c1_1 = new SqlNode<>().setId("c1_1");
-		SqlNode<?> c1_2 = new SqlNode<>().setId("c1_2");
-		SqlNode<?> c2_1 = new SqlNode2().setId("c2_1");
-		SqlNode<?> c3_1 = new SqlNode<>().setId("c3_1");
+		SqlNode<?> c1_1 = new SqlNode<>().id("c1_1");
+		SqlNode<?> c1_2 = new SqlNode<>().id("c1_2");
+		SqlNode<?> c2_1 = new SqlNode2().id("c2_1");
+		SqlNode<?> c3_1 = new SqlNode<>().id("c3_1");
 		
-		SqlNode<?> c1_1_1 = new SqlNode1().setId("c1_1_1");
-		SqlNode<?> c1_1_2 = new SqlNode<>().setId("c1_1_2");
-		SqlNode<?> c2_1_1 = new SqlNode<>().setId("c2_1_1");
-		SqlNode<?> c2_1_2 = new SqlNode3().setId("c2_1_2");
+		SqlNode<?> c1_1_1 = new SqlNode1().id("c1_1_1");
+		SqlNode<?> c1_1_2 = new SqlNode<>().id("c1_1_2");
+		SqlNode<?> c2_1_1 = new SqlNode<>().id("c2_1_1");
+		SqlNode<?> c2_1_2 = new SqlNode3().id("c2_1_2");
 		
 		root.add(c1).add(c2).add(c3);
 		c1.add(c1_1).add(c1_2);
@@ -167,22 +167,22 @@ public class SqlNodeTest {
 	public void findWithExpr(){
 		SqlNode<?> root = new SqlNode<>();
 		
-		SqlNode<?> c1 = new SqlNode<>().setId("c1");
-		SqlNode<?> c2 = new SqlNode<>().setId("c2");
-		SqlNode4 c3 = new SqlNode4().setId("c3");
+		SqlNode<?> c1 = new SqlNode<>().id("c1");
+		SqlNode<?> c2 = new SqlNode<>().id("c2");
+		SqlNode4 c3 = new SqlNode4().id("c3");
 		c3.setExpression("p.id = 'xxx'");
 		
-		SqlNode<?> c1_1 = new SqlNode<>().setId("c1_1");
-		SqlNode<?> c1_2 = new SqlNode<>().setId("c1_2");
-		SqlNode4 c2_1 = new SqlNode4().setId("c2_1");
+		SqlNode<?> c1_1 = new SqlNode<>().id("c1_1");
+		SqlNode<?> c1_2 = new SqlNode<>().id("c1_2");
+		SqlNode4 c2_1 = new SqlNode4().id("c2_1");
 		c2_1.setExpression("p.address");
-		SqlNode<?> c3_1 = new SqlNode<>().setId("c3_1");
+		SqlNode<?> c3_1 = new SqlNode<>().id("c3_1");
 		
-		SqlNode4 c1_1_1 = new SqlNode4().setId("c1_1_1");
+		SqlNode4 c1_1_1 = new SqlNode4().id("c1_1_1");
 		c1_1_1.setExpression("EMPLOYEE");
-		SqlNode<?> c1_1_2 = new SqlNode<>().setId("c1_1_2");
-		SqlNode<?> c2_1_1 = new SqlNode<>().setId("c2_1_1");
-		SqlNode<?> c2_1_2 = new SqlNode3().setId("c2_1_2");
+		SqlNode<?> c1_1_2 = new SqlNode<>().id("c1_1_2");
+		SqlNode<?> c2_1_1 = new SqlNode<>().id("c2_1_1");
+		SqlNode<?> c2_1_2 = new SqlNode3().id("c2_1_2");
 		
 		root.add(c1).add(c2).add(c3);
 		c1.add(c1_1).add(c1_2);
@@ -213,21 +213,21 @@ public class SqlNodeTest {
 	public void findWithAlias(){
 		SqlNode<?> root = new SqlNode<>();
 		
-		SqlNode<?> c1 = new SqlNode<>().setId("c1");
-		SqlNode5 c2 = new SqlNode5().setId("c2");
-		SqlNode<?> c3 = new SqlNode<>().setId("c3");
+		SqlNode<?> c1 = new SqlNode<>().id("c1");
+		SqlNode5 c2 = new SqlNode5().id("c2");
+		SqlNode<?> c3 = new SqlNode<>().id("c3");
 		c2.setAlias("emp");
 		
-		SqlNode<?> c1_1 = new SqlNode<>().setId("c1_1");
-		SqlNode<?> c1_2 = new SqlNode<>().setId("c1_2");
-		SqlNode<?> c2_1 = new SqlNode2().setId("c2_1");
-		SqlNode5 c3_1 = new SqlNode5().setId("c3_1");
+		SqlNode<?> c1_1 = new SqlNode<>().id("c1_1");
+		SqlNode<?> c1_2 = new SqlNode<>().id("c1_2");
+		SqlNode<?> c2_1 = new SqlNode2().id("c2_1");
+		SqlNode5 c3_1 = new SqlNode5().id("c3_1");
 		c3_1.setAlias("sal");
 		
-		SqlNode<?> c1_1_1 = new SqlNode1().setId("c1_1_1");
-		SqlNode5 c1_1_2 = new SqlNode5().setId("c1_1_2");
-		SqlNode<?> c2_1_1 = new SqlNode<>().setId("c2_1_1");
-		SqlNode<?> c2_1_2 = new SqlNode3().setId("c2_1_2");
+		SqlNode<?> c1_1_1 = new SqlNode1().id("c1_1_1");
+		SqlNode5 c1_1_2 = new SqlNode5().id("c1_1_2");
+		SqlNode<?> c2_1_1 = new SqlNode<>().id("c2_1_1");
+		SqlNode<?> c2_1_2 = new SqlNode3().id("c2_1_2");
 		c1_1_2.setAlias("addr");
 		
 		root.add(c1).add(c2).add(c3);

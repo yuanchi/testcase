@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.jerrylin.dynasql3.Expressible;
 import com.jerrylin.dynasql3.SqlNodeFactory;
 
 public class SimpleExpressionTest {
@@ -45,5 +46,14 @@ public class SimpleExpressionTest {
 		SimpleExpression se1 = root.findWith(expr("i.*"));
 		List<String> refs = se1.getTableReferences();
 		assertEquals("i", refs.get(0));
+	}
+	@Test
+	public void getNewExprFrom(){
+		RootNode root = RootNode.create()
+			.select("i.*")
+			.fromAs("INFO", "i");
+		SimpleExpression se1 = root.findWith(expr("i.*"));
+		String expr = Expressible.getNewExprFrom(se1.getExpression(), "");
+		System.out.println(expr);
 	}
 }
