@@ -47,7 +47,7 @@ public class SearchCondition {
 	public static class SearchById extends SearchCondition implements SqlNodeSearchable{
 		@Override
 		public <S extends SqlNode<?>> S find() {
-			SqlNode<?> f = getStart().findFirst(c->getCondition().equals(c.getId()));
+			SqlNode<?> f = getStart().findFirst(c->getCondition().equals(c.id()));
 			return (S)f;
 		}
 	}
