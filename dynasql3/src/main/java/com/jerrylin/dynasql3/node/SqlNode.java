@@ -31,11 +31,11 @@ public class SqlNode<T extends SqlNode<?>>
 		return (T)this;
 	}
 	@Override
-	public String getId() {
+	public String id() {
 		return id;
 	}
 	@Override
-	public T setId(String id) {
+	public T id(String id) {
 		this.id = id;
 		return thisType();
 	}
@@ -69,7 +69,7 @@ public class SqlNode<T extends SqlNode<?>>
 		}
 		SqlNode<?> copy = createBy(key);
 		// TODO other fields...
-		copy.setId(id);
+		copy.id(id);
 		copy.factory = factory;
 		for(int i = 0; i < children.size(); i++){
 			SqlNode<?> child = children.get(i);
