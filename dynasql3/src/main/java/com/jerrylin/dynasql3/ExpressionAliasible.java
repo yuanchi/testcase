@@ -24,6 +24,19 @@ public interface ExpressionAliasible<Me extends SqlNode<?>> extends Aliasible<Me
 		if(SqlNodeUtil.isNotBlank(expression)){
 			return expression;
 		}
-		throw new RuntimeException("target symbol: [alias or expression] NOT FOUND");
+		throw new RuntimeException("target symbol: [alias and expression] NOT FOUND");
+	}
+	default Me prependTargetSymbol(String prefix){
+		String alias = getAlias();
+		if(SqlNodeUtil.isNotBlank(alias)){
+			setAlias(prefix + alias);
+			return (Me)this;
+		}
+		String expression = getExpression();
+		if(SqlNodeUtil.isNotBlank(expression)){
+			setExpression(prefix + expression);
+			return (Me)this;
+		}
+		throw new RuntimeException("target symbol: [alias and expression] NOT FOUND");
 	}
 }
