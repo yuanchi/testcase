@@ -64,19 +64,19 @@ public class ExpressionParameterizableTest {
 		SimpleCondition sc = new SimpleCondition();
 		
 		sc.setExpression("p.name LIKE :pname OR p.age > :page");
-		sc.compileToQuestionMark();
+		sc.transferParamNameToQuestionMark();
 		String expected = "p.name LIKE ? OR p.age > ?";
 		assertEquals(expected, sc.getExpression());
 		
 		sc.setExpression("emp.salary IN (:sal) and emp.start > :startDay AND (emp.id > :empId OR emp.gender = :epmGender)");
-		sc.compileToQuestionMark();
+		sc.transferParamNameToQuestionMark();
 		expected = "emp.salary IN (?) and emp.start > ? AND (emp.id > ? OR emp.gender = ?)";
 		assertEquals(expected, sc.getExpression());
 		
 		List<Integer> salaries = Arrays.asList(1000, 2000, 2200, 5000);
 		sc.setVal("sal", salaries);
 		sc.setExpression("emp.salary IN (:sal) and emp.start > :startDay AND (emp.id > :empId OR emp.gender = :epmGender)");
-		sc.compileToQuestionMark();
+		sc.transferParamNameToQuestionMark();
 		expected = "emp.salary IN (?, ?, ?, ?) and emp.start > ? AND (emp.id > ? OR emp.gender = ?)";
 		assertEquals(expected, sc.getExpression());
 	}
