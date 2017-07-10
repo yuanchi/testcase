@@ -40,11 +40,15 @@ public class FilterConditions<T extends FilterConditions<?>> extends SqlNode<T> 
 		sc.setExpression(expression);
 		return and(sc);
 	}
+	public T and(FilterConditions<?> conds){
+		addAnd(conds);
+		return add(conds);
+	}
 	public T and(Consumer<FilterConditions<?>> consumer){
 		FilterConditions<?> fc = createBy(FilterConditions.class);
-		addAnd(fc);
+		and(fc);
 		consumer.accept(fc);
-		return add(fc);
+		return thisType();
 	}
 	public T and(String prefix, Consumer<SelectExpression<?>> consumer){
 		SubqueryCondition sc = createBy(SubqueryCondition.class);
@@ -63,11 +67,15 @@ public class FilterConditions<T extends FilterConditions<?>> extends SqlNode<T> 
 		sc.setExpression(expression);
 		return or(sc);
 	}
+	public T or(FilterConditions<?> conds){
+		addOr(conds);
+		return add(conds);
+	}
 	public T or(Consumer<FilterConditions<?>> consumer){
 		FilterConditions<?> fc = createBy(FilterConditions.class);
-		addOr(fc);
+		or(fc);
 		consumer.accept(fc);
-		return add(fc);
+		return thisType();
 	}
 	public T or(String prefix, Consumer<SelectExpression<?>> consumer){
 		SubqueryCondition sc = createBy(SubqueryCondition.class);
