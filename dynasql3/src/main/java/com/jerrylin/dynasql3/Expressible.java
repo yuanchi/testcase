@@ -33,7 +33,7 @@ public interface Expressible {
 		String compared = refs.get(0);
 		return refs.size() == Collections.frequency(refs, compared);
 	}
-	static String getNewExprFrom(String expr, String tableReference){
+	public static String getNewExprFrom(String expr, String tableReference){
 		Matcher m = FIND_TABLE_REFERENCE.matcher(expr);
 		// ref. https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex
 		StringBuffer newExpr = new StringBuffer();
@@ -55,5 +55,16 @@ public interface Expressible {
 		String newExpr = getNewExprFrom(getExpression(), tableReference);
 		setExpression(newExpr);
 		return true;
+	}
+	default void prependTableReferences(String prefix){
+		String expr = getExpression();
+		Matcher m = FIND_TABLE_REFERENCE.matcher(expr);
+		StringBuffer newExpr = new StringBuffer();
+		while(m.find()){
+			String g1 = m.group(1);
+			m.appendReplacement(newExpr, m.group(0).replaceFirst(Pattern.quote(g1), prefix + g1));
+		}
+		m.appendTail(newExpr);
+		setExpression(newExpr.toString());
 	}
 }
