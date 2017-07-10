@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.jerrylin.dynasql3.Aliasible;
 import com.jerrylin.dynasql3.Expressible;
+import com.jerrylin.dynasql3.ExpressionAliasible;
 import com.jerrylin.dynasql3.util.SqlNodeUtil;
 // TODO Set operation??
 public class SelectExpression<S extends SelectExpression<?>> extends SqlNode<S> implements Aliasible<S> {
@@ -186,8 +187,14 @@ public class SelectExpression<S extends SelectExpression<?>> extends SqlNode<S> 
 		if(children.isEmpty()){
 			throw new RuntimeException("child SqlNode as target NOT FOUND");
 		}
-		SimpleExpression se = ((SimpleExpression)children.getFirst());
-		String symbol = se.getTargetSymbol();
+		SqlNode<?> c = children.getFirst();
+		String symbol = null;
+		if(Aliasible.class.isInstance(c)){
+			symbol =  Aliasible.class.cast(c).getAlias();
+		}
+		if(SqlNodeUtil.isBlank(symbol) && ExpressionAliasible.class.isInstance(c)){
+			symbol = ExpressionAliasible.class.cast(c).getExpression();
+		}
 		return symbol;
 	}
 	@Override
