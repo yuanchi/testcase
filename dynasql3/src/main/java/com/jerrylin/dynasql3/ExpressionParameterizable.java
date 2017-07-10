@@ -162,7 +162,7 @@ public interface ExpressionParameterizable<Me extends SqlNode<?>> extends Expres
 		}
 		return f;
 	}
-	default Me compileToQuestionMark(){
+	default Me transferParamNameToQuestionMark(){
 		String expression = getExpression();
 		String result = expression;
 		Matcher m = FIND_NAME_PARM.matcher(expression);
