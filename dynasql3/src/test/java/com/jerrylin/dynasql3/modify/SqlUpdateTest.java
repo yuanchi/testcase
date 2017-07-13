@@ -58,7 +58,7 @@ public class SqlUpdateTest {
 								psmt.setObject(++count, v);
 							}
 						}
-						int r = psmt.executeUpdate();
+						psmt.executeUpdate();
 					}
 				}
 				connection.commit();
