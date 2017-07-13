@@ -33,6 +33,7 @@ public class SqlModify {
 	}
 	public SqlModify paramValues(List<? extends Collection<?>> paramValues){
 		this.paramValues = paramValues;
+		count(paramValues.size());
 		return this;
 	}
 	public List<? extends Collection<?>> paramValues(){
