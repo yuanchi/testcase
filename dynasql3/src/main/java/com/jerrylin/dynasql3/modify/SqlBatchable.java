@@ -10,6 +10,7 @@ import com.jerrylin.dynasql3.modify.SqlModify.SqlBatchChunk;
 public interface SqlBatchable {
 	public List<? extends Collection<?>> paramValues();
 	public int batchSize();
+	public <T extends SqlBatchable> T batchSize(int batchSize);
 	public String preparedBatchSql(int count);
 	public int count();
 	default String preparedBatchSql(){
