@@ -3,45 +3,45 @@ package com.jerrylin.dynasql3.modify;
 import java.util.Collection;
 import java.util.List;
 
-public class SqlModify {
+public class SqlModify<T extends SqlModify<?>> {
 	private String table;
 	private List<String> columns;
 	private int count;
 	private int batchSize = 1000;
 	private List<? extends Collection<?>> paramValues;
 
-	public SqlModify table(String table){
+	public T table(String table){
 		this.table = table;
-		return this;
+		return (T)this;
 	}
 	public String table(){
 		return table;
 	}
-	public SqlModify columns(List<String> columns){
+	public T columns(List<String> columns){
 		this.columns = columns;
-		return this;
+		return (T)this;
 	}
 	public List<String> columns(){
 		return columns;
 	}
-	public SqlModify count(int count){
+	public T count(int count){
 		this.count = count;
-		return this;
+		return (T)this;
 	}
 	public int count(){
 		return count;
 	}
-	public SqlModify paramValues(List<? extends Collection<?>> paramValues){
+	public T paramValues(List<? extends Collection<?>> paramValues){
 		this.paramValues = paramValues;
 		count(paramValues.size());
-		return this;
+		return (T)this;
 	}
 	public List<? extends Collection<?>> paramValues(){
 		return paramValues;
 	}
-	public SqlModify batchSize(int batchSize){
+	public T batchSize(int batchSize){
 		this.batchSize = batchSize;
-		return this;
+		return (T)this;
 	}
 	public int batchSize(){
 		return batchSize;

@@ -8,35 +8,71 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class SqlUpdate extends SqlModify implements SqlBatchable{
-	private String pk;
-	public SqlUpdate pk(String pk){
-		this.pk = pk;
+import com.jerrylin.dynasql3.Pk;
+
+@SuppressWarnings("unchecked")
+public class SqlUpdate extends SqlModify<SqlUpdate> implements SqlBatchable{
+	private Pk pk;
+	public SqlUpdate pk(String pkColumn){
+		Pk uniKey = Pk.init(pkColumn);
+		this.pk = uniKey;
 		return this;
 	}
-	public String pk(){
+	public SqlUpdate pk(String column1, String column2){
+		Pk uniKey = Pk.init(column1, column2);
+		this.pk = uniKey;
+		return this;
+	}
+	public SqlUpdate pk(List<String> columns){
+		Pk uniKey = Pk.init(columns);
+		this.pk = uniKey;
+		return this;
+	}
+	public Pk pk(){
 		return pk;
 	}
-	public static SqlUpdate init(String table, String pk, int count, String... columns){
+	public static SqlUpdate init(String table, String pkColumn, int count, String... columns){
 		SqlUpdate sqlUpdate = new SqlUpdate();
-		sqlUpdate.pk(pk)
+		sqlUpdate.pk(pkColumn)
 			.table(table)
 			.columns(Arrays.asList(columns))
 			.count(count);
 		return sqlUpdate;
 	}
-	public static SqlUpdate init(String table, String pk, List<? extends Collection<?>> paramValues, String... columns){
+	public static SqlUpdate init(String table, List<String> pkColumns, int count, String... columns){
 		SqlUpdate sqlUpdate = new SqlUpdate();
-		sqlUpdate.pk(pk)
+		sqlUpdate.pk(pkColumns)
+			.table(table)
+			.columns(Arrays.asList(columns))
+			.count(count);
+		return sqlUpdate;
+	}
+	public static SqlUpdate init(String table, String pkColumn, List<? extends Collection<?>> paramValues, String... columns){
+		SqlUpdate sqlUpdate = new SqlUpdate();
+		sqlUpdate.pk(pkColumn)
 			.table(table)
 			.columns(Arrays.asList(columns))
 			.paramValues(paramValues);
 		return sqlUpdate;
 	}
-	public static SqlUpdate init(String table, String pk, List<LinkedHashMap<String, Object>> params){
+	public static SqlUpdate init(String table, List<String> pkColumns, List<? extends Collection<?>> paramValues, String... columns){
+		SqlUpdate sqlUpdate = new SqlUpdate();
+		sqlUpdate.pk(pkColumns)
+			.table(table)
+			.columns(Arrays.asList(columns))
+			.paramValues(paramValues);
+		return sqlUpdate;
+	}
+	public static SqlUpdate init(String table, String pkColumn, List<LinkedHashMap<String, Object>> params){
 		List<? extends Collection<?>> paramValues = params.stream().map(p->p.values()).collect(Collectors.toList());
 		Set<String> cols = params.iterator().next().keySet();
-		SqlUpdate sqlUpdate = init(table, pk, paramValues, cols.toArray(new String[cols.size()]));
+		SqlUpdate sqlUpdate = init(table, pkColumn, paramValues, cols.toArray(new String[cols.size()]));
+		return sqlUpdate;
+	}
+	public static SqlUpdate init(String table, List<String> pkColumns, List<LinkedHashMap<String, Object>> params){
+		List<? extends Collection<?>> paramValues = params.stream().map(p->p.values()).collect(Collectors.toList());
+		Set<String> cols = params.iterator().next().keySet();
+		SqlUpdate sqlUpdate = init(table, pkColumns, paramValues, cols.toArray(new String[cols.size()]));
 		return sqlUpdate;
 	}
 	/**
@@ -60,8 +96,9 @@ public class SqlUpdate extends SqlModify implements SqlBatchable{
 			String placeSets = Collections.nCopies(count-1, placeholders).stream().collect(Collectors.joining(" UNION\n "));
 			updateTmp = "(" + updateTmp + " UNION\n " + placeSets +") AS " + updateAlias;
 		}
-		String setters = columns.stream().filter(c->!c.equals(pk)).map(c->alias+"."+c+" = updates."+c).collect(Collectors.joining(",\n "));
-		String condition = alias + "." + pk + " = " + updateAlias + "." + pk;
+		List<String> pkColumns = pk.getCompositeColumns();
+		String setters = columns.stream().filter(c->!pkColumns.contains(c)).map(c->alias+"."+c+" = updates."+c).collect(Collectors.joining(",\n "));
+		String condition = pkColumns.stream().map(c->(alias + "." + c + " = " + updateAlias + "." + c)).collect(Collectors.joining(" AND "));
 		String sql = "UPDATE " + table + " AS " + alias + ", " + updateTmp + "\n"
 				+ "SET " + setters + "\n"
 				+ "WHERE " + condition;

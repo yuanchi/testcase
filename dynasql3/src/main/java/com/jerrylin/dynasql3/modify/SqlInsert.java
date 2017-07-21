@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class SqlInsert extends SqlModify implements SqlBatchable{
+@SuppressWarnings("unchecked")
+public class SqlInsert extends SqlModify<SqlInsert> implements SqlBatchable{
 	public static SqlInsert init(String table, int count, String... columns){
 		SqlInsert sqlInsert = new SqlInsert();
 		sqlInsert.table(table)
