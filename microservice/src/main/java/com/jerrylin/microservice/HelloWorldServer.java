@@ -9,9 +9,9 @@ import io.undertow.util.Headers;
 
 import java.nio.file.Paths;
 
-
 public class HelloWorldServer {
-	public static void main(String[]args){
+	public static Undertow startup(){
+
 		// examples https://github.com/undertow-io/undertow/tree/master/examples
 		// api ref. http://undertow.io/javadoc/1.4.x/index.html
 		// ref. https://stackoverflow.com/questions/39742014/routing-template-format-for-undertow
@@ -61,5 +61,6 @@ public class HelloWorldServer {
 			)
 			.build();
 		server.start();
+		return server;
 	}
 }
