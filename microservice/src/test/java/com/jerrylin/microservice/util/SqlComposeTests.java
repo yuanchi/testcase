@@ -1,10 +1,12 @@
 package com.jerrylin.microservice.util;
 
-import static com.jerrylin.microservice.util.SqlCompose.TAG;
+import static com.jerrylin.microservice.util.SqlCompose.TAG_GRP;
 import static com.jerrylin.microservice.util.SqlCompose.tk;
 import static org.junit.Assert.assertEquals;
 
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -15,11 +17,12 @@ public class SqlComposeTests {
 	@Test
 	public void testGetGroupPos(){
 		TagKey RAN = tk("ranged");
+		TagKey RAN2 = tk("ranged2");
 		
 		SqlCompose sc = SqlCompose.gen(
-				"SELECT *",			TAG+RAN,
+				"SELECT *",			TAG_GRP+RAN,	TAG_GRP+RAN2,
 				"FROM employee",	
-				"WHERE 1=1"			,TAG+RAN
+				"WHERE 1=1"			,TAG_GRP+RAN,	TAG_GRP+RAN2
 				);
 		GroupPos gp = sc.getGroupPos(RAN);
 		int expectedStart = 1;
@@ -35,7 +38,10 @@ public class SqlComposeTests {
 			"FROM employee\n"
 			+ "WHERE 1=1";
 		assertEquals("", expected, result);
-		System.out.println(expected);
+		
+		GroupPos gp2 = sc.getGroupPos(RAN2);
+		assertEquals("", start, gp2.start);
+		assertEquals("", end, gp2.end);
 	}
 	@Test
 	public void testGetGroupRange(){
@@ -44,17 +50,18 @@ public class SqlComposeTests {
 		
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",		TAG+CUS,
+				"FROM t_order AS o",		TAG_GRP+CUS,
 				"  INNER JOIN (",			
 				"    SELECT id, nickname",
-				"    FROM t_customer",		TAG+COND,
-				"    WHERE 1 = 1",			TAG+COND,
+				"    FROM t_customer",		TAG_GRP+COND,
+				"    WHERE 1 = 1",			TAG_GRP+COND,
 				"  ) AS c",
-				"  ON o.cus_id = c.id",		TAG+CUS,
+				"  ON o.cus_id = c.id",		TAG_GRP+CUS,
 				"WHERE o.no > 'A001'",
 				"ORDER BY o.id DESC",
 				"LIMIT 2",
-				"OFFSET 0");
+				"OFFSET 0"
+				);
 		
 		String expected = 
 			"  INNER JOIN (\n"
@@ -81,13 +88,13 @@ public class SqlComposeTests {
 		
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",		TAG+CUS,
+				"FROM t_order AS o",		TAG_GRP+CUS,
 				"  INNER JOIN (",			
 				"    SELECT id, nickname",
-				"    FROM t_customer",		TAG+COND,
-				"    WHERE 1 = 1",			TAG+COND,
+				"    FROM t_customer",		TAG_GRP+COND,
+				"    WHERE 1 = 1",			TAG_GRP+COND,
 				"  ) AS c",
-				"  ON o.cus_id = c.id",		TAG+CUS,
+				"  ON o.cus_id = c.id",		TAG_GRP+CUS,
 				"WHERE o.no > 'A001'",
 				"ORDER BY o.id DESC",
 				"LIMIT 2",
@@ -119,13 +126,13 @@ public class SqlComposeTests {
 		
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",		TAG+CUS,
+				"FROM t_order AS o",		TAG_GRP+CUS,
 				"  LEFT JOIN (",			
 				"    SELECT id, nickname",
-				"    FROM t_customer",		TAG+COND,
-				"    WHERE 1 = 1",			TAG+COND,
+				"    FROM t_customer",		TAG_GRP+COND,
+				"    WHERE 1 = 1",			TAG_GRP+COND,
 				"  ) AS c",
-				"  ON o.cus_id = c.id",		TAG+CUS,
+				"  ON o.cus_id = c.id",		TAG_GRP+CUS,
 				"WHERE o.no > 'A001'",
 				"ORDER BY o.id DESC",
 				"LIMIT 2",
@@ -149,5 +156,83 @@ public class SqlComposeTests {
 			+ "OFFSET 0";
 		assertEquals("", expected, result);
 		System.out.println(result);
+	}
+	@Test
+	public void testRmove(){
+		SqlCompose sc = SqlCompose.gen(
+				"SELECT *",
+				"FROM t_order AS o",
+				"  LEFT JOIN (",
+				"    SELECT id, nickname",
+				"    FROM t_customer",
+				"  ) AS c",
+				"  ON o.cus_id = c.id",
+				"WHERE o.no > 'A001'",		
+				"ORDER BY o.id DESC",		// 8		
+				"LIMIT 2",					// 9
+				"OFFSET 0",					// 10
+				";");
+		List<String> list = sc.remove(8, 9, 10);
+		String result = String.join("\n", list);
+		String expected = 
+				"SELECT *\n"
+				+ "FROM t_order AS o\n"
+				+ "  LEFT JOIN (\n"
+				+ "    SELECT id, nickname\n"
+				+ "    FROM t_customer\n"
+				+ "  ) AS c\n"
+				+ "  ON o.cus_id = c.id\n"
+				+ "WHERE o.no > 'A001'\n"
+				+ ";";
+		assertEquals("", expected, result);
+		System.out.println(expected);
+	}
+	@Test
+	public void testCalcTotal(){
+		TagKey ROOT_ORD = tk("root_ord");
+		TagKey ROOT_PAGING = tk("root_paging");
+		
+		SqlCompose sc = SqlCompose.gen(
+				"SELECT *",
+				"FROM t_order AS o",
+				"  LEFT JOIN (",
+				"    SELECT id, nickname",
+				"    FROM t_customer",
+				"  ) AS c",
+				"  ON o.cus_id = c.id",
+				"WHERE o.no > 'A001'",		TAG_GRP+ROOT_ORD,
+				"ORDER BY o.id DESC",		TAG_GRP+ROOT_ORD,TAG_GRP+ROOT_PAGING,
+				"LIMIT 2",
+				"OFFSET 0",					TAG_GRP+ROOT_PAGING,
+				";");
+		
+		List<String> list = sc.calcTotal(null, ROOT_ORD, ROOT_PAGING);
+		String result = String.join("\n", list);
+		String expected = 
+				"SELECT COUNT(DISTINCT id)\n" // change to select count
+				+ "FROM t_order AS o\n"
+				+ "  LEFT JOIN (\n"
+				+ "    SELECT id, nickname\n"
+				+ "    FROM t_customer\n"
+				+ "  ) AS c\n"
+				+ "  ON o.cus_id = c.id\n"
+				+ "WHERE o.no > 'A001'\n"
+				+ ";"; // remove statements not required for counting
+		System.out.println(result);
+		assertEquals("", expected, result);
+		
+	}
+	
+	@Test
+	public void testTreeSet(){
+		TreeSet<Integer> set = new TreeSet<>((a, b)->{return b - a;});
+		set.add(4);
+		set.add(4);
+		set.add(3);
+		set.add(5);
+		
+		assertEquals("", new Integer(5), set.pollFirst());
+		assertEquals("", new Integer(4), set.pollFirst());
+		assertEquals("", new Integer(3), set.pollFirst());
 	}
 }

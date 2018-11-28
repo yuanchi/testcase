@@ -2,8 +2,11 @@ package com.jerrylin.microservice.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SqlCompose {
 	
@@ -27,8 +30,8 @@ public class SqlCompose {
 	}
 	private List<String> origin = new ArrayList<>();
 	private Map<String, GroupPos> groups = new HashMap<>();
-	public static final String TAG = "a:";
-	public static final int TAG_COUNT = TAG.length();
+	public static final String TAG_GRP = "group:";
+	public static final int TAG_GRP_COUNT = TAG_GRP.length();
 	
 	public GroupPos getGroupPos(TagKey k){
 		return groups.get(k.key);
@@ -80,13 +83,52 @@ public class SqlCompose {
 		ss.set(start, newOne);
 		return ss;
 	}
-	
+	public List<String> remove(Integer... idx){
+		Set<Integer> range = new HashSet<>();
+		for(Integer i : idx){
+			range.add(i);
+		}
+		LinkedList<String> ss = new LinkedList<>();
+		for(int i = origin.size()-1; i >= 0; i--){
+			if(range.contains(i)){
+				continue;
+			}
+			ss.addFirst(origin.get(i));
+		} 
+
+		return ss;		
+	}
+	public List<String> calcTotal(String selectReplaced, TagKey... rootToRemoved){
+		List<Integer> removed = new ArrayList<>();
+		for(TagKey r : rootToRemoved){
+			GroupPos gp = getGroupPos(r);
+			int start = gp.start;
+			int end = gp.end;
+			for(;start <= end; start++){
+				removed.add(start);
+			}
+		}
+		
+		List<String> ss = remove(removed.toArray(new Integer[removed.size()]));
+		if(selectReplaced == null){
+			selectReplaced = "COUNT(DISTINCT id)";
+		}
+		ss.set(0, "SELECT " + selectReplaced);
+		return ss;
+	}
+	/**
+	 * 產出SqlCompose<br>
+	 * 這個方法也允許連續標記，<br>
+	 * 也就是tag下一個元素還是tag的情境
+	 * @param ss
+	 * @return
+	 */
 	public static SqlCompose gen(String... ss){
 		SqlCompose sc = new SqlCompose();
 		int c = -1;
 		for(String s : ss){
-			if(s.startsWith(TAG)){
-				String k = s.substring(TAG_COUNT);
+			if(s.startsWith(TAG_GRP)){
+				String k = s.substring(TAG_GRP_COUNT);
 				GroupPos gp = sc.getGroupPos(tk(k));
 				if(gp == null){
 					gp = new GroupPos();
