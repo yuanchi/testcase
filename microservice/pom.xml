@@ -24,7 +24,81 @@
     <dependency>
     <groupId>io.undertow</groupId>
     <artifactId>undertow-core</artifactId>
-    <version>1.4.18.Final</version>
+    <version>2.0.15.Final</version>
 </dependency>
+
+	<!-- json parser -->
+	<dependency>
+    	<groupId>com.jsoniter</groupId>
+    	<artifactId>jsoniter</artifactId>
+    	<version>0.9.23</version>
+	</dependency>
+
+	<!-- JDBC connection pool -->
+	<dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>3.2.0</version>
+    </dependency>
+    
+    <dependency>
+    <groupId>io.dropwizard.metrics</groupId>
+    <artifactId>metrics-core</artifactId>
+    <version>4.0.3</version>
+</dependency>
+    
+    <dependency>
+    <groupId>io.dropwizard.metrics</groupId>
+    <artifactId>metrics-healthchecks</artifactId>
+    <version>4.0.3</version>
+</dependency>
+    
+    <dependency>
+    	<groupId>org.mariadb.jdbc</groupId>
+    	<artifactId>mariadb-java-client</artifactId>
+    	<version>2.3.0</version>
+	</dependency>
+	<!-- log implementation -->
+	<dependency>
+    	<groupId>ch.qos.logback</groupId>
+    	<artifactId>logback-classic</artifactId>
+    	<version>1.2.3</version>
+	</dependency>
+	<!-- http client -->
+	<dependency>
+    	<groupId>com.squareup.okhttp3</groupId>
+    	<artifactId>okhttp</artifactId>
+    	<version>3.8.1</version>
+	</dependency>
+	<!-- io -->
+	<dependency>
+    	<groupId>com.squareup.okio</groupId>
+    	<artifactId>okio</artifactId>
+    	<version>1.13.0</version>
+	</dependency>
+	
+	<!-- email server component -->
+	<dependency>
+    	<groupId>org.subethamail</groupId>
+    	<artifactId>subethasmtp</artifactId>
+    	<version>3.1.7</version>
+	</dependency>
+	
+	<!-- web application test library, also used for web scraping -->
+	<dependency>
+    <groupId>org.seleniumhq.selenium</groupId>
+    <artifactId>selenium-chrome-driver</artifactId>
+    <version>3.5.3</version>
+</dependency>
+
+<dependency>
+    <groupId>org.seleniumhq.selenium</groupId>
+    <artifactId>selenium-support</artifactId>
+    <version>3.5.3</version>
+</dependency>
+	
+	
   </dependencies>
+  
+  
 </project>
