@@ -1,5 +1,13 @@
 package com.jerrylin.microservice.util;
 
+import static com.jerrylin.microservice.util.SqlCompose.RC;
+import static com.jerrylin.microservice.util.SqlCompose.RL;
+import static com.jerrylin.microservice.util.SqlCompose.RO;
+import static com.jerrylin.microservice.util.SqlCompose.ROOT_CONDS;
+import static com.jerrylin.microservice.util.SqlCompose.ROOT_LIMIT;
+import static com.jerrylin.microservice.util.SqlCompose.ROOT_OFFSET;
+import static com.jerrylin.microservice.util.SqlCompose.ROOT_ORDER;
+import static com.jerrylin.microservice.util.SqlCompose.ROR;
 import static com.jerrylin.microservice.util.SqlCompose.TAG_GRP;
 import static com.jerrylin.microservice.util.SqlCompose.tk;
 import static org.junit.Assert.assertEquals;
@@ -52,13 +60,13 @@ public class SqlComposeTests {
 		
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",		TAG_GRP+CUS,
+				"FROM t_order AS o",      TAG_GRP+CUS,
 				"  INNER JOIN (",			
 				"    SELECT id, nickname",
-				"    FROM t_customer",		TAG_GRP+COND,
-				"    WHERE 1 = 1",			TAG_GRP+COND,
+				"    FROM t_customer",    TAG_GRP+COND,
+				"    WHERE 1 = 1",        TAG_GRP+COND,
 				"  ) AS c",
-				"  ON o.cus_id = c.id",		TAG_GRP+CUS,
+				"  ON o.cus_id = c.id",   TAG_GRP+CUS,
 				"WHERE o.no > 'A001'",
 				"ORDER BY o.id DESC",
 				"LIMIT 2",
@@ -90,13 +98,13 @@ public class SqlComposeTests {
 		
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",		TAG_GRP+CUS,
+				"FROM t_order AS o",       TAG_GRP+CUS,
 				"  INNER JOIN (",			
 				"    SELECT id, nickname",
-				"    FROM t_customer",		TAG_GRP+COND,
-				"    WHERE 1 = 1",			TAG_GRP+COND,
+				"    FROM t_customer",     TAG_GRP+COND,
+				"    WHERE 1 = 1",         TAG_GRP+COND,
 				"  ) AS c",
-				"  ON o.cus_id = c.id",		TAG_GRP+CUS,
+				"  ON o.cus_id = c.id",    TAG_GRP+CUS,
 				"WHERE o.no > 'A001'",
 				"ORDER BY o.id DESC",
 				"LIMIT 2",
@@ -128,13 +136,13 @@ public class SqlComposeTests {
 		
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",		TAG_GRP+CUS,
+				"FROM t_order AS o",       TAG_GRP+CUS,
 				"  LEFT JOIN (",			
 				"    SELECT id, nickname",
-				"    FROM t_customer",		TAG_GRP+COND,
-				"    WHERE 1 = 1",			TAG_GRP+COND,
+				"    FROM t_customer",     TAG_GRP+COND,
+				"    WHERE 1 = 1",         TAG_GRP+COND,
 				"  ) AS c",
-				"  ON o.cus_id = c.id",		TAG_GRP+CUS,
+				"  ON o.cus_id = c.id",    TAG_GRP+CUS,
 				"WHERE o.no > 'A001'",
 				"ORDER BY o.id DESC",
 				"LIMIT 2",
@@ -169,9 +177,9 @@ public class SqlComposeTests {
 				"  ) AS c",
 				"  ON o.cus_id = c.id",
 				"WHERE o.no > 'A001'",		
-				"ORDER BY o.id DESC",		// 8		
-				"LIMIT 2",					// 9
-				"OFFSET 0",					// 10
+				"ORDER BY o.id DESC",  // 8		
+				"LIMIT 2",             // 9
+				"OFFSET 0",            // 10
 				";");
 		List<String> list = sc.remove(8, 9, 10);
 		String result = String.join("\n", list);
@@ -232,10 +240,10 @@ public class SqlComposeTests {
 				"    FROM t_customer",
 				"  ) AS c",
 				"  ON o.cus_id = c.id",
-				"WHERE o.no > 'A001'",		TAG_GRP+ROOT_ORD,
-				"ORDER BY o.id DESC",		TAG_GRP+ROOT_ORD,	TAG_GRP+ROOT_PAGING,
+				"WHERE o.no > 'A001'",   TAG_GRP+ROOT_ORD,
+				"ORDER BY o.id DESC",    TAG_GRP+ROOT_ORD, TAG_GRP+ROOT_PAGING,
 				"LIMIT 2",
-				"OFFSET 0",										TAG_GRP+ROOT_PAGING,
+				"OFFSET 0",                                TAG_GRP+ROOT_PAGING,
 				";");
 		
 		List<String> list = sc.calcTotal(null, ROOT_ORD, ROOT_PAGING);
@@ -302,8 +310,8 @@ public class SqlComposeTests {
 				"    FROM t_customer",
 				"  ) AS c",
 				"  ON o.cus_id = c.id",
-				"WHERE o.no > 'A001'",    TAG_GRP+ROOT_ORD,
-				"ORDER BY o.id DESC",     TAG_GRP+ROOT_ORD,	TAG_GRP+ROOT_PAGING,
+				"WHERE o.no > 'A001'",   TAG_GRP+ROOT_ORD,
+				"ORDER BY o.id DESC",    TAG_GRP+ROOT_ORD,  TAG_GRP+ROOT_PAGING,
 				"LIMIT 2",
 				"OFFSET 0",                                 TAG_GRP+ROOT_PAGING,
 				";");
@@ -321,5 +329,58 @@ public class SqlComposeTests {
 				.replace("LIMIT 2\nOFFSET 0", "limit 3");
 		assertEquals("", expected, result);
 		log(result);
+	}
+	@Test
+	public void testSimplePagingQuery(){
+		// configuring sql template and marks
+		SqlCompose sc = SqlCompose.gen(
+				"SELECT *",
+				"FROM employee AS e", RC,
+				"WHERE 1 = 1",        RC, ROR,
+				"ORDER BY e.id DESC",     ROR, RL,
+				"LIMIT 2",                     RL, RO,
+				"OFFSET 0",                        RO,
+				";"
+				);
+		// using cloned object keeping original sql composition
+		SqlCompose c = sc.clone();
+		PageParams pp = 
+				new PageParams(
+					ROOT_CONDS, "WHERE e.id > '0001' AND e.age > 30",
+					ROOT_ORDER, "ORDER BY e.no ASC",
+					ROOT_LIMIT, "LIMIT 5",
+					ROOT_OFFSET, "OFFSET 9"
+				);
+		// change where conditions and paging settings 
+		String result = 
+				c.replaceExact(ROOT_CONDS, pp.rootConds())
+				.replaceExact(ROOT_ORDER, pp.rootOrder())
+				 .replaceExact(ROOT_LIMIT, pp.rootLimit())
+				 .replaceExact(ROOT_OFFSET, pp.rootOffset())
+				.joinWithBr();
+		String expected = 
+				sc.joinWithBr()
+				.replace("WHERE 1 = 1", pp.rootConds())
+				.replace("ORDER BY e.id DESC", pp.rootOrder())
+				.replace("LIMIT 2", pp.rootLimit())
+				.replace("OFFSET 0", pp.rootOffset());
+		assertEquals("", expected, result);
+		log(result);
+		
+		// calculating total count sql ignoring paging settings
+		List<String> total = c.calcTotal(null, ROOT_ORDER, ROOT_LIMIT, ROOT_OFFSET);
+		String totalVal = String.join("\n", total);
+		String expectedTotal = 
+				String.join("\n", c.remove(ROOT_ORDER, ROOT_LIMIT, ROOT_OFFSET))
+				.replace("SELECT *", "SELECT COUNT(DISTINCT id)");
+		assertEquals("", expectedTotal, totalVal);
+		log(totalVal);
+		
+		// using genPagingSql method generates the same result as the above
+		SqlCompose c2 = sc.clone();
+		String anotherVersion = c2.genPagingSql(pp);
+		String expectedResult = expected + "\n" + totalVal;
+		assertEquals("", expectedResult, anotherVersion);
+		log(expectedResult);
 	}
 }

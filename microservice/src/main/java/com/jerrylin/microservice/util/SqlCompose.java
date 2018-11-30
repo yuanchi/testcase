@@ -25,6 +25,26 @@ public class SqlCompose {
 			return this.key;
 		}
 	}
+	public static class RootConds extends TagKey{
+		public RootConds(String key) {
+			super(key);
+		}
+	}
+	public static class RootOrder extends TagKey{
+		public RootOrder(String key) {
+			super(key);
+		}
+	}
+	public static class RootLimit extends TagKey{
+		public RootLimit(String key) {
+			super(key);
+		}
+	}
+	public static class RootOffset extends TagKey{
+		public RootOffset(String key) {
+			super(key);
+		}
+	}
 	
 	public static TagKey tk(String k){
 		return new TagKey(k);
@@ -33,8 +53,16 @@ public class SqlCompose {
 	public static final String TAG_GRP = "group:";
 	private static final int TAG_GRP_COUNT = TAG_GRP.length();
 	
-	public static final String TAG_ALI = "alias:";
-	private static final int TAG_ALI_COUNT = TAG_ALI.length();
+	public static final RootConds ROOT_CONDS = new RootConds("root_conds");
+	public static final RootOrder ROOT_ORDER = new RootOrder("root_order");
+	public static final RootLimit ROOT_LIMIT = new RootLimit("root_limt");
+	public static final RootOffset ROOT_OFFSET = new RootOffset("root_offset");
+	
+	public static final String RC = TAG_GRP + ROOT_CONDS;
+	public static final String ROR = TAG_GRP + ROOT_ORDER;
+	public static final String RL = TAG_GRP + ROOT_LIMIT;
+	public static final String RO = TAG_GRP + ROOT_OFFSET;
+	
 	
 	private List<String> origin = new ArrayList<>();
 	private Map<String, GroupPos> groups = new HashMap<>();
@@ -175,7 +203,7 @@ public class SqlCompose {
 		if(count != contents.length){
 			throw new RuntimeException("contents count "+ contents.length +" must be the same as line count "+ count +" of TagKey: " + tk);
 		}
-		for(int i = start; i <= end; start++){
+		for(int i = start; i <= end; i++){
 			origin.set(i, contents[i-start]);
 		}
 		return this;
@@ -195,6 +223,20 @@ public class SqlCompose {
 	}
 	public List<String> getOrigin(){
 		return this.origin;
+	}
+	public String genPagingSql(PageParams params){
+		SqlCompose sc = clone();
+		String query = sc.replaceExact(ROOT_CONDS, params.get(ROOT_CONDS))
+			.replaceExact(ROOT_ORDER, params.get(ROOT_ORDER))
+			.replaceExact(ROOT_LIMIT, params.get(ROOT_LIMIT))
+			.replaceExact(ROOT_OFFSET, params.get(ROOT_OFFSET))
+			.joinWithBr()
+			;
+		String calcTotal = String.join("\n", sc.calcTotal(null, ROOT_ORDER, ROOT_LIMIT, ROOT_OFFSET));
+		// TODO considering other join conditions
+		// TODO considering prepared statement parameters
+		String sql = query + "\n" + calcTotal;
+		return sql;
 	}
 	/**
 	 * responsible for generating SqlCompose.<br>
