@@ -483,19 +483,21 @@ public class SqlComposeTests {
 	public void testGenPagingSqlWithJoinConds(){
 		JoinTarget cus = new JoinTarget("c");
 		JoinWhere cusConds = cus.where();
+		String C = cus.gk();
+		String CW = cusConds.gk();
 		SqlCompose sc = SqlCompose.gen(
 				"SELECT *",
-				"FROM t_order AS o",    cus.gk(), RA+"o", 
+				"FROM t_order AS o",    C, RA+"o", 
 				"LEFT JOIN (",
 				"  SELECT id, nickname",
-				"  FROM t_customer",    cusConds.gk(),
-				"  WHERE 1=1",          cusConds.gk(),
+				"  FROM t_customer",      CW,
+				"  WHERE 1=1",            CW,
 				") AS c",
-				"  ON o.cus_id = c.id", cus.gk(), RW,
-				"WHERE 1=1",                      RW, ROB,
-				"ORDER BY o.id DESC",                 ROB, RL,
-				"LIMIT 3",                                 RL, RO,
-				"OFFSET 0",                                    RO,
+				"  ON o.cus_id = c.id", C, RW,
+				"WHERE 1=1",               RW, ROB,
+				"ORDER BY o.id DESC",          ROB, RL,
+				"LIMIT 3",                          RL, RO,
+				"OFFSET 0",                             RO,
 				";");
 		
 		PageParams pp = 
