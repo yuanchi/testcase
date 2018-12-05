@@ -24,14 +24,26 @@ public class SqlCompose {
 		public String toString(){
 			return this.key;
 		}
+		/**
+		 * meaning group key
+		 * @return
+		 */
+		public String gk(){
+			return TAG_GRP+key;
+		}
 	}
-	public static class RootConds extends TagKey{
-		public RootConds(String key) {
+	public static class RootAlias extends TagKey{
+		public RootAlias(String key){
 			super(key);
 		}
 	}
-	public static class RootOrder extends TagKey{
-		public RootOrder(String key) {
+	public static class RootWhere extends TagKey{
+		public RootWhere(String key) {
+			super(key);
+		}
+	}
+	public static class RootOrderBy extends TagKey{
+		public RootOrderBy(String key) {
 			super(key);
 		}
 	}
@@ -46,6 +58,36 @@ public class SqlCompose {
 		}
 	}
 	
+	private static final String JOIN_PREFIX = "join_"; 
+	private static final String JOIN_CONDS_POSTFIX = "_conds";
+	public static class JoinTarget extends TagKey{
+		private JoinWhere jw;
+		/**
+		 * suggesting using alias the same as sql
+		 * @param alias
+		 */
+		public JoinTarget(String alias){
+			super(JOIN_PREFIX + alias);
+		}
+		public JoinWhere where(){
+			if(jw == null){
+				jw = new JoinWhere(key+JOIN_CONDS_POSTFIX);
+			}
+			jw.jt = this;
+			return jw;
+		}
+	}
+	
+	public static class JoinWhere extends TagKey{
+		private JoinTarget jt;
+		public JoinWhere(String key){
+			super(key);
+		}
+		public JoinTarget findTarget(){
+			return jt;
+		}
+	}
+	
 	public static TagKey tk(String k){
 		return new TagKey(k);
 	}
@@ -53,19 +95,24 @@ public class SqlCompose {
 	public static final String TAG_GRP = "group:";
 	private static final int TAG_GRP_COUNT = TAG_GRP.length();
 	
-	public static final RootConds ROOT_CONDS = new RootConds("root_conds");
-	public static final RootOrder ROOT_ORDER = new RootOrder("root_order");
-	public static final RootLimit ROOT_LIMIT = new RootLimit("root_limt");
-	public static final RootOffset ROOT_OFFSET = new RootOffset("root_offset");
+	public static final RootAlias R_ALIAS = new RootAlias("root_alias:");
+	public static final RootWhere R_WHERE = new RootWhere("root_where");
+	public static final RootOrderBy R_ORDER_BY = new RootOrderBy("root_orderBy");
+	public static final RootLimit R_LIMIT = new RootLimit("root_limt");
+	public static final RootOffset R_OFFSET = new RootOffset("root_offset");
 	
-	public static final String RC = TAG_GRP + ROOT_CONDS;
-	public static final String ROR = TAG_GRP + ROOT_ORDER;
-	public static final String RL = TAG_GRP + ROOT_LIMIT;
-	public static final String RO = TAG_GRP + ROOT_OFFSET;
+	public static final String RA = R_ALIAS.gk();
+	public static final String RW = R_WHERE.gk();
+	public static final String ROB = R_ORDER_BY.gk();
+	public static final String RL = R_LIMIT.gk();
+	public static final String RO = R_OFFSET.gk();
+	
+	public static final String DEFAULT_ROOT_ALIAS = "p";
 	
 	
 	private List<String> origin = new ArrayList<>();
 	private Map<String, GroupPos> groups = new HashMap<>();
+	private String rootAlias = DEFAULT_ROOT_ALIAS;
 
 	public GroupPos getGroupPos(TagKey k){
 		return groups.get(k.key);
@@ -94,24 +141,29 @@ public class SqlCompose {
 		}
 		return this;
 	}
+	private SqlCompose leftJoinToInnerIfCondsExisted(JoinTarget jtKey){
+		int start = getGroupPos(jtKey).start;
+		String original = origin.get(start);
+		String newOne = original.replace("LEFT JOIN", "INNER JOIN");
+		origin.set(start, newOne);
+		return this;
+	}
 	/**
 	 * 在關聯資料表中插入條件；<br>
 	 * (在一對一、多對一的情境中)如果在關聯資料表中有設定條件，<br>
 	 * 且join類型為LEFT JOIN，<br>
 	 * 將LEFT JOIN換為INNER JOIN
-	 * TODO considering distinguish between jcKey and jKey with subclass
-	 * @param jcKey
+	 * @param jtKey
 	 * @param conds
-	 * @param jKey
 	 * @return
 	 */
-	public SqlCompose appendInJoinConds(TagKey jcKey, String conds, TagKey jKey){
-		appendIn(jcKey, conds);
-		int start = getGroupPos(jKey).start;
-		String original = origin.get(start);
-		String newOne = original.replace("LEFT JOIN", "INNER JOIN");
-		origin.set(start, newOne);
-		return this;
+	public SqlCompose appendInJoinConds(JoinTarget jtKey, String conds){
+		appendIn(jtKey.where(), conds);
+		return leftJoinToInnerIfCondsExisted(jtKey);
+	}
+	public SqlCompose replaceExactJoinConds(JoinTarget jtKey, String conds){
+		replaceExact(jtKey.where(), conds);
+		return leftJoinToInnerIfCondsExisted(jtKey);
 	}
 	public List<String> remove(Integer... idx){
 		Set<Integer> range = new HashSet<>();
@@ -153,7 +205,7 @@ public class SqlCompose {
 		
 		List<String> ss = remove(removed.toArray(new Integer[removed.size()]));
 		if(selectReplaced == null){
-			selectReplaced = "COUNT(DISTINCT id)";
+			selectReplaced = "COUNT(DISTINCT "+ rootAlias +".id)";
 		}
 		ss.set(0, "SELECT " + selectReplaced);
 		return ss;
@@ -219,21 +271,36 @@ public class SqlCompose {
 		for(Map.Entry<String, GroupPos> m : this.groups.entrySet()){
 			sc.groups.put(m.getKey(), m.getValue());
 		}
+		sc.rootAlias = rootAlias;
 		return sc;
 	}
 	public List<String> getOrigin(){
 		return this.origin;
 	}
+	/**
+	 * generating sql to query pagination and calculating total count;<br>
+	 * this method doesn't support one to many relations for now.<br>
+	 * another issue is join conditions,<br>
+	 * that is, if there're conditions in joined tables,<br>
+	 * LEFT JOIN should be converted to INNER JOIN.
+	 * @param params
+	 * @return
+	 */
 	public String genPagingSql(PageParams params){
 		SqlCompose sc = clone();
-		String query = sc.replaceExact(ROOT_CONDS, params.get(ROOT_CONDS))
-			.replaceExact(ROOT_ORDER, params.get(ROOT_ORDER))
-			.replaceExact(ROOT_LIMIT, params.get(ROOT_LIMIT))
-			.replaceExact(ROOT_OFFSET, params.get(ROOT_OFFSET))
-			.joinWithBr()
-			;
-		String calcTotal = String.join("\n", sc.calcTotal(null, ROOT_ORDER, ROOT_LIMIT, ROOT_OFFSET));
-		// TODO considering other join conditions
+		sc.replaceExact(R_WHERE, params.get(R_WHERE))
+			.replaceExact(R_ORDER_BY, params.get(R_ORDER_BY))
+			.replaceExact(R_LIMIT, params.get(R_LIMIT))
+			.replaceExact(R_OFFSET, params.get(R_OFFSET));
+		
+		for(Map.Entry<JoinWhere, String> e : params.joinWheres().entrySet()){
+			JoinWhere jw = e.getKey();
+			JoinTarget jt = jw.findTarget();
+			sc.replaceExactJoinConds(jt, e.getValue());
+		}
+		
+		String query = sc.joinWithBr();
+		String calcTotal = String.join("\n", sc.calcTotal(null, R_ORDER_BY, R_LIMIT, R_OFFSET));
 		// TODO considering prepared statement parameters
 		String sql = query + "\n" + calcTotal;
 		return sql;
@@ -250,6 +317,10 @@ public class SqlCompose {
 		int c = -1;
 		for(String s : ss){
 			if(s.startsWith(TAG_GRP)){
+				if(s.startsWith(RA)){
+					sc.rootAlias = s.substring(s.lastIndexOf(":")+1, s.length());
+					continue;
+				}
 				String k = s.substring(TAG_GRP_COUNT);
 				GroupPos gp = sc.getGroupPos(tk(k));
 				if(gp == null){
