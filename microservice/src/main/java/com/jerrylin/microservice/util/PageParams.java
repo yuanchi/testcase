@@ -1,44 +1,66 @@
 package com.jerrylin.microservice.util;
 
-import static com.jerrylin.microservice.util.SqlCompose.ROOT_CONDS;
-import static com.jerrylin.microservice.util.SqlCompose.ROOT_LIMIT;
-import static com.jerrylin.microservice.util.SqlCompose.ROOT_OFFSET;
-import static com.jerrylin.microservice.util.SqlCompose.ROOT_ORDER;
+import static com.jerrylin.microservice.util.SqlCompose.R_LIMIT;
+import static com.jerrylin.microservice.util.SqlCompose.R_OFFSET;
+import static com.jerrylin.microservice.util.SqlCompose.R_ORDER_BY;
+import static com.jerrylin.microservice.util.SqlCompose.R_WHERE;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
-import com.jerrylin.microservice.util.SqlCompose.RootConds;
+import com.jerrylin.microservice.util.SqlCompose.JoinWhere;
 import com.jerrylin.microservice.util.SqlCompose.RootLimit;
 import com.jerrylin.microservice.util.SqlCompose.RootOffset;
-import com.jerrylin.microservice.util.SqlCompose.RootOrder;
+import com.jerrylin.microservice.util.SqlCompose.RootOrderBy;
+import com.jerrylin.microservice.util.SqlCompose.RootWhere;
 import com.jerrylin.microservice.util.SqlCompose.TagKey;
 
 public class PageParams extends HashMap<TagKey, String> {
 	private static final long serialVersionUID = 1L;
 	public PageParams(
-			RootConds rootConds, 
+			RootWhere rootConds, 
 			String conds, 
-			RootOrder rootOrder, 
+			RootOrderBy rootOrder, 
 			String order, 
 			RootLimit rootLimt, 
 			String limit, 
 			RootOffset rootOffset, 
 			String offset){
-		this.put(rootConds, conds);
-		this.put(rootOrder, order);
-		this.put(rootLimt, limit);
-		this.put(rootOffset, offset);
+		this.put(rootConds, "WHERE " + conds);
+		this.put(rootOrder, "ORDER BY " + order);
+		this.put(rootLimt, "LIMIT " + limit);
+		this.put(rootOffset, "OFFSET " + offset);
 	}
+	private boolean joinWhereExisted;
 	public String rootConds(){
-		return get(ROOT_CONDS);
+		return get(R_WHERE);
 	}
-	public String rootOrder(){
-		return get(ROOT_ORDER);
+	public String rootOrderBy(){
+		return get(R_ORDER_BY);
 	}
 	public String rootLimit(){
-		return get(ROOT_LIMIT);
+		return get(R_LIMIT);
 	}
 	public String rootOffset(){
-		return get(ROOT_OFFSET);
+		return get(R_OFFSET);
+	}
+	public PageParams joinWhere(JoinWhere jw, String conds){
+		joinWhereExisted = true;
+		put(jw, "WHERE " + conds);
+		return this;
+	}
+	public Map<JoinWhere, String> joinWheres(){
+		if(!joinWhereExisted){
+			return Collections.emptyMap();
+		}
+		Map<JoinWhere, String> r = new HashMap<>();
+		for(Map.Entry<TagKey, String> e : entrySet()){
+			TagKey tk = e.getKey();
+			if(tk instanceof JoinWhere){
+				r.put((JoinWhere)tk, e.getValue());
+			}
+		}
+		return r;
 	}
 }
